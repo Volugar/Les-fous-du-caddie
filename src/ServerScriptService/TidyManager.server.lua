@@ -57,6 +57,18 @@ local totals = {}
 local placedCounts = {}
 local totalItems = 0
 local remainingItems = 0
+local roomTotals = {}
+local roomPlaced = {}
+
+-- Pièces ouvertes : celles qui ne coûtent rien le sont dès le début.
+local unlockedRooms = {}
+for _, room in TidyConfig.Rooms do
+	unlockedRooms[room.Id] = room.Cost <= 0
+end
+
+local function isRoomUnlocked(roomId)
+	return unlockedRooms[roomId] == true
+end
 
 local function updateBillboards()
 	for _, zone in agency.Zones do
@@ -82,6 +94,11 @@ local function publishProgress()
 	for _, itemType in TidyConfig.TypeOrder do
 		ReplicatedStorage:SetAttribute("Total_" .. itemType, totals[itemType] or 0)
 		ReplicatedStorage:SetAttribute("Placed_" .. itemType, placedCounts[itemType] or 0)
+	end
+	for _, room in TidyConfig.Rooms do
+		ReplicatedStorage:SetAttribute("RoomTotal_" .. room.Id, roomTotals[room.Id] or 0)
+		ReplicatedStorage:SetAttribute("RoomPlaced_" .. room.Id, roomPlaced[room.Id] or 0)
+		ReplicatedStorage:SetAttribute("Unlocked_" .. room.Id, unlockedRooms[room.Id] == true)
 	end
 	ReplicatedStorage:SetAttribute("AgencyInOrder", totalItems > 0 and remainingItems <= 0)
 	updateBillboards()
@@ -253,6 +270,10 @@ local function pick(player, state, item)
 	if not CollectionService:HasTag(item, TidyConfig.ItemTag) or item:GetAttribute("State") ~= "Loose" then
 		return
 	end
+	if not isRoomUnlocked(item:GetAttribute("Room")) then
+		notify(player, "error", "Cette pièce est encore fermée.")
+		return
+	end
 	local root = getLivingRoot(player)
 	local main = item.PrimaryPart
 	if not root or not main then
@@ -279,7 +300,7 @@ local function place(player, state, zone)
 	end
 	local zoneType = zone:GetAttribute("ItemType")
 	local zoneInfo = TidyConfig.ItemTypes[zoneType]
-	if not zoneInfo then
+	if not zoneInfo or not isRoomUnlocked(zone:GetAttribute("Room")) then
 		return
 	end
 	if #state.Held == 0 then
@@ -349,10 +370,56 @@ local function place(player, state, zone)
 	placedCounts[zoneType] = (placedCounts[zoneType] or 0) + 1
 	remainingItems -= 1
 
+	-- Pièce d'origine de l'objet : bonus quand elle est entièrement rangée.
+	local roomId = item:GetAttribute("Room")
+	local roomDone = false
+	if roomId and roomTotals[roomId] then
+		roomPlaced[roomId] = (roomPlaced[roomId] or 0) + 1
+		if roomPlaced[roomId] == roomTotals[roomId] then
+			roomDone = true
+			state.Points += TidyConfig.RoomBonus
+		end
+	end
+
 	syncHands(player, state)
 	publishPlayer(player, state)
 	publishProgress()
-	notify(player, "points", "+" .. zoneInfo.Points .. " points")
+	notifyEvent:FireClient(player, "placed", "+" .. zoneInfo.Points .. " points", bestSlot.Position)
+	if roomDone then
+		local room = TidyConfig.GetRoom(roomId)
+		notify(player, "room", room.Name .. " : tout est rangé ! +" .. TidyConfig.RoomBonus .. " points bonus")
+	end
+end
+
+-- Ouvre une pièce verrouillée avec les points du joueur.
+local function unlock(player, state, door)
+	if typeof(door) ~= "Instance" or not CollectionService:HasTag(door, TidyConfig.DoorTag) then
+		return
+	end
+	local roomId = door:GetAttribute("Room")
+	local room = TidyConfig.GetRoom(roomId)
+	if not room or isRoomUnlocked(roomId) then
+		return
+	end
+	local root = getLivingRoot(player)
+	if not root or (root.Position - door.Position).Magnitude > MAX_DISTANCE then
+		notify(player, "error", "Approchez-vous de la porte.")
+		return
+	end
+	if state.Points < room.Cost then
+		notify(player, "error", "Il faut " .. room.Cost .. " points pour ouvrir : " .. room.Name .. ".")
+		return
+	end
+	state.Points -= room.Cost
+	unlockedRooms[roomId] = true
+	for _, other in agency.Doors do
+		if other.Parent and other:GetAttribute("Room") == roomId then
+			other:Destroy()
+		end
+	end
+	publishPlayer(player, state)
+	publishProgress()
+	notify(player, "room", room.Name .. " est ouverte ! Bon rangement.")
 end
 
 -- Hauteur de la surface sous un point (sol, bureau...), sinon le sol.
@@ -380,8 +447,8 @@ local function drop(player, state)
 	state.Selected = math.min(state.Selected, #state.Held)
 
 	local front = (root.CFrame * CFrame.new(0, 0, -3)).Position
-	local x = math.clamp(front.X, -38.5, 38.5)
-	local z = math.clamp(front.Z, -28.5, 28.5)
+	local x = math.clamp(front.X, -AgencyBuilder.HalfX + 1.5, AgencyBuilder.HalfX - 1.5)
+	local z = math.clamp(front.Z, -AgencyBuilder.HalfZ + 1.5, AgencyBuilder.HalfZ - 1.5)
 	local surfaceY = findSurfaceY(Vector3.new(x, root.Position.Y, z), player.Character)
 	local home = CFrame.new(x, surfaceY + item:GetAttribute("RestHeight"), z) * root.CFrame.Rotation
 
@@ -429,7 +496,7 @@ local function useMagnet(player, state)
 	local radius = magnetRadiusOf(state)
 	local candidates = {}
 	for _, item in itemsFolder:GetChildren() do
-		if item:GetAttribute("State") == "Loose" and item.PrimaryPart then
+		if item:GetAttribute("State") == "Loose" and item.PrimaryPart and isRoomUnlocked(item:GetAttribute("Room")) then
 			local distance = (item.PrimaryPart.Position - root.Position).Magnitude
 			if distance <= radius then
 				table.insert(candidates, { Item = item, Distance = distance })
@@ -467,9 +534,13 @@ local function startRound()
 
 	totals = {}
 	placedCounts = {}
+	roomTotals = {}
+	roomPlaced = {}
 	for _, item in items do
 		local itemType = item:GetAttribute("ItemType")
 		totals[itemType] = (totals[itemType] or 0) + 1
+		local roomId = item:GetAttribute("Room")
+		roomTotals[roomId] = (roomTotals[roomId] or 0) + 1
 	end
 	totalItems = #items
 	remainingItems = totalItems
@@ -494,6 +565,8 @@ actionEvent.OnServerEvent:Connect(function(player, action, target)
 		cycle(player, state, target)
 	elseif action == "magnet" then
 		useMagnet(player, state)
+	elseif action == "unlock" then
+		unlock(player, state, target)
 	elseif action == "restart" then
 		if remainingItems <= 0 then
 			startRound()

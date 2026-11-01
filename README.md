@@ -1,4 +1,4 @@
-# Agence pour l'emploi de Valmont — jeu de rangement Roblox
+# Agence pour l'emploi de Valmont — jeu de rangement détente Roblox
 
 Jeu solo (PC et mobile, en français) : le joueur range une agence pour l'emploi
 fictive. Des dossiers, des piles de papiers, des chaises et des cartons traînent
@@ -35,27 +35,35 @@ effacez le texte par défaut et collez le contenu du fichier.
 
 ## Comment on joue
 
+Un jeu de rangement **détente** : pas de pression, on range à son rythme dans une grande agence de 7 pièces.
+
 - **Ramasser :** cliquez sur un objet qui traîne (ou appuyez dessus sur mobile). Il va dans votre **sac**.
-- **Ranger :** cliquez sur l'endroit où il se range : étagère, bureau, comptoir ou tapis bleu.
-  Les places libres brillent en vert, et les meubles concernés sont entourés.
+- **Ranger :** cliquez sur le meuble où il se range. Les places libres brillent en vert,
+  les meubles concernés sont entourés, et chaque objet rangé fait une pluie d'étincelles avec un petit son.
 - **Sac :** 3 objets au départ. La touche **E** ou les boutons < > changent l'objet en main,
   la touche **Q** (A sur un clavier AZERTY) ou le bouton « Lâcher » le pose par terre.
-- **Points :** chaque objet rangé rapporte des points (dossier et papiers 10, carton 15, chaise 20).
+- **Points :** chaque objet rangé rapporte des points, et chaque pièce entièrement rangée donne **100 points bonus**.
+- **Pièces à débloquer :** cliquez sur une porte vitrée verrouillée pour l'ouvrir avec vos points.
 - **Améliorations (touche G) :** sac plus grand, chaussures de course, aimant, loupe.
 - **Outils (touches 1, 2, 3) :**
   - **Main** : ramasser et ranger ;
   - **Aimant** : un clic attire dans le sac les objets proches ;
   - **Loupe** : un rayon doré montre l'objet le plus proche, ou la place où ranger.
-- **Chronomètre** en haut, **compteurs par catégorie** en haut à droite, **zone actuelle** en bas.
-- **Fin :** message « L'agence est en ordre. » avec votre temps et votre record, puis **Rejouer**.
-  Une nouvelle partie éparpille de nouveaux objets ; les points et les améliorations sont conservés.
+- En bas de l'écran, **« Vous êtes dans : … »** affiche la pièce et sa progression.
+- **Fin :** message « L'agence est en ordre. », puis **Rejouer**. Les pièces ouvertes,
+  les points et les améliorations sont conservés.
 
-| Objet           | Nombre | Où le ranger                                        |
-|-----------------|--------|-----------------------------------------------------|
-| Dossier         | 36     | 2 étagères « DOSSIERS » contre le mur du fond       |
-| Pile de papiers | 24     | Bacs à documents (4 bureaux + 4 sur l'accueil)      |
-| Chaise          | 18     | Tapis bleu de la salle d'attente                    |
-| Carton          | 18     | 3 étagères de la réserve                            |
+| Pièce              | Prix pour ouvrir | Objets à ranger                       |
+|--------------------|------------------|---------------------------------------|
+| Accueil            | ouverte          | 12 piles de papiers, 18 chaises       |
+| Couloir            | ouvert           | 12 plantes                            |
+| Bureaux            | 200 points       | 36 piles de papiers, 12 plantes       |
+| Salle de pause     | 400 points       | 36 tasses, 16 chaises                 |
+| Archives           | 600 points       | 72 dossiers                           |
+| Réserve            | 800 points       | 36 cartons                            |
+| Salle de formation | 1000 points      | 20 chaises, 6 piles de papiers, 6 plantes |
+
+Total : **282 objets** par partie.
 
 ## Plan (vue de dessus)
 
@@ -67,7 +75,8 @@ Exemple de partie. En rouge : les objets qui traînent (placés au hasard). En v
 
 - `AgencyName` : nom de l'agence affiché sur les panneaux et l'interface.
 - `ItemTypes` : noms affichés et consignes pour chaque type d'objet.
-- `ItemCounts` : nombre d'objets de chaque type par partie.
+- `Rooms` : les pièces, leur prix d'ouverture et le nombre d'objets de chaque type.
+- `RoomBonus` : points bonus pour une pièce entièrement rangée.
 - `ReachDistance` : distance à laquelle on peut ramasser / ranger.
 - `BaseCapacity`, `BaseWalkSpeed` : sac et vitesse de départ.
 - `Upgrades` : prix et niveaux des améliorations.

@@ -11,6 +11,7 @@ local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
+local Debris = game:GetService("Debris")
 
 local TidyConfig = require(ReplicatedStorage:WaitForChild("TidyConfig"))
 local remotes = ReplicatedStorage:WaitForChild("TidyRemotes")
@@ -163,7 +164,7 @@ local progressPanel = makePanel({
 	Name = "Progress",
 	AnchorPoint = Vector2.new(1, 0),
 	Position = UDim2.new(1, -10, 0, 8),
-	Size = UDim2.new(0, 220, 0, 170),
+	Size = UDim2.new(0, 220, 0, 80 + #TidyConfig.TypeOrder * 24),
 	Parent = screenGui,
 })
 makeLabel(progressPanel, {
@@ -247,7 +248,7 @@ local areaLabel = makeLabel(screenGui, {
 	Name = "Area",
 	AnchorPoint = Vector2.new(0.5, 1),
 	Position = UDim2.new(0.5, 0, 1, -128),
-	Size = UDim2.new(0, 320, 0, 22),
+	Size = UDim2.new(0, 420, 0, 22),
 	Font = Enum.Font.FredokaOne,
 	Text = "",
 	TextColor3 = OVERLAY_COLOR,
@@ -525,8 +526,10 @@ local function showToast(text, kind)
 	toastLabel.Text = text
 	if kind == "error" then
 		toastLabel.TextColor3 = ERROR_COLOR
-	elseif kind == "points" then
+	elseif kind == "points" or kind == "placed" then
 		toastLabel.TextColor3 = GOLD_COLOR
+	elseif kind == "room" then
+		toastLabel.TextColor3 = ACCENT_COLOR
 	else
 		toastLabel.TextColor3 = OVERLAY_COLOR
 	end
@@ -538,7 +541,51 @@ local function showToast(text, kind)
 	end)
 end
 
-notifyEvent.OnClientEvent:Connect(showToast)
+-- Petite pluie d'étincelles et son doux quand un objet est rangé.
+local function celebrate(position)
+	if typeof(position) ~= "Vector3" then
+		return
+	end
+	local holder = make("Part", {
+		Name = "TidySparkle",
+		Anchored = true,
+		CanCollide = false,
+		Transparency = 1,
+		Size = Vector3.new(0.2, 0.2, 0.2),
+		CFrame = CFrame.new(position),
+		Parent = Workspace,
+	})
+	holder.CanTouch = false
+	holder.CanQuery = false
+	local emitter = make("ParticleEmitter", {
+		Name = "Sparkles",
+		Rate = 0,
+		Lifetime = NumberRange.new(0.4, 0.8),
+		Speed = NumberRange.new(3, 6),
+		SpreadAngle = Vector2.new(180, 180),
+		Color = ColorSequence.new(GOLD_COLOR),
+		Size = NumberSequence.new(0.3),
+		LightEmission = 1,
+		Parent = holder,
+	})
+	emitter:Emit(14)
+	local sound = make("Sound", {
+		Name = "PlaceSound",
+		SoundId = TidyConfig.PlaceSoundId,
+		Volume = 0.35,
+		PlaybackSpeed = 0.9 + math.random() * 0.25,
+		Parent = holder,
+	})
+	sound:Play()
+	Debris:AddItem(holder, 1.5)
+end
+
+notifyEvent.OnClientEvent:Connect(function(kind, text, position)
+	showToast(text, kind)
+	if kind == "placed" then
+		celebrate(position)
+	end
+end)
 
 ---------------------------------------------------------------------------
 -- Chronomètre et fin de partie
@@ -753,22 +800,24 @@ local function refreshWorld()
 		end
 	end
 	for _, zone in CollectionService:GetTagged(TidyConfig.ZoneTag) do
+		-- Contour vert sur les meubles du bon type (créé seulement quand il sert,
+		-- car Roblox limite le nombre de contours affichés en même temps).
+		local matches = carrying ~= "" and zone:GetAttribute("ItemType") == carrying
 		local highlight = zoneHighlights[zone]
-		if not highlight or highlight.Parent ~= zone then
-			highlight = make("Highlight", {
+		if matches and (not highlight or highlight.Parent ~= zone) then
+			zoneHighlights[zone] = make("Highlight", {
 				Name = "ZoneHighlight",
 				FillColor = ACCENT_COLOR,
 				FillTransparency = 0.85,
 				OutlineColor = ACCENT_COLOR,
 				OutlineTransparency = 0.2,
 				DepthMode = Enum.HighlightDepthMode.Occluded,
-				Enabled = false,
 				Parent = zone,
 			})
-			zoneHighlights[zone] = highlight
+		elseif not matches and highlight then
+			highlight:Destroy()
+			zoneHighlights[zone] = nil
 		end
-		local matches = carrying ~= "" and zone:GetAttribute("ItemType") == carrying
-		highlight.Enabled = matches
 
 		-- Panneau flottant : visible pour la catégorie en main, ou quand on est tout près.
 		local billboard = zone:FindFirstChild("CategoryBillboard")
@@ -890,10 +939,14 @@ end
 -- Clic / appui dans le décor
 ---------------------------------------------------------------------------
 
--- Trouve ce qui a été visé : un objet qui traîne ("item") ou une zone de rangement ("zone").
+-- Trouve ce qui a été visé : un objet qui traîne ("item"), une zone de rangement ("zone")
+-- ou une porte verrouillée ("door").
 local function resolveTarget(instance)
 	local current = instance
 	while current and current ~= Workspace do
+		if CollectionService:HasTag(current, TidyConfig.DoorTag) then
+			return "door", current
+		end
 		if CollectionService:HasTag(current, TidyConfig.ItemTag) and current:GetAttribute("State") == "Loose" then
 			return "item", current
 		end
@@ -934,7 +987,13 @@ local function handleClick(ray)
 		showToast("Trop loin ! Approchez-vous.", "error")
 		return
 	end
-	actionEvent:FireServer(if kind == "item" then "pick" else "place", target)
+	if kind == "item" then
+		actionEvent:FireServer("pick", target)
+	elseif kind == "door" then
+		actionEvent:FireServer("unlock", target)
+	else
+		actionEvent:FireServer("place", target)
+	end
 end
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
@@ -1088,17 +1147,14 @@ end)
 task.spawn(function()
 	while true do
 		local root = getRoot()
-		local areaName = nil
-		if root then
-			local position = root.Position
-			for _, area in TidyConfig.Areas do
-				if position.X >= area.MinX and position.X <= area.MaxX and position.Z >= area.MinZ and position.Z <= area.MaxZ then
-					areaName = area.Name
-					break
-				end
-			end
+		local room = root and TidyConfig.GetRoomAt(root.Position)
+		if room then
+			local done = ReplicatedStorage:GetAttribute("RoomPlaced_" .. room.Id) or 0
+			local count = ReplicatedStorage:GetAttribute("RoomTotal_" .. room.Id) or 0
+			areaLabel.Text = "Vous êtes dans : " .. room.Name .. "  (" .. done .. " / " .. count .. " rangés)"
+		else
+			areaLabel.Text = ""
 		end
-		areaLabel.Text = if areaName then "Vous êtes dans : " .. areaName else ""
 		updateGuide()
 		refreshWorld()
 		task.wait(0.25)
