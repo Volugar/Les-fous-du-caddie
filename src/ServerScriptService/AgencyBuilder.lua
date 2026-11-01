@@ -1,8 +1,8 @@
 -- AgencyBuilder (ModuleScript)
--- Location: ServerScriptService
--- Builds the whole employment agency when the game starts: building, furniture,
--- signs, lights, the places where objects belong, and the misplaced objects.
--- It is used by the TidyManager script. It does nothing on its own.
+-- Emplacement : ServerScriptService
+-- Construit toute l'agence pour l'emploi au lancement du jeu : bâtiment, mobilier,
+-- panneaux, lumières, emplacements des objets et objets mal rangés.
+-- Il est utilisé par le script TidyManager. Il ne fait rien tout seul.
 
 local CollectionService = game:GetService("CollectionService")
 local Lighting = game:GetService("Lighting")
@@ -14,8 +14,8 @@ local TidyConfig = require(ReplicatedStorage:WaitForChild("TidyConfig"))
 local AgencyBuilder = {}
 
 ---------------------------------------------------------------------------
--- Dimensions (in studs). The inside of the building goes from
--- X = -40 to 40 and from Z = -30 to 30. The floor surface is at Y = 1.
+-- Dimensions (en studs). L'intérieur du bâtiment va de
+-- X = -40 à 40 et de Z = -30 à 30. La surface du sol est à Y = 1.
 ---------------------------------------------------------------------------
 local FLOOR_TOP = 1
 local HALF_X = 40
@@ -25,7 +25,7 @@ local CEILING_BOTTOM = FLOOR_TOP + WALL_HEIGHT
 local DESK_HEIGHT = 2.5
 local COUNTER_HEIGHT = 3.75
 
--- Size of the main part of each object. Used for the objects and their places.
+-- Taille de la pièce principale de chaque objet. Sert aux objets et à leurs emplacements.
 local ITEM_SIZES = {
 	Folder = Vector3.new(1.3, 0.15, 1.6),
 	Paper = Vector3.new(1.1, 0.25, 1.5),
@@ -33,7 +33,7 @@ local ITEM_SIZES = {
 	Box = Vector3.new(2.4, 1.8, 1.8),
 }
 
--- Distance between the floor and the center of each object's main part.
+-- Distance entre le sol et le centre de la pièce principale de chaque objet.
 local REST_HEIGHTS = {
 	Folder = 0.075,
 	Paper = 0.125,
@@ -83,10 +83,10 @@ local BINDER_COLORS = {
 }
 
 ---------------------------------------------------------------------------
--- Where the misplaced objects start.
--- X / Z : position on the map. Surface : height of what it lies on
--- (0 = floor, DESK_HEIGHT = on a desk). Yaw : rotation in degrees.
--- Tipped : the chair lies on its side.
+-- Position de départ des objets mal rangés.
+-- X / Z : position sur la carte. Surface : hauteur de ce sur quoi il est posé
+-- (0 = sol, DESK_HEIGHT = sur un bureau). Yaw : rotation en degrés.
+-- Tipped : la chaise est renversée sur le côté.
 ---------------------------------------------------------------------------
 local MISPLACED_ITEMS = {
 	{ Type = "Folder", X = -22, Z = 4, Surface = 0, Yaw = 25 },
@@ -117,10 +117,10 @@ local MISPLACED_ITEMS = {
 }
 
 ---------------------------------------------------------------------------
--- Small helpers
+-- Petites fonctions utilitaires
 ---------------------------------------------------------------------------
 
--- Applies a material by name, with a safe fallback if it does not exist.
+-- Applique un matériau par son nom, avec un matériau de secours s'il n'existe pas.
 local function setMaterial(part, materialName)
 	local ok = pcall(function()
 		part.Material = Enum.Material[materialName]
@@ -130,7 +130,7 @@ local function setMaterial(part, materialName)
 	end
 end
 
--- Creates an anchored part. "options" can set extra properties.
+-- Crée une pièce ancrée. "options" permet de régler d'autres propriétés.
 local function newPart(parent, name, size, cframe, color, materialName, options)
 	local part = Instance.new("Part")
 	part.Name = name
@@ -150,12 +150,12 @@ local function newPart(parent, name, size, cframe, color, materialName, options)
 	return part
 end
 
--- Creates an anchored part from a center position (no rotation).
+-- Crée une pièce ancrée à partir de la position de son centre (sans rotation).
 local function block(parent, name, size, position, color, materialName, options)
 	return newPart(parent, name, size, CFrame.new(position), color, materialName, options)
 end
 
--- Creates a vertical cylinder (Roblox cylinders lie along X, so we rotate it).
+-- Crée un cylindre vertical (les cylindres Roblox sont couchés sur X, on les fait pivoter).
 local function cylinder(parent, name, height, diameter, center, color, materialName)
 	local part = newPart(
 		parent,
@@ -169,7 +169,7 @@ local function cylinder(parent, name, height, diameter, center, color, materialN
 	return part
 end
 
--- Creates a flat sign with text. "facing" is the direction the text looks at.
+-- Crée un panneau plat avec du texte. "facing" est la direction vers laquelle le texte regarde.
 local function newSign(parent, name, text, size, position, facing, backgroundColor, textColor)
 	local board = newPart(
 		parent,
@@ -219,28 +219,28 @@ local function newFolder(parent, name)
 end
 
 ---------------------------------------------------------------------------
--- Building: floors, walls, windows, entrance, ceiling and lights
+-- Bâtiment : sols, murs, fenêtres, entrée, plafond et lumières
 ---------------------------------------------------------------------------
 local function buildStructure(parent)
 	local floorY = FLOOR_TOP / 2
 
-	-- Floors (they touch each other without overlapping).
+	-- Sols (ils se touchent sans se chevaucher).
 	block(parent, "OfficeCarpet", Vector3.new(64, 1, 38), Vector3.new(-8, floorY, -11), COLORS.Carpet, "Carpet")
 	block(parent, "CorridorCarpet", Vector3.new(16, 1, 20), Vector3.new(32, floorY, -2), COLORS.Carpet, "Carpet")
 	block(parent, "StorageFloor", Vector3.new(16, 1, 18), Vector3.new(32, floorY, -21), COLORS.Concrete, "Concrete")
 	block(parent, "LobbyTiles", Vector3.new(80, 1, 22), Vector3.new(0, floorY, 19), COLORS.Tiles, "Marble")
 
-	-- Outer walls (outside the inner area, so they never overlap the floor).
+	-- Murs extérieurs (hors de la zone intérieure, ils ne chevauchent jamais le sol).
 	local wallHeight = CEILING_BOTTOM
 	local wallY = wallHeight / 2
 	local fullLengthX = HALF_X * 2 + 2
 	local fullLengthZ = HALF_Z * 2 + 2
-	local sideWallLength = HALF_Z * 2 -- east/west walls fit between the north and south walls
+	local sideWallLength = HALF_Z * 2 -- les murs est/ouest tiennent entre les murs nord et sud
 
 	block(parent, "NorthWall", Vector3.new(fullLengthX, wallHeight, 1), Vector3.new(0, wallY, -HALF_Z - 0.5), COLORS.Wall, "Plaster")
 	block(parent, "EastWall", Vector3.new(1, wallHeight, sideWallLength), Vector3.new(HALF_X + 0.5, wallY, 0), COLORS.Wall, "Plaster")
 
-	-- South wall with the entrance (8 studs wide, 8 studs high).
+	-- Mur sud avec l'entrée (8 studs de large, 8 studs de haut).
 	local doorHalf = 4
 	local doorTop = FLOOR_TOP + 8
 	local sideLength = HALF_X + 1 - doorHalf
@@ -248,14 +248,14 @@ local function buildStructure(parent)
 	block(parent, "SouthWallRight", Vector3.new(sideLength, wallHeight, 1), Vector3.new(doorHalf + sideLength / 2, wallY, HALF_Z + 0.5), COLORS.Wall, "Plaster")
 	block(parent, "EntranceLintel", Vector3.new(doorHalf * 2, wallHeight - doorTop, 1), Vector3.new(0, (doorTop + wallHeight) / 2, HALF_Z + 0.5), COLORS.Wall, "Plaster")
 
-	-- Closed glass entrance doors (the agency is not open to the public yet).
+	-- Portes vitrées fermées (l'agence n'est pas encore ouverte au public).
 	for _, side in { -1, 1 } do
 		block(parent, "GlassDoor", Vector3.new(3.9, 8, 0.3), Vector3.new(side * 2, FLOOR_TOP + 4, HALF_Z + 0.5), COLORS.Glass, "Glass", { Transparency = 0.6 })
 		block(parent, "DoorHandle", Vector3.new(0.15, 1.5, 0.5), Vector3.new(side * 0.4, FLOOR_TOP + 3.75, HALF_Z + 0.2), COLORS.Metal, "Metal")
 	end
 	block(parent, "DoorFrame", Vector3.new(0.3, 8, 0.4), Vector3.new(0, FLOOR_TOP + 4, HALF_Z + 0.5), COLORS.DarkMetal, "Metal")
 
-	-- West wall with two large windows.
+	-- Mur ouest avec deux grandes fenêtres.
 	local sillY = FLOOR_TOP + 3
 	local windowTop = FLOOR_TOP + 9
 	local westX = -HALF_X - 0.5
@@ -263,7 +263,7 @@ local function buildStructure(parent)
 	block(parent, "WestWallHigh", Vector3.new(1, wallHeight - windowTop, sideWallLength), Vector3.new(westX, (windowTop + wallHeight) / 2, 0), COLORS.Wall, "Plaster")
 	local windowHeight = windowTop - sillY
 	local windowY = (sillY + windowTop) / 2
-	-- Pillars between the windows: {from Z, to Z}
+	-- Piliers entre les fenêtres : {de Z, à Z}
 	for _, range in { { -HALF_Z, -24 }, { -4, 4 }, { 24, HALF_Z } } do
 		local length = range[2] - range[1]
 		block(parent, "WestPillar", Vector3.new(1, windowHeight, length), Vector3.new(westX, windowY, range[1] + length / 2), COLORS.Wall, "Plaster")
@@ -274,7 +274,7 @@ local function buildStructure(parent)
 		block(parent, "WindowSill", Vector3.new(0.6, 0.2, length), Vector3.new(-HALF_X + 0.3, sillY + 0.1, range[1] + length / 2), COLORS.Wall, "SmoothPlastic")
 	end
 
-	-- Storage room partitions (room from X = 24 to 40 and Z = -30 to -12).
+	-- Cloisons de la réserve (pièce de X = 24 à 40 et de Z = -30 à -12).
 	local partitionX = 24
 	local doorFromZ, doorToZ = -22, -16
 	block(parent, "StoragePartition", Vector3.new(0.5, WALL_HEIGHT, doorFromZ + HALF_Z), Vector3.new(partitionX, FLOOR_TOP + WALL_HEIGHT / 2, (-HALF_Z + doorFromZ) / 2), COLORS.Partition, "Plaster")
@@ -282,10 +282,10 @@ local function buildStructure(parent)
 	block(parent, "StorageDoorLintel", Vector3.new(0.5, WALL_HEIGHT - 8, doorToZ - doorFromZ), Vector3.new(partitionX, FLOOR_TOP + 8 + (WALL_HEIGHT - 8) / 2, (doorFromZ + doorToZ) / 2), COLORS.Partition, "Plaster")
 	block(parent, "StoragePartition", Vector3.new(HALF_X - partitionX + 0.25, WALL_HEIGHT, 0.5), Vector3.new((partitionX - 0.25 + HALF_X) / 2, FLOOR_TOP + WALL_HEIGHT / 2, -11.75), COLORS.Partition, "Plaster")
 
-	-- Ceiling.
+	-- Plafond.
 	block(parent, "Ceiling", Vector3.new(fullLengthX, 1, fullLengthZ), Vector3.new(0, CEILING_BOTTOM + 0.5, 0), COLORS.Ceiling, "SmoothPlastic")
 
-	-- Ceiling light panels.
+	-- Dalles lumineuses du plafond.
 	for _, x in { -30, -15, 0, 15, 31 } do
 		for _, z in { -21, -6, 9, 22 } do
 			local panel = block(parent, "CeilingLight", Vector3.new(4, 0.2, 2), Vector3.new(x, CEILING_BOTTOM - 0.1, z), COLORS.Light, "Neon", { CanCollide = false, CastShadow = false })
@@ -300,15 +300,15 @@ local function buildStructure(parent)
 		end
 	end
 
-	-- Entrance mat.
+	-- Tapis d'entrée.
 	block(parent, "EntranceMat", Vector3.new(6, 0.05, 3), Vector3.new(0, FLOOR_TOP + 0.025, HALF_Z - 2.5), COLORS.DarkMetal, "Fabric")
 end
 
 ---------------------------------------------------------------------------
--- Decorative furniture (cannot be picked up)
+-- Mobilier décoratif (ne peut pas être ramassé)
 ---------------------------------------------------------------------------
 
--- Office chair. "floorPosition" is on the floor; the chair faces -Z before rotation.
+-- Chaise de bureau. "floorPosition" est au sol ; la chaise regarde vers -Z avant rotation.
 local function createOfficeChair(parent, floorPosition, yawRadians)
 	local model = newModel(parent, "OfficeChair")
 	local base = CFrame.new(floorPosition) * CFrame.Angles(0, yawRadians, 0)
@@ -327,13 +327,13 @@ local function createPlant(parent, x, z)
 	return model
 end
 
--- Empty document tray. Returns the position where a stack of papers goes.
+-- Bac à documents vide. Renvoie la position où va une pile de papiers.
 local function createTray(parent, position)
 	block(parent, "DocumentTray", Vector3.new(1.4, 0.1, 1.8), position + Vector3.new(0, 0.05, 0), COLORS.DarkMetal, "Metal")
 	return CFrame.new(position + Vector3.new(0, 0.1 + REST_HEIGHTS.Paper, 0))
 end
 
--- Advisor desk with computer and two chairs. Returns the paper tray spot.
+-- Bureau de conseiller avec ordinateur et deux chaises. Renvoie l'emplacement du bac à papiers.
 local function createAdvisorDesk(parent, index, cx, cz)
 	local model = newModel(parent, "AdvisorDesk" .. index)
 	local top = FLOOR_TOP + DESK_HEIGHT
@@ -347,14 +347,14 @@ local function createAdvisorDesk(parent, index, cx, cz)
 	block(model, "Monitor", Vector3.new(2.2, 1.3, 0.1), Vector3.new(cx, top + 1.15, cz + 0.7), COLORS.Black, "SmoothPlastic")
 	block(model, "Keyboard", Vector3.new(1.6, 0.08, 0.5), Vector3.new(cx, top + 0.04, cz - 0.6), COLORS.Black, "SmoothPlastic")
 
-	-- Advisor sits on the north side, the job seeker on the south side.
+	-- Le conseiller est assis côté nord, le demandeur d'emploi côté sud.
 	createOfficeChair(model, Vector3.new(cx, FLOOR_TOP, cz - 2.4), math.pi)
 	createOfficeChair(model, Vector3.new(cx, FLOOR_TOP, cz + 2.4), 0)
 
 	return createTray(model, Vector3.new(cx + 2, top, cz))
 end
 
--- Reception counter in the lobby. Returns the two paper tray spots.
+-- Comptoir d'accueil du hall. Renvoie les deux emplacements de bacs à papiers.
 local function createReception(parent)
 	local model = newModel(parent, "Reception")
 	local cz = 13
@@ -362,13 +362,13 @@ local function createReception(parent)
 
 	block(model, "CounterBody", Vector3.new(12, COUNTER_HEIGHT - 0.25, 2.5), Vector3.new(0, FLOOR_TOP + (COUNTER_HEIGHT - 0.25) / 2, cz), COLORS.DarkWood, "Wood")
 	block(model, "CounterTop", Vector3.new(12.4, 0.25, 2.9), Vector3.new(0, top - 0.125, cz), COLORS.Tiles, "Marble")
-	newSign(model, "ReceptionSign", "RECEPTION", Vector3.new(5, 1, 0.05), Vector3.new(0, FLOOR_TOP + 2.2, cz + 1.275), Vector3.new(0, 0, 1))
+	newSign(model, "ReceptionSign", "ACCUEIL", Vector3.new(5, 1, 0.05), Vector3.new(0, FLOOR_TOP + 2.2, cz + 1.275), Vector3.new(0, 0, 1))
 
 	block(model, "MonitorStand", Vector3.new(0.4, 0.5, 0.3), Vector3.new(0, top + 0.25, cz - 0.6), COLORS.Black, "SmoothPlastic")
 	block(model, "Monitor", Vector3.new(2.2, 1.3, 0.1), Vector3.new(0, top + 1.15, cz - 0.6), COLORS.Black, "SmoothPlastic")
 	createOfficeChair(model, Vector3.new(0, FLOOR_TOP, 10), math.pi)
 
-	-- Agency name, hanging from the ceiling above the counter.
+	-- Nom de l'agence, suspendu au plafond au-dessus du comptoir.
 	local signY = FLOOR_TOP + 9
 	newSign(model, "AgencySign", string.upper(TidyConfig.AgencyName), Vector3.new(16, 1.8, 0.3), Vector3.new(0, signY, 12), Vector3.new(0, 0, 1))
 	local wireLength = CEILING_BOTTOM - (signY + 0.9)
@@ -382,7 +382,7 @@ local function createReception(parent)
 	}
 end
 
--- Archive shelf for case folders. Returns the 6 folder spots.
+-- Étagère des dossiers. Renvoie les 6 emplacements de dossiers.
 local function createArchiveShelf(parent)
 	local model = newModel(parent, "ArchiveShelf")
 	local cx, cz = 8, -29
@@ -399,24 +399,24 @@ local function createArchiveShelf(parent)
 		block(model, "Shelf", Vector3.new(width - 0.4, 0.15, depth - 0.2), Vector3.new(cx, FLOOR_TOP + shelfTop - 0.075, cz + 0.1), COLORS.Wood, "Wood")
 	end
 
-	-- Bottom shelf: decorative binders (already in order).
+	-- Étagère du bas : classeurs décoratifs (déjà rangés).
 	for i = 0, 11 do
 		local x = cx - 2.55 + 0.25 + i * 0.42
 		block(model, "Binder", Vector3.new(0.36, 1.5, 1.5), Vector3.new(x, FLOOR_TOP + 0.2 + 0.75, cz + 0.1), BINDER_COLORS[i % #BINDER_COLORS + 1], "SmoothPlastic")
 	end
 
-	-- Middle and top shelves: three free spots each, folders stand upright.
+	-- Étagères du milieu et du haut : trois places libres chacune, les dossiers sont debout.
 	for _, shelfTop in { shelfTops[2], shelfTops[3] } do
 		for _, x in { cx - 1.5, cx, cx + 1.5 } do
 			table.insert(spots, CFrame.new(x, FLOOR_TOP + shelfTop + ITEM_SIZES.Folder.X / 2, cz + 0.05) * CFrame.Angles(0, 0, math.rad(90)))
 		end
 	end
 
-	newSign(parent, "ArchiveSign", "CASE FILES", Vector3.new(5, 0.9, 0.1), Vector3.new(cx, FLOOR_TOP + 7.2, -HALF_Z + 0.05), Vector3.new(0, 0, 1))
+	newSign(parent, "ArchiveSign", "DOSSIERS", Vector3.new(5, 0.9, 0.1), Vector3.new(cx, FLOOR_TOP + 7.2, -HALF_Z + 0.05), Vector3.new(0, 0, 1))
 	return spots
 end
 
--- Decorative filing cabinet against the north wall.
+-- Meuble à tiroirs décoratif contre le mur nord.
 local function createFilingCabinet(parent, cx)
 	local model = newModel(parent, "FilingCabinet")
 	local depth = 2.2
@@ -430,7 +430,7 @@ local function createFilingCabinet(parent, cx)
 	return model
 end
 
--- Metal shelving unit in the storage room. Returns the 2 box spots.
+-- Étagère métallique de la réserve. Renvoie les 2 emplacements de cartons.
 local function createStorageShelf(parent, index, cx)
 	local model = newModel(parent, "StorageShelf" .. index)
 	local width, depth, height = 5, 3, 7
@@ -448,11 +448,11 @@ local function createStorageShelf(parent, index, cx)
 		block(model, "ShelfBoard", Vector3.new(width - 0.1, 0.15, depth - 0.1), Vector3.new(cx, FLOOR_TOP + level - 0.075, cz), COLORS.Metal, "Metal")
 	end
 
-	-- Two lower levels are free for boxes.
+	-- Les deux niveaux du bas sont libres pour les cartons.
 	table.insert(spots, CFrame.new(cx, FLOOR_TOP + levels[1] + REST_HEIGHTS.Box, cz))
 	table.insert(spots, CFrame.new(cx, FLOOR_TOP + levels[2] + REST_HEIGHTS.Box, cz))
 
-	-- Top level: decorative archive boxes (already in order).
+	-- Niveau du haut : boîtes d'archives décoratives (déjà rangées).
 	for _, offset in { -1.2, 1.2 } do
 		block(model, "ArchiveBox", Vector3.new(2.2, 0.6, 2.4), Vector3.new(cx + offset, FLOOR_TOP + levels[3] + 0.3, cz), COLORS.Cardboard, "Cardboard")
 	end
@@ -460,8 +460,8 @@ local function createStorageShelf(parent, index, cx)
 	return spots
 end
 
--- Waiting area chairs face the "Now serving" screen on the east wall.
--- Returns the 6 chair spots.
+-- Les chaises de la salle d'attente font face à l'écran "Numéro appelé" sur le mur est.
+-- Renvoie les 6 emplacements de chaises.
 local function createWaitingArea(parent)
 	local spots = {}
 	for _, x in { 27, 31 } do
@@ -470,12 +470,12 @@ local function createWaitingArea(parent)
 		end
 	end
 
-	newSign(parent, "NowServingScreen", "NOW SERVING   A-047", Vector3.new(6, 2, 0.2), Vector3.new(HALF_X - 0.1, FLOOR_TOP + 6.5, 21), Vector3.new(-1, 0, 0), COLORS.Black, Color3.fromRGB(255, 90, 70))
-	newSign(parent, "WaitingSign", "WAITING AREA", Vector3.new(6, 0.9, 0.2), Vector3.new(HALF_X - 0.1, FLOOR_TOP + 8.6, 21), Vector3.new(-1, 0, 0))
+	newSign(parent, "NowServingScreen", "NUMÉRO APPELÉ   A-047", Vector3.new(6, 2, 0.2), Vector3.new(HALF_X - 0.1, FLOOR_TOP + 6.5, 21), Vector3.new(-1, 0, 0), COLORS.Black, Color3.fromRGB(255, 90, 70))
+	newSign(parent, "WaitingSign", "SALLE D'ATTENTE", Vector3.new(6, 0.9, 0.2), Vector3.new(HALF_X - 0.1, FLOOR_TOP + 8.6, 21), Vector3.new(-1, 0, 0))
 	return spots
 end
 
--- Lobby decoration: water cooler, job offers board, plants.
+-- Décoration du hall : fontaine à eau, tableau des offres d'emploi, plantes.
 local function createLobbyDecor(parent)
 	local cooler = newModel(parent, "WaterCooler")
 	block(cooler, "Body", Vector3.new(1.2, 3.2, 1.2), Vector3.new(-38.5, FLOOR_TOP + 1.6, 20), Color3.fromRGB(235, 235, 235), "SmoothPlastic")
@@ -485,7 +485,7 @@ local function createLobbyDecor(parent)
 	local board = newModel(parent, "JobOffersBoard")
 	local boardZ = HALF_Z - 0.08
 	block(board, "Cork", Vector3.new(8, 4, 0.15), Vector3.new(-20, FLOOR_TOP + 5, boardZ), COLORS.Cork, "Fabric")
-	newSign(board, "Title", "JOB OFFERS", Vector3.new(8, 0.9, 0.1), Vector3.new(-20, FLOOR_TOP + 7.6, HALF_Z - 0.05), Vector3.new(0, 0, -1))
+	newSign(board, "Title", "OFFRES D'EMPLOI", Vector3.new(8, 0.9, 0.1), Vector3.new(-20, FLOOR_TOP + 7.6, HALF_Z - 0.05), Vector3.new(0, 0, -1))
 	local tilt = { -4, 3, -2, 5, -3, 2 }
 	local n = 0
 	for _, y in { FLOOR_TOP + 5.9, FLOOR_TOP + 4.1 } do
@@ -501,7 +501,7 @@ local function createLobbyDecor(parent)
 end
 
 ---------------------------------------------------------------------------
--- Objects to tidy up and the places where they belong
+-- Objets à ranger et emplacements où ils vont
 ---------------------------------------------------------------------------
 
 local function weldToMain(main, part)
@@ -523,7 +523,7 @@ local function createPrompt(parent, name, actionText, objectText)
 	return prompt
 end
 
--- Builds the parts of one object around the origin. Returns the model and its main part.
+-- Fabrique les pièces d'un objet autour de l'origine. Renvoie le modèle et sa pièce principale.
 local function buildItemParts(itemType, index)
 	local model = Instance.new("Model")
 	model.Name = itemType .. index
@@ -543,7 +543,7 @@ local function buildItemParts(itemType, index)
 		sheet.CanCollide = false
 		weldToMain(main, sheet)
 	elseif itemType == "Chair" then
-		-- The main part is the seat. The chair faces -Z.
+		-- La pièce principale est l'assise. La chaise regarde vers -Z.
 		main = newPart(model, "Main", size, CFrame.new(), COLORS.WaitingChair, "Plastic")
 		local back = newPart(model, "Back", Vector3.new(2, 2, 0.25), CFrame.new(0, 1.175, 0.875), COLORS.WaitingChair, "Plastic")
 		weldToMain(main, back)
@@ -574,15 +574,15 @@ local function createItem(parent, itemType, index, homeCFrame)
 	model:SetAttribute("State", "Loose")
 	model:SetAttribute("HomeCFrame", homeCFrame)
 
-	createPrompt(main, "PickupPrompt", "Pick up", TidyConfig.ItemTypes[itemType].DisplayName)
+	createPrompt(main, "PickupPrompt", TidyConfig.PickupText, TidyConfig.ItemTypes[itemType].DisplayName)
 
 	model.Parent = parent
 	CollectionService:AddTag(model, TidyConfig.ItemTag)
 	return model
 end
 
--- An invisible spot where an object belongs. It glows when the player
--- carries a matching object (handled by TidyUI).
+-- Emplacement invisible où un objet doit être rangé. Il brille quand le joueur
+-- porte un objet du bon type (géré par TidyUI).
 local function createSlot(parent, itemType, index, targetCFrame)
 	local slot = newPart(parent, itemType .. "Spot" .. index, ITEM_SIZES[itemType], targetCFrame, COLORS.Ghost, "Neon", {
 		Transparency = 1,
@@ -595,7 +595,7 @@ local function createSlot(parent, itemType, index, targetCFrame)
 	slot:SetAttribute("ItemType", itemType)
 	slot:SetAttribute("Occupied", false)
 
-	createPrompt(slot, "PlacePrompt", "Put away", TidyConfig.ItemTypes[itemType].PlaceName)
+	createPrompt(slot, "PlacePrompt", TidyConfig.PutAwayText, TidyConfig.ItemTypes[itemType].PlaceName)
 
 	CollectionService:AddTag(slot, TidyConfig.SlotTag)
 	return slot
@@ -610,7 +610,7 @@ local function startCFrame(entry)
 end
 
 ---------------------------------------------------------------------------
--- Lighting and spawn
+-- Éclairage et point d'apparition
 ---------------------------------------------------------------------------
 local function setupLighting()
 	Lighting.ClockTime = 14
@@ -633,7 +633,7 @@ local function setupLighting()
 end
 
 local function createSpawn(parent)
-	-- Removes the default spawn of the template so players start inside the agency.
+	-- Supprime le point d'apparition du modèle pour que le joueur commence dans l'agence.
 	for _, descendant in Workspace:GetDescendants() do
 		if descendant:IsA("SpawnLocation") then
 			descendant:Destroy()
@@ -658,7 +658,7 @@ local function createSpawn(parent)
 end
 
 ---------------------------------------------------------------------------
--- Main function
+-- Fonction principale
 ---------------------------------------------------------------------------
 function AgencyBuilder.Build()
 	local old = Workspace:FindFirstChild("EmploymentAgency")
@@ -679,7 +679,7 @@ function AgencyBuilder.Build()
 	buildStructure(structure)
 	createLobbyDecor(furniture)
 
-	-- Places where objects belong, grouped by type.
+	-- Emplacements où vont les objets, regroupés par type.
 	local spotCFrames = { Folder = {}, Paper = {}, Chair = {}, Box = {} }
 
 	for _, cframe in createReception(furniture) do
@@ -700,7 +700,7 @@ function AgencyBuilder.Build()
 			table.insert(spotCFrames.Box, cframe)
 		end
 	end
-	newSign(furniture, "StorageSign", "STORAGE", Vector3.new(4, 1, 0.1), Vector3.new(23.7, FLOOR_TOP + 9.5, -19), Vector3.new(-1, 0, 0))
+	newSign(furniture, "StorageSign", "RÉSERVE", Vector3.new(4, 1, 0.1), Vector3.new(23.7, FLOOR_TOP + 9.5, -19), Vector3.new(-1, 0, 0))
 
 	spotCFrames.Chair = createWaitingArea(furniture)
 
@@ -718,7 +718,7 @@ function AgencyBuilder.Build()
 		table.insert(items, createItem(itemsFolder, entry.Type, counts[entry.Type], startCFrame(entry)))
 	end
 
-	-- Safety check: every object must have a free place.
+	-- Vérification : chaque objet doit avoir une place libre.
 	for itemType, count in counts do
 		if #spotCFrames[itemType] < count then
 			warn(string.format("[AgencyBuilder] Not enough places for %s: %d objects, %d places", itemType, count, #spotCFrames[itemType]))

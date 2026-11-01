@@ -1,8 +1,8 @@
 -- TidyUI (LocalScript)
--- Location: StarterPlayer > StarterPlayerScripts
--- Player interface: counter of objects left, instructions, welcome and
--- completion messages. Also shows only the useful prompts and makes the
--- right places glow when the player carries an object.
+-- Emplacement : StarterPlayer > StarterPlayerScripts
+-- Interface du joueur : compteur d'objets restants, consignes, messages d'accueil
+-- et de fin. Affiche aussi seulement les boutons utiles et fait briller les
+-- bons emplacements quand le joueur porte un objet.
 
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
@@ -15,7 +15,7 @@ local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
 ---------------------------------------------------------------------------
--- Interface building helpers
+-- Fonctions pour construire l'interface
 ---------------------------------------------------------------------------
 
 local TEXT_COLOR = Color3.fromRGB(240, 240, 240)
@@ -76,7 +76,7 @@ local function makeButton(parent, text)
 	return button
 end
 
--- Centered message window (welcome and completion).
+-- Fenêtre de message centrée (accueil et fin).
 local function makeMessagePanel(name, titleText, bodyText, buttonText)
 	local panel = make("Frame", {
 		Name = name,
@@ -114,7 +114,7 @@ local function makeMessagePanel(name, titleText, bodyText, buttonText)
 end
 
 ---------------------------------------------------------------------------
--- Build the interface
+-- Construction de l'interface
 ---------------------------------------------------------------------------
 
 local screenGui = make("ScreenGui", {
@@ -125,7 +125,7 @@ local screenGui = make("ScreenGui", {
 	Parent = playerGui,
 })
 
--- Counter (top of the screen).
+-- Compteur (en haut de l'écran).
 local counterFrame = make("Frame", {
 	Name = "Counter",
 	AnchorPoint = Vector2.new(0.5, 0),
@@ -155,7 +155,7 @@ local countLabel = makeLabel(counterFrame, {
 	Position = UDim2.new(0, 14, 0, 24),
 	Size = UDim2.new(1, -28, 0, 26),
 	Font = Enum.Font.GothamBold,
-	Text = "Items left to put away: ...",
+	Text = "Objets restants à ranger : ...",
 	TextXAlignment = Enum.TextXAlignment.Left,
 	MaxTextSize = 22,
 })
@@ -178,7 +178,7 @@ local progressFill = make("Frame", {
 })
 addCorner(progressFill, 2)
 
--- Instruction line (just below the counter).
+-- Ligne de consigne (juste sous le compteur).
 local hintFrame = make("Frame", {
 	Name = "Hint",
 	AnchorPoint = Vector2.new(0.5, 0),
@@ -199,23 +199,23 @@ local hintLabel = makeLabel(hintFrame, {
 	MaxTextSize = 16,
 })
 
--- Welcome and completion windows.
+-- Fenêtres d'accueil et de fin.
 local introPanel, _, _, introButton = makeMessagePanel(
 	"Welcome",
-	"Welcome to the agency",
-	"The "
+	"Bienvenue à l'agence",
+	"L'"
 		.. TidyConfig.AgencyName
-		.. " opens soon, but the office is a mess. Folders, papers, chairs and boxes have been left everywhere.\n\nPut every item back where it belongs.",
-	"Start"
+		.. " ouvre bientôt, mais les bureaux sont en désordre. Des dossiers, des papiers, des chaises et des cartons traînent partout.\n\nRemettez chaque objet à sa place.",
+	"Commencer"
 )
 introPanel.Parent = screenGui
 introPanel.Visible = true
 
 local completePanel, _, completeBody, completeButton = makeMessagePanel(
 	"Complete",
-	"The agency is in order.",
+	"L'agence est en ordre.",
 	"",
-	"Close"
+	"Fermer"
 )
 completePanel.Parent = screenGui
 
@@ -227,7 +227,7 @@ completeButton.Activated:Connect(function()
 end)
 
 ---------------------------------------------------------------------------
--- Counter, instructions and completion
+-- Compteur, consignes et fin de partie
 ---------------------------------------------------------------------------
 
 local finished = false
@@ -235,15 +235,15 @@ local lastRemaining = nil
 
 local function updateHint()
 	if finished then
-		hintLabel.Text = "Everything is in its place."
+		hintLabel.Text = "Tout est à sa place."
 		return
 	end
 	local carrying = player:GetAttribute("Carrying") or ""
 	local typeInfo = TidyConfig.ItemTypes[carrying]
 	if typeInfo then
-		hintLabel.Text = "Carrying: " .. typeInfo.DisplayName .. ". " .. typeInfo.Hint
+		hintLabel.Text = "Vous portez : " .. typeInfo.DisplayName .. ". " .. typeInfo.Hint
 	else
-		hintLabel.Text = "Find the items that are out of place and pick them up."
+		hintLabel.Text = "Trouvez les objets mal rangés et ramassez-les."
 	end
 end
 
@@ -253,9 +253,9 @@ local function showCompletion(total)
 	end
 	finished = true
 	introPanel.Visible = false
-	completeBody.Text = "All "
+	completeBody.Text = "Les "
 		.. total
-		.. " items have been put away.\n\nThe office is ready to welcome job seekers. Thank you for your work."
+		.. " objets ont été rangés.\n\nLes bureaux sont prêts à accueillir les demandeurs d'emploi. Merci pour votre travail."
 	completePanel.Visible = true
 	updateHint()
 end
@@ -267,7 +267,7 @@ local function updateCounter()
 		return
 	end
 
-	countLabel.Text = "Items left to put away: " .. remaining
+	countLabel.Text = "Objets restants à ranger : " .. remaining
 
 	local progress = 0
 	if total > 0 then
@@ -277,7 +277,7 @@ local function updateCounter()
 		Size = UDim2.fromScale(progress, 1),
 	}):Play()
 
-	-- Short green flash when an object has just been put away.
+	-- Bref flash vert quand un objet vient d'être rangé.
 	if lastRemaining and remaining < lastRemaining then
 		countLabel.TextColor3 = ACCENT_COLOR
 		TweenService:Create(countLabel, TweenInfo.new(0.8), { TextColor3 = TEXT_COLOR }):Play()
@@ -290,7 +290,7 @@ local function updateCounter()
 end
 
 ---------------------------------------------------------------------------
--- Prompts and glowing places
+-- Boutons d'action et emplacements lumineux
 ---------------------------------------------------------------------------
 
 local GHOST_TRANSPARENCY = 0.6
@@ -299,7 +299,7 @@ local function refreshWorld()
 	local carrying = player:GetAttribute("Carrying") or ""
 	local handsFree = carrying == ""
 
-	-- Objects: can be picked up only when the hands are free.
+	-- Objets : on ne peut les ramasser que les mains libres.
 	for _, item in CollectionService:GetTagged(TidyConfig.ItemTag) do
 		local prompt = item:FindFirstChild("PickupPrompt", true)
 		if prompt then
@@ -307,7 +307,7 @@ local function refreshWorld()
 		end
 	end
 
-	-- Places: visible and usable only for the type of object being carried.
+	-- Emplacements : visibles et utilisables seulement pour le type d'objet porté.
 	for _, slot in CollectionService:GetTagged(TidyConfig.SlotTag) do
 		local matches = not handsFree
 			and slot:GetAttribute("ItemType") == carrying
@@ -322,7 +322,7 @@ local function refreshWorld()
 	end
 end
 
--- Groups many refresh requests into a single refresh.
+-- Regroupe plusieurs demandes de mise à jour en une seule.
 local refreshQueued = false
 local function requestRefresh()
 	if refreshQueued then
@@ -360,7 +360,7 @@ end)
 ReplicatedStorage:GetAttributeChangedSignal("TidyRemaining"):Connect(updateCounter)
 ReplicatedStorage:GetAttributeChangedSignal("TidyTotal"):Connect(updateCounter)
 
--- Safety net: refresh regularly in case something arrived late.
+-- Filet de sécurité : mise à jour régulière au cas où quelque chose arrive en retard.
 task.spawn(function()
 	while true do
 		task.wait(1)

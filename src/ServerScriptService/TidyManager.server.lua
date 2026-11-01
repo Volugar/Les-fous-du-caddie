@@ -1,7 +1,7 @@
 -- TidyManager (Script)
--- Location: ServerScriptService
--- Main game logic: builds the agency, lets the player pick up objects,
--- put them back in their place, and counts how many are left.
+-- Emplacement : ServerScriptService
+-- Logique principale du jeu : construit l'agence, permet au joueur de ramasser les objets,
+-- de les remettre à leur place, et compte combien il en reste.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -15,19 +15,19 @@ local agency = AgencyBuilder.Build()
 local totalItems = #agency.Items
 local remainingItems = totalItems
 
--- Shared progress, read by the TidyUI script on the player's screen.
+-- Progression partagée, lue par le script TidyUI sur l'écran du joueur.
 ReplicatedStorage:SetAttribute("TidyTotal", totalItems)
 ReplicatedStorage:SetAttribute("TidyRemaining", remainingItems)
 ReplicatedStorage:SetAttribute("AgencyInOrder", false)
 
--- What each player is carrying: carried[player] = { Item = model, Weld = weld }
+-- Ce que porte chaque joueur : carried[player] = { Item = model, Weld = weld }
 local carried = {}
 
 ---------------------------------------------------------------------------
--- Helpers
+-- Fonctions utilitaires
 ---------------------------------------------------------------------------
 
--- Returns the HumanoidRootPart of a living character, or nil.
+-- Renvoie le HumanoidRootPart d'un personnage vivant, ou nil.
 local function getLivingRoot(player)
 	local character = player.Character
 	if not character then
@@ -41,13 +41,13 @@ local function getLivingRoot(player)
 	return root
 end
 
--- Server-side check that the player really is close enough.
+-- Vérification côté serveur que le joueur est vraiment assez proche.
 local function isWithinReach(root, part)
 	local limit = TidyConfig.MaxDistance + TidyConfig.ServerDistanceMargin
 	return (root.Position - part.Position).Magnitude <= limit
 end
 
--- Switches an object between "held in hands" and "resting in the world".
+-- Fait passer un objet de "porté en main" à "posé dans le décor", et inversement.
 local function setHeldPhysics(item, held)
 	for _, part in item:GetDescendants() do
 		if part:IsA("BasePart") then
@@ -73,7 +73,7 @@ local function setCarrying(player, itemType)
 	player:SetAttribute("Carrying", itemType or "")
 end
 
--- Puts a carried object back where it started (used if the player dies or leaves).
+-- Remet un objet porté à sa position de départ (si le joueur meurt ou quitte le jeu).
 local function returnCarriedItem(player)
 	local entry = carried[player]
 	if not entry then
@@ -96,7 +96,7 @@ local function returnCarriedItem(player)
 end
 
 ---------------------------------------------------------------------------
--- Picking up and putting away
+-- Ramasser et ranger
 ---------------------------------------------------------------------------
 
 local function pickUp(player, item)
@@ -158,7 +158,7 @@ local function putAway(player, slot)
 	item:SetAttribute("State", "Placed")
 	slot:SetAttribute("Occupied", true)
 
-	-- The object and its place are done: remove their prompts.
+	-- L'objet et son emplacement sont terminés : on retire leurs boutons d'action.
 	local pickupPrompt = item:FindFirstChild("PickupPrompt", true)
 	if pickupPrompt then
 		pickupPrompt:Destroy()
@@ -178,7 +178,7 @@ local function putAway(player, slot)
 end
 
 ---------------------------------------------------------------------------
--- Connect the prompts
+-- Branchement des boutons d'action
 ---------------------------------------------------------------------------
 
 for _, item in agency.Items do
@@ -200,7 +200,7 @@ for _, slot in agency.Slots do
 end
 
 ---------------------------------------------------------------------------
--- Players
+-- Joueurs
 ---------------------------------------------------------------------------
 
 local function onCharacterAdded(player, character)
