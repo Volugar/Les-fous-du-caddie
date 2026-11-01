@@ -150,7 +150,7 @@ function character(o = {}) {
 	face.position.y = -0.05; headG.add(face);
 	// coiffure « bacon » : calotte et longues mèches qui tombent sur le front et les côtés
 	if (o.hairStyle !== 'none') {
-		const hairLight = SCENE === 'clean' ? hairM : plastic(new THREE.Color(o.hair ?? 0x7a3f1a).offsetHSL(0, 0, 0.08), 0.55);
+		const hairLight = SCENE.startsWith('clean') ? hairM : plastic(new THREE.Color(o.hair ?? 0x7a3f1a).offsetHSL(0, 0, 0.08), 0.55);
 		const cap = new THREE.Mesh(new THREE.SphereGeometry(R + 0.1, 32, 16, 0, Math.PI * 2, 0, Math.PI * 0.5), hairM);
 		cap.scale.set(1.05, 0.8, 1.08); cap.position.y = HH - 0.28; add(cap, headG);
 		for (let i = 0; i < 26; i++) {
@@ -247,8 +247,8 @@ function character(o = {}) {
 			if (col === 0xcf9e64) box(w + 0.02, 0.04, 0.4, M(0xe4bc82), b.position.x, y + h + 0.01, 0, stack);
 			y += h;
 		}
-		const bear = teddy(-0.85, y, 0.1, 0xb0784a, stack, 0.55); bear.rotation.y = 0.4;
-		stack.position.set(0, 2.05, 1.75);
+		const bear = teddy(SCENE === 'cleanStack' ? -1.0 : -0.85, y, 0.1, 0xb0784a, stack, 0.55); bear.rotation.y = 0.4;
+		stack.position.set(0, SCENE === 'cleanStack' ? 1.35 : 2.05, 1.75);
 	} else if (pose === 'wave') {
 		arms[1].rotation.set(0, 0, 2.6);
 		arms[0].rotation.set(0.1, 0, -0.15);
@@ -660,6 +660,18 @@ function closeShot(hero, products, square, clean = false) {
 	aperture = 0.0009;
 }
 
+// Cadrage épuré : personnage entier à gauche, place libre en haut à droite pour le titre.
+function cleanCam(hero, side = 3.0, dist = 15) {
+	const p = hero.position;
+	const right = new THREE.Vector3(Math.cos(hero.rotation.y), 0, -Math.sin(hero.rotation.y));
+	const fwd = new THREE.Vector3(Math.sin(hero.rotation.y), 0, Math.cos(hero.rotation.y));
+	const cam = p.clone().addScaledVector(fwd, dist).addScaledVector(right, -0.3); cam.y = 4.8;
+	camera.position.copy(cam);
+	const look = p.clone().addScaledVector(right, side).addScaledVector(fwd, 1.5); look.y = 2.7;
+	camera.lookAt(look); camera.fov = 46; aperture = 0.0005;
+	focusTarget = p.clone().add(new THREE.Vector3(0, 4, 0));
+}
+
 function buildOffice(closeUp, clean = false) {
 	scene.background = new THREE.Color(0xf6eedd);
 	scene.fog = new THREE.Fog(0xf3e8d4, 90, 170);
@@ -710,18 +722,10 @@ function buildOffice(closeUp, clean = false) {
 	hero.position.set(closeUp ? 1.2 : 7.5, 0, closeUp ? 15 : 11.5); hero.rotation.y = closeUp ? -0.35 : -0.5;
 	hero.position.set(0, 0, 8); hero.rotation.y = 0.55;
 	closeShot(hero, OFFICE_PRODUCTS, closeUp, clean);
-	if (clean) {
-		const p = hero.position;
-		const right = new THREE.Vector3(Math.cos(hero.rotation.y), 0, -Math.sin(hero.rotation.y));
-		const fwd = new THREE.Vector3(Math.sin(hero.rotation.y), 0, Math.cos(hero.rotation.y));
-		const cam = p.clone().addScaledVector(fwd, 15).addScaledVector(right, -0.3); cam.y = 4.8;
-		camera.position.copy(cam);
-		const look = p.clone().addScaledVector(right, 3.0).addScaledVector(fwd, 1.5); look.y = 2.7;
-		camera.lookAt(look); camera.fov = 46; aperture = 0.0005;
-	}
+	if (clean) cleanCam(hero);
 }
 
-function buildWarehouse() {
+function buildWarehouse(clean = false, pose = 'sweep') {
 	scene.background = new THREE.Color(0xeee6d8);
 	scene.fog = new THREE.Fog(0xece2d0, 70, 170);
 	lightsBase([-30, 90, 20], 1.6);
@@ -753,14 +757,15 @@ function buildWarehouse() {
 		(x, z) => parcel(x, z, pick([0xe23e34, 0x2e74de, 0x34aa56, 0xf6c428])), (x, z) => shoeBox(x, z), (x, z) => beachBall(x, z), (x, z) => tapeRoll(x, z),
 		(x, z) => cardboardBox(x, 0, z, 2.1, 1.6, 1.6).rotation.y = rr(0, 6),
 	];
-	scatter(380, -9.5, 9.5, -120, 28, makers, [[0, 14, 3], [1.8, 22.9, 3], [-3.5, -46, 6]]);
-	scatter(140, -15.5, -14.5, -120, 10, makers); scatter(140, 14.5, 15.5, -120, 10, makers);
-	const hero = character({ pose: 'sweep', avatar: 'bacon2', scale: 1.3 });
+	scatter(clean ? 140 : 380, -9.5, 9.5, -120, clean ? 4 : 28, makers, [[0, 14, 3], [1.8, 22.9, 3], [-3.5, -46, 6]]);
+	if (!clean) { scatter(140, -15.5, -14.5, -120, 10, makers); scatter(140, 14.5, 15.5, -120, 10, makers); }
+	const hero = character({ pose, avatar: pose === 'carry' ? 'bacon' : 'bacon2', scale: 1.3 });
 	hero.position.set(0, 0, 14); hero.rotation.y = 0.55;
-	closeShot(hero, STORE_PRODUCTS, false);
+	closeShot(hero, STORE_PRODUCTS, false, clean);
+	if (clean) cleanCam(hero, pose === 'carry' ? 2.4 : 3.0, pose === 'carry' ? 16 : 15);
 }
 
-function buildHQ() {
+function buildHQ(clean = false) {
 	scene.background = new THREE.Color(0x2a1e18);
 	scene.fog = new THREE.Fog(0x5a4430, 70, 150);
 	lightsBase([30, 70, 50], 1.1);
@@ -800,16 +805,17 @@ function buildHQ() {
 		(x, z) => photoFrame(x, z), (x, z) => binder(x, z), (x, z) => folder(x, z), (x, z) => paperStack(x, z), (x, z) => looseSheet(x, z),
 		(x, z) => cushion(x, z), (x, z) => mug(x, z, null, true), (x, z) => laptop(x, z),
 	];
-	scatter(330, -29, 29, -80, 26, makers, [[-1, 14, 3], [-0.2, 23.1, 3], [9, 2, 3]]);
+	scatter(clean ? 120 : 330, -29, 29, -80, clean ? 4 : 26, makers, [[-1, 14, 3], [-0.2, 23.1, 3], [9, 2, 3]]);
 	const hero = character({ pose: 'duster', avatar: 'noob', scale: 1.3 });
 	hero.position.set(-1, 0, 14); hero.rotation.y = 0.45;
 	const hero2 = character({ pose: 'sweep', avatar: 'bacon3', scale: 1.15 });
 	hero2.position.set(9, 0, 2); hero2.rotation.y = -0.8;
-	closeShot(hero, LUXE_PRODUCTS, false);
+	closeShot(hero, LUXE_PRODUCTS, false, clean);
+	if (clean) { cleanCam(hero, 2.8, 18); camera.position.y = 5.6; camera.lookAt(hero.position.clone().add(new THREE.Vector3(3, 3.6, 0))); }
 	bloomStrength = 0.15;
 }
 
-function buildLobby() {
+function buildLobby(clean = false) {
 	scene.background = new THREE.Color(0x7fbfee);
 	scene.fog = new THREE.Fog(0xb8dcf4, 90, 180);
 	lightsBase([30, 90, 40], 1.7);
@@ -853,6 +859,7 @@ function buildLobby() {
 	focusTarget = new THREE.Vector3(0.3, 4.5, -17.5); aperture = 0.00035;
 	for (const p of [[-42, 25], [42, 25], [-14, 8], [14, 8], [-42, -55], [42, -55]]) palm(p[0], p[1], 1);
 	camera.position.set(4, 3.4, -5); camera.lookAt(0.2, 4.6, -17.5); camera.fov = 50;
+	if (clean) { camera.position.set(6.5, 4.2, -2); camera.lookAt(3.2, 5.6, -17.5); camera.fov = 48; aperture = 0.0003; }
 	bloomStrength = 0.15;
 }
 
@@ -879,6 +886,10 @@ async function main() {
 	else if (SCENE === 'warehouse') buildWarehouse();
 	else if (SCENE === 'hq') buildHQ();
 	else if (SCENE === 'lobby') buildLobby();
+	else if (SCENE === 'cleanWarehouse') buildWarehouse(true, 'sweep');
+	else if (SCENE === 'cleanStack') buildWarehouse(true, 'carry');
+	else if (SCENE === 'cleanHQ') buildHQ(true);
+	else if (SCENE === 'cleanFriends') buildLobby(true);
 	camera.aspect = W / H; camera.updateProjectionMatrix();
 
 	const composer = new EffectComposer(renderer);

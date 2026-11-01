@@ -7,7 +7,7 @@ await new Promise(r => setTimeout(r, 800));
 const jobs = (process.argv[2] || 'office,warehouse,hq,lobby,icon').split(',');
 const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
 for (const name of jobs) {
-  const [w, h] = name === 'icon' ? [512, 512] : name === 'clean' ? [3840, 2160] : [1920, 1080];
+  const [w, h] = name === 'icon' ? [512, 512] : name.startsWith('clean') ? [3840, 2160] : [1920, 1080];
   const page = await browser.newPage({ viewport: { width: w, height: h } });
   page.on('console', m => { if (m.type() === 'error') console.log('console:', m.text()); });
   page.on('pageerror', e => console.log('pageerror:', e.message));
