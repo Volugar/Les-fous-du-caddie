@@ -25,16 +25,16 @@ local playerGui = player:WaitForChild("PlayerGui")
 ---------------------------------------------------------------------------
 -- Couleurs et fonctions pour construire l'interface
 ---------------------------------------------------------------------------
-local TEXT_COLOR = Color3.fromRGB(58, 46, 36) -- texte foncé sur les panneaux crème
+local TEXT_COLOR = Color3.fromRGB(238, 238, 236) -- texte clair sur les panneaux sombres
 local OVERLAY_COLOR = Color3.fromRGB(255, 255, 255) -- texte blanc contouré sur le décor
-local MUTED_COLOR = Color3.fromRGB(130, 116, 100)
-local PANEL_COLOR = Color3.fromRGB(253, 248, 236)
-local SOFT_COLOR = Color3.fromRGB(242, 233, 212)
-local ACCENT_COLOR = Color3.fromRGB(32, 168, 160)
-local ERROR_COLOR = Color3.fromRGB(235, 90, 80)
-local GOLD_COLOR = Color3.fromRGB(255, 205, 70)
-local POINTS_COLOR = Color3.fromRGB(214, 140, 18)
-local LOCKED_COLOR = Color3.fromRGB(214, 206, 192)
+local MUTED_COLOR = Color3.fromRGB(160, 166, 176)
+local PANEL_COLOR = Color3.fromRGB(26, 29, 34)
+local SOFT_COLOR = Color3.fromRGB(52, 57, 66)
+local ACCENT_COLOR = Color3.fromRGB(96, 168, 124)
+local ERROR_COLOR = Color3.fromRGB(226, 104, 92)
+local GOLD_COLOR = Color3.fromRGB(226, 196, 120)
+local POINTS_COLOR = Color3.fromRGB(226, 196, 120)
+local LOCKED_COLOR = Color3.fromRGB(62, 66, 74)
 local BUTTON_TEXT = Color3.fromRGB(255, 255, 255)
 
 local function make(className, properties)
@@ -53,15 +53,15 @@ local function addCorner(parent, radius)
 end
 
 local function addStroke(parent)
-	make("UIStroke", { Color = Color3.fromRGB(120, 92, 60), Transparency = 0.55, Thickness = 2, Parent = parent })
+	make("UIStroke", { Color = Color3.fromRGB(255, 255, 255), Transparency = 0.88, Thickness = 1, Parent = parent })
 end
 
 local function makePanel(properties)
 	properties.BackgroundColor3 = properties.BackgroundColor3 or PANEL_COLOR
-	properties.BackgroundTransparency = properties.BackgroundTransparency or 0.04
+	properties.BackgroundTransparency = properties.BackgroundTransparency or 0.15
 	properties.BorderSizePixel = 0
 	local frame = make("Frame", properties)
-	addCorner(frame, 14)
+	addCorner(frame, 8)
 	addStroke(frame)
 	return frame
 end
@@ -87,11 +87,11 @@ local function makeButton(parent, properties)
 	properties.BackgroundColor3 = properties.BackgroundColor3 or ACCENT_COLOR
 	properties.AutoButtonColor = true
 	properties.BorderSizePixel = 0
-	properties.Font = properties.Font or Enum.Font.FredokaOne
+	properties.Font = properties.Font or Enum.Font.GothamBold
 	properties.TextColor3 = properties.TextColor3 or BUTTON_TEXT
 	properties.TextScaled = true
 	local button = make("TextButton", properties)
-	addCorner(button, 10)
+	addCorner(button, 6)
 	make("UIPadding", {
 		PaddingLeft = UDim.new(0, 6),
 		PaddingRight = UDim.new(0, 6),
@@ -140,7 +140,7 @@ local timerLabel = makeLabel(screenGui, {
 	AnchorPoint = Vector2.new(0.5, 0),
 	Position = UDim2.new(0.5, 0, 0, 4),
 	Size = UDim2.new(0, 170, 0, 46),
-	Font = Enum.Font.FredokaOne,
+	Font = Enum.Font.GothamBold,
 	Text = "00:00",
 	TextColor3 = OVERLAY_COLOR,
 	TextStrokeTransparency = 0.2,
@@ -152,7 +152,7 @@ local hintLabel = makeLabel(screenGui, {
 	AnchorPoint = Vector2.new(0.5, 0),
 	Position = UDim2.new(0.5, 0, 0, 52),
 	Size = UDim2.new(0.5, 0, 0, 26),
-	Font = Enum.Font.FredokaOne,
+	Font = Enum.Font.GothamBold,
 	Text = "",
 	TextColor3 = OVERLAY_COLOR,
 	TextStrokeTransparency = 0.3,
@@ -164,7 +164,7 @@ local progressPanel = makePanel({
 	Name = "Progress",
 	AnchorPoint = Vector2.new(1, 0),
 	Position = UDim2.new(1, -10, 0, 8),
-	Size = UDim2.new(0, 220, 0, 80 + #TidyConfig.TypeOrder * 24),
+	Size = UDim2.new(0, 230, 0, 80 + #TidyConfig.TypeOrder * 24),
 	Parent = screenGui,
 })
 makeLabel(progressPanel, {
@@ -172,19 +172,19 @@ makeLabel(progressPanel, {
 	Position = UDim2.new(0, 12, 0, 8),
 	Size = UDim2.new(1, -24, 0, 16),
 	Font = Enum.Font.GothamMedium,
-	Text = "OBJETS RANGÉS",
+	Text = "PROGRESS",
 	TextColor3 = MUTED_COLOR,
 	TextXAlignment = Enum.TextXAlignment.Left,
 	MaxTextSize = 13,
 })
 local totalLabel = makeLabel(progressPanel, {
 	Name = "Total",
-	Position = UDim2.new(0, 12, 0, 26),
-	Size = UDim2.new(1, -24, 0, 30),
-	Font = Enum.Font.FredokaOne,
-	Text = "0 / 0",
+	Position = UDim2.new(0, 12, 0, 28),
+	Size = UDim2.new(1, -24, 0, 24),
+	Font = Enum.Font.GothamBold,
+	Text = "Items left to put away: ...",
 	TextXAlignment = Enum.TextXAlignment.Left,
-	MaxTextSize = 26,
+	MaxTextSize = 18,
 })
 local progressBack = make("Frame", {
 	Name = "Bar",
@@ -210,7 +210,7 @@ for index, itemType in TidyConfig.TypeOrder do
 		Name = "Category_" .. itemType,
 		Position = UDim2.new(0, 12, 0, 50 + index * 24),
 		Size = UDim2.new(1, -24, 0, 20),
-		Text = plural(itemType) .. " : 0 / 0",
+		Text = plural(itemType) .. ": 0 / 0",
 		TextXAlignment = Enum.TextXAlignment.Left,
 		MaxTextSize = 16,
 	})
@@ -228,8 +228,8 @@ local pointsLabel = makeLabel(leftPanel, {
 	Name = "Points",
 	Position = UDim2.new(0, 10, 0, 8),
 	Size = UDim2.new(1, -20, 0, 28),
-	Font = Enum.Font.FredokaOne,
-	Text = "Points : 0",
+	Font = Enum.Font.GothamBold,
+	Text = "Points: 0",
 	TextColor3 = POINTS_COLOR,
 	TextXAlignment = Enum.TextXAlignment.Left,
 	MaxTextSize = 22,
@@ -238,9 +238,9 @@ local upgradesButton = makeButton(leftPanel, {
 	Name = "UpgradesButton",
 	Position = UDim2.new(0, 10, 0, 44),
 	Size = UDim2.new(1, -20, 0, 38),
-	Text = "Améliorations [" .. keyName(Enum.KeyCode.G) .. "]",
-	BackgroundColor3 = GOLD_COLOR,
-	TextColor3 = TEXT_COLOR,
+	Text = "Upgrades [" .. keyName(Enum.KeyCode.G) .. "]",
+	BackgroundColor3 = ACCENT_COLOR,
+	TextColor3 = BUTTON_TEXT,
 })
 
 -- Zone actuelle, sac et barre d'outils (en bas au centre).
@@ -249,7 +249,7 @@ local areaLabel = makeLabel(screenGui, {
 	AnchorPoint = Vector2.new(0.5, 1),
 	Position = UDim2.new(0.5, 0, 1, -128),
 	Size = UDim2.new(0, 420, 0, 22),
-	Font = Enum.Font.FredokaOne,
+	Font = Enum.Font.GothamBold,
 	Text = "",
 	TextColor3 = OVERLAY_COLOR,
 	TextStrokeTransparency = 0.3,
@@ -307,8 +307,8 @@ local dropButton = makeButton(bagBar, {
 	Name = "Drop",
 	LayoutOrder = 4,
 	Size = UDim2.new(0, 86, 0, 36),
-	Text = "Lâcher",
-	BackgroundColor3 = Color3.fromRGB(240, 130, 70),
+	Text = "Drop",
+	BackgroundColor3 = Color3.fromRGB(150, 110, 90),
 })
 
 local hotbar = make("Frame", {
@@ -328,9 +328,9 @@ make("UIListLayout", {
 })
 
 local TOOLS = {
-	{ Id = "Hand", Name = "Main", Key = Enum.KeyCode.One, Upgrade = nil },
-	{ Id = "Magnet", Name = "Aimant", Key = Enum.KeyCode.Two, Upgrade = "Magnet" },
-	{ Id = "Magnifier", Name = "Loupe", Key = Enum.KeyCode.Three, Upgrade = "Magnifier" },
+	{ Id = "Hand", Name = "Hand", Key = Enum.KeyCode.One, Upgrade = nil },
+	{ Id = "Magnet", Name = "Magnet", Key = Enum.KeyCode.Two, Upgrade = "Magnet" },
+	{ Id = "Magnifier", Name = "Magnifier", Key = Enum.KeyCode.Three, Upgrade = "Magnifier" },
 }
 local toolButtons = {}
 for index, tool in TOOLS do
@@ -350,14 +350,14 @@ local controlsLabel = makeLabel(screenGui, {
 	AnchorPoint = Vector2.new(1, 1),
 	Position = UDim2.new(1, -12, 1, -12),
 	Size = UDim2.new(0, 260, 0, 110),
-	Text = "Clic : ramasser / ranger\n"
+	Text = "Click: pick up / put away\n"
 		.. keyName(Enum.KeyCode.E)
-		.. " : objet suivant\n"
+		.. ": next item\n"
 		.. keyName(Enum.KeyCode.Q)
-		.. " : lâcher l'objet\n1, 2, 3 : outils\n"
+		.. ": drop item\n1, 2, 3: tools\n"
 		.. keyName(Enum.KeyCode.G)
-		.. " : améliorations",
-	Font = Enum.Font.FredokaOne,
+		.. ": upgrades",
+	Font = Enum.Font.GothamBold,
 	TextColor3 = OVERLAY_COLOR,
 	TextXAlignment = Enum.TextXAlignment.Right,
 	TextYAlignment = Enum.TextYAlignment.Bottom,
@@ -372,7 +372,7 @@ local toastLabel = makeLabel(screenGui, {
 	AnchorPoint = Vector2.new(0.5, 0.5),
 	Position = UDim2.new(0.5, 0, 0.3, 0),
 	Size = UDim2.new(0.6, 0, 0, 34),
-	Font = Enum.Font.FredokaOne,
+	Font = Enum.Font.GothamBold,
 	Text = "",
 	TextColor3 = OVERLAY_COLOR,
 	TextStrokeTransparency = 0.2,
@@ -394,8 +394,8 @@ makeLabel(upgradesPanel, {
 	Name = "Title",
 	Position = UDim2.new(0, 16, 0, 12),
 	Size = UDim2.new(1, -120, 0, 30),
-	Font = Enum.Font.FredokaOne,
-	Text = "Améliorations",
+	Font = Enum.Font.GothamBold,
+	Text = "Upgrades",
 	TextXAlignment = Enum.TextXAlignment.Left,
 	MaxTextSize = 24,
 })
@@ -404,7 +404,7 @@ local closeUpgradesButton = makeButton(upgradesPanel, {
 	AnchorPoint = Vector2.new(1, 0),
 	Position = UDim2.new(1, -12, 0, 12),
 	Size = UDim2.new(0, 90, 0, 30),
-	Text = "Fermer",
+	Text = "Close",
 	BackgroundColor3 = SOFT_COLOR,
 	TextColor3 = TEXT_COLOR,
 })
@@ -424,7 +424,7 @@ for index, upgrade in TidyConfig.Upgrades do
 		Name = "Name",
 		Position = UDim2.new(0, 10, 0, 6),
 		Size = UDim2.new(1, -150, 0, 22),
-		Font = Enum.Font.FredokaOne,
+		Font = Enum.Font.GothamBold,
 		Text = upgrade.Name,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		MaxTextSize = 18,
@@ -464,7 +464,7 @@ local function makeMessagePanel(name, titleText)
 		Name = "Title",
 		Position = UDim2.new(0, 20, 0, 18),
 		Size = UDim2.new(1, -40, 0, 32),
-		Font = Enum.Font.FredokaOne,
+		Font = Enum.Font.GothamBold,
 		Text = titleText,
 		MaxTextSize = 26,
 	})
@@ -480,35 +480,35 @@ local function makeMessagePanel(name, titleText)
 	return panel, body
 end
 
-local introPanel, introBody = makeMessagePanel("Welcome", "Bienvenue à l'agence")
-introBody.Text = "L'"
+local introPanel, introBody = makeMessagePanel("Welcome", "Welcome to the agency")
+introBody.Text = "The "
 	.. TidyConfig.AgencyName
-	.. " ouvre bientôt, mais tout traîne par terre !\n\n"
-	.. "Cliquez (ou appuyez) sur un objet pour le mettre dans votre sac, puis cliquez sur l'endroit où il se range. "
-	.. "Gagnez des points pour acheter des améliorations et finir le plus vite possible."
+	.. " opens on Monday, and the place is a mess.\n\n"
+	.. "Click (or tap) an item to put it in your bag, then click the place where it belongs. "
+	.. "Take your time: every item has its place."
 local startButton = makeButton(introPanel, {
 	Name = "Start",
 	AnchorPoint = Vector2.new(0.5, 1),
 	Position = UDim2.new(0.5, 0, 1, -16),
 	Size = UDim2.new(0, 170, 0, 42),
-	Text = "Commencer",
+	Text = "Start",
 })
 introPanel.Visible = true
 
-local completePanel, completeBody = makeMessagePanel("Complete", "L'agence est en ordre.")
+local completePanel, completeBody = makeMessagePanel("Complete", "The agency is in order.")
 local replayButton = makeButton(completePanel, {
 	Name = "Replay",
 	AnchorPoint = Vector2.new(1, 1),
 	Position = UDim2.new(0.5, -6, 1, -16),
 	Size = UDim2.new(0, 160, 0, 42),
-	Text = "Rejouer",
+	Text = "Play again",
 })
 local closeCompleteButton = makeButton(completePanel, {
 	Name = "Close",
 	AnchorPoint = Vector2.new(0, 1),
 	Position = UDim2.new(0.5, 6, 1, -16),
 	Size = UDim2.new(0, 160, 0, 42),
-	Text = "Fermer",
+	Text = "Close",
 	BackgroundColor3 = SOFT_COLOR,
 	TextColor3 = TEXT_COLOR,
 })
@@ -541,8 +541,8 @@ local function showToast(text, kind)
 	end)
 end
 
--- Petite pluie d'étincelles et son doux quand un objet est rangé.
-local function celebrate(position)
+-- Petit nuage de poussière discret et son doux quand un objet est rangé.
+local function celebrate(position, strength)
 	if typeof(position) ~= "Vector3" then
 		return
 	end
@@ -560,19 +560,20 @@ local function celebrate(position)
 	local emitter = make("ParticleEmitter", {
 		Name = "Sparkles",
 		Rate = 0,
-		Lifetime = NumberRange.new(0.4, 0.8),
-		Speed = NumberRange.new(3, 6),
-		SpreadAngle = Vector2.new(180, 180),
-		Color = ColorSequence.new(GOLD_COLOR),
-		Size = NumberSequence.new(0.3),
-		LightEmission = 1,
+		Lifetime = NumberRange.new(0.5, 0.9),
+		Speed = NumberRange.new(1, 2.5),
+		SpreadAngle = Vector2.new(70, 70),
+		Color = ColorSequence.new(Color3.fromRGB(235, 232, 225)),
+		Transparency = NumberSequence.new(0.4),
+		Size = NumberSequence.new(0.25),
+		LightEmission = 0.2,
 		Parent = holder,
 	})
-	emitter:Emit(14)
+	emitter:Emit(strength or 10)
 	local sound = make("Sound", {
 		Name = "PlaceSound",
 		SoundId = TidyConfig.PlaceSoundId,
-		Volume = 0.35,
+		Volume = if (strength or 10) < 6 then 0.12 else 0.25,
 		PlaybackSpeed = 0.9 + math.random() * 0.25,
 		Parent = holder,
 	})
@@ -583,7 +584,7 @@ end
 notifyEvent.OnClientEvent:Connect(function(kind, text, position)
 	showToast(text, kind)
 	if kind == "placed" then
-		celebrate(position)
+		celebrate(position, 10)
 	end
 end)
 
@@ -623,17 +624,17 @@ local function showCompletion()
 	end
 	introPanel.Visible = false
 	upgradesPanel.Visible = false
-	completeBody.Text = "Les "
+	completeBody.Text = "All "
 		.. (ReplicatedStorage:GetAttribute("TidyTotal") or 0)
-		.. " objets ont été rangés.\n\n"
-		.. "Temps : "
+		.. " items have been put away.\n\n"
+		.. "Time: "
 		.. formatTime(time)
-		.. (if isRecord then "  (nouveau record !)" else "")
-		.. "\nMeilleur temps : "
+		.. (if isRecord then "  (personal best)" else "")
+		.. "\nBest time: "
 		.. formatTime(bestTime)
-		.. "\nPoints : "
+		.. "\nPoints: "
 		.. (player:GetAttribute("Points") or 0)
-		.. "\n\nLes bureaux sont prêts à accueillir les demandeurs d'emploi."
+		.. "\n\nThe offices are ready to welcome job seekers."
 	completePanel.Visible = true
 end
 
@@ -646,14 +647,14 @@ local function updateCounters()
 	local total = ReplicatedStorage:GetAttribute("TidyTotal") or 0
 	local remaining = ReplicatedStorage:GetAttribute("TidyRemaining") or total
 	local placed = total - remaining
-	totalLabel.Text = placed .. " / " .. total
+	totalLabel.Text = "Items left to put away: " .. remaining
 	local progress = if total > 0 then placed / total else 0
 	TweenService:Create(progressFill, TweenInfo.new(0.3, Enum.EasingStyle.Quad), { Size = UDim2.fromScale(progress, 1) }):Play()
 	for _, itemType in TidyConfig.TypeOrder do
 		local done = ReplicatedStorage:GetAttribute("Placed_" .. itemType) or 0
 		local count = ReplicatedStorage:GetAttribute("Total_" .. itemType) or 0
 		local label = categoryLabels[itemType]
-		label.Text = plural(itemType) .. " : " .. done .. " / " .. count
+		label.Text = plural(itemType) .. ": " .. done .. " / " .. count
 		label.TextColor3 = if count > 0 and done >= count then ACCENT_COLOR else TEXT_COLOR
 	end
 	if total > 0 and remaining <= 0 then
@@ -672,15 +673,15 @@ end
 
 local function updateHint()
 	if finished then
-		hintLabel.Text = "Tout est à sa place."
+		hintLabel.Text = "Everything is in its place."
 		return
 	end
 	local carrying = player:GetAttribute("Carrying") or ""
 	local info = TidyConfig.ItemTypes[carrying]
 	if info then
-		hintLabel.Text = info.DisplayName .. " : " .. info.Hint
+		hintLabel.Text = info.DisplayName .. ": " .. info.Hint
 	else
-		hintLabel.Text = "Cliquez sur un objet pour le ramasser."
+		hintLabel.Text = "Click an item to pick it up."
 	end
 end
 
@@ -700,7 +701,7 @@ local function updateBag()
 			LayoutOrder = index,
 			Size = UDim2.new(0, 84, 0, 34),
 			BackgroundTransparency = 0.1,
-			Font = Enum.Font.FredokaOne,
+			Font = Enum.Font.GothamBold,
 			Text = info and info.DisplayName or itemType,
 			TextColor3 = if index == selected then BUTTON_TEXT else TEXT_COLOR,
 			MaxTextSize = 14,
@@ -713,7 +714,7 @@ local function updateBag()
 		Name = "ChipCount",
 		LayoutOrder = 100,
 		Size = UDim2.new(0, 54, 0, 34),
-		Font = Enum.Font.FredokaOne,
+		Font = Enum.Font.GothamBold,
 		Text = #list .. "/" .. capacity,
 		TextColor3 = if #list >= capacity then ERROR_COLOR else OVERLAY_COLOR,
 		TextStrokeTransparency = 0.3,
@@ -737,7 +738,7 @@ local function updateTools()
 		if not unlocked and equippedTool == tool.Id then
 			equippedTool = "Hand"
 		end
-		button.Text = index .. "\n" .. tool.Name .. (if unlocked then "" else "\n(verrouillé)")
+		button.Text = index .. "\n" .. tool.Name .. (if unlocked then "" else "\n(locked)")
 		if not unlocked then
 			button.BackgroundColor3 = LOCKED_COLOR
 			button.TextColor3 = MUTED_COLOR
@@ -753,18 +754,18 @@ end
 
 local function updateUpgrades()
 	local points = player:GetAttribute("Points") or 0
-	pointsLabel.Text = "Points : " .. points
+	pointsLabel.Text = "Points: " .. points
 	for id, row in upgradeRows do
 		local level = player:GetAttribute("Level_" .. id) or 0
 		local upgrade = row.Upgrade
-		row.Title.Text = upgrade.Name .. "  (niv. " .. level .. "/" .. upgrade.MaxLevel .. ")"
+		row.Title.Text = upgrade.Name .. "  (lvl " .. level .. "/" .. upgrade.MaxLevel .. ")"
 		if level >= upgrade.MaxLevel then
 			row.Button.Text = "MAX"
 			row.Button.BackgroundColor3 = LOCKED_COLOR
 			row.Button.TextColor3 = MUTED_COLOR
 		else
 			local cost = TidyConfig.GetUpgradeCost(upgrade, level)
-			row.Button.Text = "Acheter\n" .. cost .. " pts"
+			row.Button.Text = "Buy\n" .. cost .. " pts"
 			row.Button.BackgroundColor3 = if points >= cost then ACCENT_COLOR else LOCKED_COLOR
 			row.Button.TextColor3 = if points >= cost then BUTTON_TEXT else MUTED_COLOR
 		end
@@ -775,7 +776,7 @@ local function equipTool(toolId)
 	for _, tool in TOOLS do
 		if tool.Id == toolId then
 			if not toolUnlocked(tool) then
-				showToast("Débloquez cet outil dans les améliorations [" .. keyName(Enum.KeyCode.G) .. "].", "error")
+				showToast("Unlock this tool in the upgrades menu [" .. keyName(Enum.KeyCode.G) .. "].", "error")
 				return
 			end
 			equippedTool = toolId
@@ -984,7 +985,7 @@ local function handleClick(ray)
 	end
 	local root = getRoot()
 	if root and (result.Position - root.Position).Magnitude > TidyConfig.ReachDistance + 2 then
-		showToast("Trop loin ! Approchez-vous.", "error")
+		showToast("Too far away. Move closer.", "error")
 		return
 	end
 	if kind == "item" then
@@ -1151,7 +1152,7 @@ task.spawn(function()
 		if room then
 			local done = ReplicatedStorage:GetAttribute("RoomPlaced_" .. room.Id) or 0
 			local count = ReplicatedStorage:GetAttribute("RoomTotal_" .. room.Id) or 0
-			areaLabel.Text = "Vous êtes dans : " .. room.Name .. "  (" .. done .. " / " .. count .. " rangés)"
+			areaLabel.Text = "You are in: " .. room.Name .. "  (" .. done .. " / " .. count .. " done)"
 		else
 			areaLabel.Text = ""
 		end

@@ -1,12 +1,12 @@
 -- TidyConfig (ModuleScript)
 -- Emplacement : ReplicatedStorage
 -- Réglages partagés par le serveur (TidyManager, AgencyBuilder) et le joueur (TidyUI).
--- Tous les textes du jeu visibles par le joueur sont en français.
+-- Tous les textes vus par le joueur sont en anglais.
 
 local TidyConfig = {}
 
--- Nom de l'agence fictive (sans accents : il est affiché en majuscules sur un panneau).
-TidyConfig.AgencyName = "Agence pour l'emploi de Valmont"
+-- Nom de l'agence fictive (affiché en majuscules sur un panneau).
+TidyConfig.AgencyName = "Northfield Employment Agency"
 
 -- Chaque type d'objet que le joueur peut ranger.
 -- DisplayName : nom d'un objet.        Plural : nom au pluriel (compteurs).
@@ -16,50 +16,50 @@ TidyConfig.AgencyName = "Agence pour l'emploi de Valmont"
 -- CarryOffset : position de l'objet tenu, par rapport au corps du joueur.
 TidyConfig.ItemTypes = {
 	Folder = {
-		DisplayName = "Dossier",
-		Plural = "Dossiers",
-		PlaceName = "Étagère des dossiers",
-		Hint = "Rangez-le sur une étagère des Archives.",
+		DisplayName = "Case Folder",
+		Plural = "Case Folders",
+		PlaceName = "Archive Shelf",
+		Hint = "Put it on an archive shelf in the Archives.",
 		Points = 10,
 		CarryOffset = CFrame.new(0, 0, -1.6),
 	},
 	Paper = {
-		DisplayName = "Pile de papiers",
-		Plural = "Papiers",
-		PlaceName = "Bac à documents",
-		Hint = "Rangez-la dans un bac à documents (bureaux, accueil, formation).",
+		DisplayName = "Stack of Papers",
+		Plural = "Paper Stacks",
+		PlaceName = "Document Tray",
+		Hint = "Put it in a document tray (offices, reception or training room).",
 		Points = 10,
 		CarryOffset = CFrame.new(0, 0, -1.6),
 	},
 	Chair = {
-		DisplayName = "Chaise",
-		Plural = "Chaises",
-		PlaceName = "Place de chaise",
-		Hint = "Remettez-la à une place libre : salle d'attente, tables ou formation.",
+		DisplayName = "Chair",
+		Plural = "Chairs",
+		PlaceName = "Chair Spot",
+		Hint = "Put it back in a free spot: waiting area, break room tables or training room.",
 		Points = 20,
 		CarryOffset = CFrame.new(0, 0.3, -2.4),
 	},
 	Box = {
-		DisplayName = "Carton",
-		Plural = "Cartons",
-		PlaceName = "Étagère de la réserve",
-		Hint = "Rangez-le sur une étagère de la Réserve.",
+		DisplayName = "Cardboard Box",
+		Plural = "Boxes",
+		PlaceName = "Storage Shelf",
+		Hint = "Put it on a shelf in the Storage room.",
 		Points = 15,
 		CarryOffset = CFrame.new(0, 0.2, -2),
 	},
 	Mug = {
-		DisplayName = "Tasse",
-		Plural = "Tasses",
-		PlaceName = "Vaisselier",
-		Hint = "Rangez-la dans un vaisselier de la Salle de pause.",
+		DisplayName = "Mug",
+		Plural = "Mugs",
+		PlaceName = "Cupboard",
+		Hint = "Put it in a cupboard in the Break Room.",
 		Points = 10,
 		CarryOffset = CFrame.new(0, 0.2, -1.5),
 	},
 	Plant = {
-		DisplayName = "Plante",
-		Plural = "Plantes",
-		PlaceName = "Jardinière",
-		Hint = "Posez-la sur une jardinière (bureaux, couloir, formation).",
+		DisplayName = "Potted Plant",
+		Plural = "Plants",
+		PlaceName = "Planter",
+		Hint = "Put it on a planter (offices, hallway or training room).",
 		Points = 15,
 		CarryOffset = CFrame.new(0, 0, -1.8),
 	},
@@ -70,15 +70,15 @@ TidyConfig.TypeOrder = { "Folder", "Paper", "Chair", "Box", "Mug", "Plant" }
 
 -- Les pièces de l'agence. Cost = points pour ouvrir la pièce (0 = ouverte dès le début).
 -- Items = objets qui traînent dans la pièce à chaque partie.
--- La première pièce qui contient le joueur donne le nom affiché « Vous êtes dans : … ».
+-- La première pièce qui contient le joueur donne le nom affiché « You are in: … ».
 TidyConfig.Rooms = {
-	{ Id = "Accueil", Name = "Accueil", MinX = -30, MaxX = 30, MinZ = 20, MaxZ = 60, Cost = 0, Items = { Paper = 12, Chair = 18 } },
-	{ Id = "Bureaux", Name = "Bureaux", MinX = -80, MaxX = 0, MinZ = -60, MaxZ = 20, Cost = 200, Items = { Paper = 36, Plant = 12 } },
-	{ Id = "Couloir", Name = "Couloir", MinX = 0, MaxX = 80, MinZ = -10, MaxZ = 20, Cost = 0, Items = { Plant = 12 } },
-	{ Id = "Pause", Name = "Salle de pause", MinX = -80, MaxX = -30, MinZ = 20, MaxZ = 60, Cost = 400, Items = { Mug = 36, Chair = 16 } },
+	{ Id = "Reception", Name = "Reception", MinX = -30, MaxX = 30, MinZ = 20, MaxZ = 60, Cost = 0, Items = { Paper = 12, Chair = 18 } },
+	{ Id = "Offices", Name = "Offices", MinX = -80, MaxX = 0, MinZ = -60, MaxZ = 20, Cost = 200, Items = { Paper = 36, Plant = 12 } },
+	{ Id = "Hallway", Name = "Hallway", MinX = 0, MaxX = 80, MinZ = -10, MaxZ = 20, Cost = 0, Items = { Plant = 12 } },
+	{ Id = "BreakRoom", Name = "Break Room", MinX = -80, MaxX = -30, MinZ = 20, MaxZ = 60, Cost = 400, Items = { Mug = 36, Chair = 16 } },
 	{ Id = "Archives", Name = "Archives", MinX = 0, MaxX = 50, MinZ = -60, MaxZ = -10, Cost = 600, Items = { Folder = 72 } },
-	{ Id = "Reserve", Name = "Réserve", MinX = 50, MaxX = 80, MinZ = -60, MaxZ = -10, Cost = 800, Items = { Box = 36 } },
-	{ Id = "Formation", Name = "Salle de formation", MinX = 30, MaxX = 80, MinZ = 20, MaxZ = 60, Cost = 1000, Items = { Chair = 20, Paper = 6, Plant = 6 } },
+	{ Id = "Storage", Name = "Storage", MinX = 50, MaxX = 80, MinZ = -60, MaxZ = -10, Cost = 800, Items = { Box = 36 } },
+	{ Id = "Training", Name = "Training Room", MinX = 30, MaxX = 80, MinZ = 20, MaxZ = 60, Cost = 1000, Items = { Chair = 20, Paper = 6, Plant = 6 } },
 }
 
 -- Points bonus quand toute une pièce est rangée.
@@ -100,10 +100,10 @@ TidyConfig.MagnetRadiusPerLevel = 4
 
 -- Améliorations achetées avec les points. Prix = BaseCost x (niveau visé).
 TidyConfig.Upgrades = {
-	{ Id = "Capacity", Name = "Sac plus grand", Description = "+1 objet transporté", MaxLevel = 8, BaseCost = 25 },
-	{ Id = "Speed", Name = "Chaussures de course", Description = "+2 de vitesse de marche", MaxLevel = 4, BaseCost = 30 },
-	{ Id = "Magnet", Name = "Aimant", Description = "Débloque l'aimant, puis augmente sa portée", MaxLevel = 4, BaseCost = 60 },
-	{ Id = "Magnifier", Name = "Loupe", Description = "Débloque la loupe qui montre où aller", MaxLevel = 1, BaseCost = 50 },
+	{ Id = "Capacity", Name = "Bigger Bag", Description = "Carry one more item", MaxLevel = 8, BaseCost = 25 },
+	{ Id = "Speed", Name = "Comfortable Shoes", Description = "Walk a little faster", MaxLevel = 4, BaseCost = 30 },
+	{ Id = "Magnet", Name = "Magnet", Description = "Unlocks the magnet, then increases its range", MaxLevel = 4, BaseCost = 60 },
+	{ Id = "Magnifier", Name = "Magnifier", Description = "Unlocks the magnifier that shows where to go", MaxLevel = 1, BaseCost = 50 },
 }
 
 -- Son joué quand un objet est rangé (son intégré à Roblox).

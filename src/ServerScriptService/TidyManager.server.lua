@@ -77,7 +77,7 @@ local function updateBillboards()
 		local label = billboard and billboard:FindFirstChild("Text")
 		if label then
 			label.Text = string.format(
-				"%s\n%s : %d / %d",
+				"%s\n%s: %d / %d",
 				zone:GetAttribute("ZoneLabel"),
 				TidyConfig.ItemTypes[itemType].Plural,
 				placedCounts[itemType] or 0,
@@ -259,6 +259,27 @@ local function returnAllItems(player)
 	end
 end
 
+-- Un objet de plus rangé pour une pièce.
+-- Renvoie l'identifiant de la pièce si elle vient d'être entièrement terminée.
+local function advanceRoom(state, roomId)
+	if not roomId or not roomTotals[roomId] then
+		return nil
+	end
+	roomPlaced[roomId] = (roomPlaced[roomId] or 0) + 1
+	if roomPlaced[roomId] == roomTotals[roomId] then
+		state.Points += TidyConfig.RoomBonus
+		return roomId
+	end
+	return nil
+end
+
+local function announceRoom(player, roomId)
+	if roomId then
+		local room = TidyConfig.GetRoom(roomId)
+		notify(player, "room", room.Name .. " is in order. +" .. TidyConfig.RoomBonus .. " bonus points")
+	end
+end
+
 ---------------------------------------------------------------------------
 -- Actions du joueur
 ---------------------------------------------------------------------------
@@ -271,7 +292,7 @@ local function pick(player, state, item)
 		return
 	end
 	if not isRoomUnlocked(item:GetAttribute("Room")) then
-		notify(player, "error", "Cette pièce est encore fermée.")
+		notify(player, "error", "This room is still locked.")
 		return
 	end
 	local root = getLivingRoot(player)
@@ -280,11 +301,11 @@ local function pick(player, state, item)
 		return
 	end
 	if (root.Position - main.Position).Magnitude > MAX_DISTANCE then
-		notify(player, "error", "Trop loin ! Approchez-vous.")
+		notify(player, "error", "Too far away. Move closer.")
 		return
 	end
 	if #state.Held >= capacityOf(state) then
-		notify(player, "error", "Sac plein ! Rangez d'abord vos objets.")
+		notify(player, "error", "Your bag is full. Put some items away first.")
 		return
 	end
 
@@ -304,7 +325,7 @@ local function place(player, state, zone)
 		return
 	end
 	if #state.Held == 0 then
-		notify(player, "info", "Ici, on range : " .. string.lower(zoneInfo.Plural) .. ".")
+		notify(player, "info", "This spot is for: " .. string.lower(zoneInfo.Plural) .. ".")
 		return
 	end
 
@@ -322,7 +343,7 @@ local function place(player, state, zone)
 		end
 	end
 	if not index then
-		notify(player, "error", "Ce n'est pas le bon endroit. Ici, on range : " .. string.lower(zoneInfo.Plural) .. ".")
+		notify(player, "error", "Wrong place. This spot is for: " .. string.lower(zoneInfo.Plural) .. ".")
 		return
 	end
 
@@ -343,11 +364,11 @@ local function place(player, state, zone)
 		end
 	end
 	if not bestSlot then
-		notify(player, "error", "Cet endroit est complet.")
+		notify(player, "error", "This spot is full.")
 		return
 	end
 	if bestDistance > MAX_DISTANCE then
-		notify(player, "error", "Approchez-vous pour ranger.")
+		notify(player, "error", "Move closer to put it away.")
 		return
 	end
 
@@ -370,25 +391,13 @@ local function place(player, state, zone)
 	placedCounts[zoneType] = (placedCounts[zoneType] or 0) + 1
 	remainingItems -= 1
 
-	-- Pièce d'origine de l'objet : bonus quand elle est entièrement rangée.
-	local roomId = item:GetAttribute("Room")
-	local roomDone = false
-	if roomId and roomTotals[roomId] then
-		roomPlaced[roomId] = (roomPlaced[roomId] or 0) + 1
-		if roomPlaced[roomId] == roomTotals[roomId] then
-			roomDone = true
-			state.Points += TidyConfig.RoomBonus
-		end
-	end
+	local roomDone = advanceRoom(state, item:GetAttribute("Room"))
 
 	syncHands(player, state)
 	publishPlayer(player, state)
 	publishProgress()
 	notifyEvent:FireClient(player, "placed", "+" .. zoneInfo.Points .. " points", bestSlot.Position)
-	if roomDone then
-		local room = TidyConfig.GetRoom(roomId)
-		notify(player, "room", room.Name .. " : tout est rangé ! +" .. TidyConfig.RoomBonus .. " points bonus")
-	end
+	announceRoom(player, roomDone)
 end
 
 -- Ouvre une pièce verrouillée avec les points du joueur.
@@ -403,11 +412,11 @@ local function unlock(player, state, door)
 	end
 	local root = getLivingRoot(player)
 	if not root or (root.Position - door.Position).Magnitude > MAX_DISTANCE then
-		notify(player, "error", "Approchez-vous de la porte.")
+		notify(player, "error", "Move closer to the door.")
 		return
 	end
 	if state.Points < room.Cost then
-		notify(player, "error", "Il faut " .. room.Cost .. " points pour ouvrir : " .. room.Name .. ".")
+		notify(player, "error", "You need " .. room.Cost .. " points to open the " .. room.Name .. ".")
 		return
 	end
 	state.Points -= room.Cost
@@ -419,7 +428,7 @@ local function unlock(player, state, door)
 	end
 	publishPlayer(player, state)
 	publishProgress()
-	notify(player, "room", room.Name .. " est ouverte ! Bon rangement.")
+	notify(player, "room", "The " .. room.Name .. " is now open.")
 end
 
 -- Hauteur de la surface sous un point (sol, bureau...), sinon le sol.
@@ -474,7 +483,7 @@ end
 
 local function useMagnet(player, state)
 	if state.Levels.Magnet < 1 then
-		notify(player, "error", "Débloquez l'aimant dans les améliorations.")
+		notify(player, "error", "Unlock the magnet in the upgrades menu.")
 		return
 	end
 	local now = os.clock()
@@ -489,7 +498,7 @@ local function useMagnet(player, state)
 	end
 	local free = capacityOf(state) - #state.Held
 	if free <= 0 then
-		notify(player, "error", "Sac plein ! Rangez d'abord vos objets.")
+		notify(player, "error", "Your bag is full. Put some items away first.")
 		return
 	end
 
@@ -504,7 +513,7 @@ local function useMagnet(player, state)
 		end
 	end
 	if #candidates == 0 then
-		notify(player, "info", "Aucun objet à portée de l'aimant.")
+		notify(player, "info", "No items within the magnet's range.")
 		return
 	end
 	table.sort(candidates, function(a, b)
@@ -518,7 +527,7 @@ local function useMagnet(player, state)
 	state.Selected = #state.Held
 	syncHands(player, state)
 	publishPlayer(player, state)
-	notify(player, "info", "Aimant : " .. taken .. " objet(s) attrapé(s).")
+	notify(player, "info", "Magnet: " .. taken .. " item(s) collected.")
 end
 
 ---------------------------------------------------------------------------
@@ -542,6 +551,7 @@ local function startRound()
 		local roomId = item:GetAttribute("Room")
 		roomTotals[roomId] = (roomTotals[roomId] or 0) + 1
 	end
+
 	totalItems = #items
 	remainingItems = totalItems
 
@@ -567,6 +577,7 @@ actionEvent.OnServerEvent:Connect(function(player, action, target)
 		useMagnet(player, state)
 	elseif action == "unlock" then
 		unlock(player, state, target)
+
 	elseif action == "restart" then
 		if remainingItems <= 0 then
 			startRound()
@@ -577,19 +588,19 @@ end)
 upgradeFunction.OnServerInvoke = function(player, upgradeId)
 	local state = states[player]
 	if not state or type(upgradeId) ~= "string" then
-		return false, "Action impossible."
+		return false, "Not possible right now."
 	end
 	local upgrade = TidyConfig.GetUpgrade(upgradeId)
 	if not upgrade then
-		return false, "Amélioration inconnue."
+		return false, "Unknown upgrade."
 	end
 	local level = state.Levels[upgradeId] or 0
 	if level >= upgrade.MaxLevel then
-		return false, "Niveau maximum atteint."
+		return false, "Already at the maximum level."
 	end
 	local cost = TidyConfig.GetUpgradeCost(upgrade, level)
 	if state.Points < cost then
-		return false, "Pas assez de points : il en faut " .. cost .. "."
+		return false, "Not enough points. You need " .. cost .. "."
 	end
 
 	state.Points -= cost
@@ -598,7 +609,7 @@ upgradeFunction.OnServerInvoke = function(player, upgradeId)
 		applyWalkSpeed(player, state)
 	end
 	publishPlayer(player, state)
-	return true, upgrade.Name .. " : niveau " .. (level + 1) .. " !"
+	return true, upgrade.Name .. ": level " .. (level + 1)
 end
 
 ---------------------------------------------------------------------------

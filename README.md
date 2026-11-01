@@ -1,8 +1,8 @@
-# Agence pour l'emploi de Valmont — jeu de rangement détente Roblox
+# Northfield Employment Agency — jeu de rangement calme pour Roblox
 
-Jeu solo (PC et mobile, en français) : le joueur range une agence pour l'emploi
-fictive. Des dossiers, des piles de papiers, des chaises et des cartons traînent
-partout. Il faut les ramasser et les remettre à leur place. Un compteur indique
+Jeu solo (PC et mobile, **en anglais**), ton sérieux et ambiance de bureau réaliste :
+le joueur range une agence pour l'emploi fictive. Dossiers, piles de papiers, chaises,
+cartons, tasses et plantes traînent partout. Il faut les ramasser et les remettre à leur place. Un compteur indique
 combien d'objets il reste, et un message s'affiche quand l'agence est en ordre.
 
 L'agence entière (bâtiment, mobilier, lumières, objets) est **construite par les
@@ -35,11 +35,12 @@ effacez le texte par défaut et collez le contenu du fichier.
 
 ## Comment on joue
 
-Un jeu de rangement **détente** : pas de pression, on range à son rythme dans une grande agence de 7 pièces.
+Un jeu de rangement **calme et satisfaisant** : chaque objet a sa place, on range à son rythme
+dans une grande agence de 7 pièces et on la voit devenir propre et organisée.
 
 - **Ramasser :** cliquez sur un objet qui traîne (ou appuyez dessus sur mobile). Il va dans votre **sac**.
 - **Ranger :** cliquez sur le meuble où il se range. Les places libres brillent en vert,
-  les meubles concernés sont entourés, et chaque objet rangé fait une pluie d'étincelles avec un petit son.
+  les meubles concernés sont entourés, et chaque objet rangé fait un petit nuage de poussière avec un son doux.
 - **Sac :** 3 objets au départ. La touche **E** ou les boutons < > changent l'objet en main,
   la touche **Q** (A sur un clavier AZERTY) ou le bouton « Lâcher » le pose par terre.
 - **Points :** chaque objet rangé rapporte des points, et chaque pièce entièrement rangée donne **100 points bonus**.
@@ -49,19 +50,20 @@ Un jeu de rangement **détente** : pas de pression, on range à son rythme dans 
   - **Main** : ramasser et ranger ;
   - **Aimant** : un clic attire dans le sac les objets proches ;
   - **Loupe** : un rayon doré montre l'objet le plus proche, ou la place où ranger.
-- En bas de l'écran, **« Vous êtes dans : … »** affiche la pièce et sa progression.
-- **Fin :** message « L'agence est en ordre. », puis **Rejouer**. Les pièces ouvertes,
+- En bas de l'écran, **« You are in: … »** affiche la pièce et sa progression.
+- En haut à droite : **« Items left to put away: … »** et le détail par catégorie.
+- **Fin :** message « The agency is in order. », puis **Play again**. Les pièces ouvertes,
   les points et les améliorations sont conservés.
 
-| Pièce              | Prix pour ouvrir | Objets à ranger                       |
-|--------------------|------------------|---------------------------------------|
-| Accueil            | ouverte          | 12 piles de papiers, 18 chaises       |
-| Couloir            | ouvert           | 12 plantes                            |
-| Bureaux            | 200 points       | 36 piles de papiers, 12 plantes       |
-| Salle de pause     | 400 points       | 36 tasses, 16 chaises                 |
-| Archives           | 600 points       | 72 dossiers                           |
-| Réserve            | 800 points       | 36 cartons                            |
-| Salle de formation | 1000 points      | 20 chaises, 6 piles de papiers, 6 plantes |
+| Pièce (nom dans le jeu)        | Prix pour ouvrir | Objets à ranger                           |
+|--------------------------------|------------------|-------------------------------------------|
+| Accueil (Reception)            | ouverte          | 12 piles de papiers, 18 chaises           |
+| Couloir (Hallway)              | ouvert           | 12 plantes                                |
+| Bureaux (Offices)              | 200 points       | 36 piles de papiers, 12 plantes           |
+| Salle de pause (Break Room)    | 400 points       | 36 tasses, 16 chaises                     |
+| Archives (Archives)            | 600 points       | 72 dossiers                               |
+| Réserve (Storage)              | 800 points       | 36 cartons                                |
+| Salle de formation (Training Room) | 1000 points  | 20 chaises, 6 piles de papiers, 6 plantes |
 
 Total : **282 objets** par partie.
 

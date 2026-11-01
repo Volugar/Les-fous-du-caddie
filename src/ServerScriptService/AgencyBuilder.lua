@@ -1,7 +1,8 @@
 -- AgencyBuilder (ModuleScript)
 -- Emplacement : ServerScriptService
 -- Construit toute l'agence pour l'emploi au lancement du jeu : 7 pièces, murs, portes
--- verrouillées, mobilier, décor, lumières, zones de rangement, et objets éparpillés.
+-- verrouillées, mobilier, décor, lumières, zones de rangement et objets éparpillés.
+-- Style bureau réaliste et sobre.
 -- Il est utilisé par le script TidyManager. Il ne fait rien tout seul.
 
 local CollectionService = game:GetService("CollectionService")
@@ -64,82 +65,73 @@ local ITEM_RADIUS = {
 }
 
 local COLORS = {
-	Wall = Color3.fromRGB(236, 226, 208),
-	WallBand = Color3.fromRGB(40, 150, 155),
-	Trim = Color3.fromRGB(252, 252, 250),
-	Partition = Color3.fromRGB(232, 222, 202),
-	Ceiling = Color3.fromRGB(70, 52, 40),
-	Slat = Color3.fromRGB(214, 160, 104),
-	Skylight = Color3.fromRGB(225, 240, 255),
-	Tiles = Color3.fromRGB(222, 214, 198),
-	MintTiles = Color3.fromRGB(206, 228, 216),
-	Carpet = Color3.fromRGB(96, 124, 146),
-	WarmCarpet = Color3.fromRGB(150, 112, 92),
-	GreenCarpet = Color3.fromRGB(104, 140, 108),
-	WoodFloor = Color3.fromRGB(200, 162, 118),
-	Concrete = Color3.fromRGB(182, 182, 176),
-	Wood = Color3.fromRGB(214, 176, 128),
-	DarkWood = Color3.fromRGB(150, 98, 60),
-	Metal = Color3.fromRGB(176, 180, 186),
+	Wall = Color3.fromRGB(232, 230, 224),
+	WallBand = Color3.fromRGB(140, 146, 152),
+	Trim = Color3.fromRGB(245, 245, 242),
+	Partition = Color3.fromRGB(226, 224, 218),
+	Ceiling = Color3.fromRGB(226, 226, 222),
+	CeilingGrid = Color3.fromRGB(205, 205, 202),
+	Light = Color3.fromRGB(248, 248, 244),
+	Tiles = Color3.fromRGB(198, 196, 190),
+	MintTiles = Color3.fromRGB(208, 200, 186),
+	Carpet = Color3.fromRGB(88, 98, 110),
+	WarmCarpet = Color3.fromRGB(96, 96, 100),
+	GreenCarpet = Color3.fromRGB(104, 112, 104),
+	WoodFloor = Color3.fromRGB(178, 176, 170),
+	Concrete = Color3.fromRGB(170, 170, 166),
+	Wood = Color3.fromRGB(176, 150, 116),
+	DarkWood = Color3.fromRGB(104, 78, 56),
+	Metal = Color3.fromRGB(160, 164, 170),
 	DarkMetal = Color3.fromRGB(70, 72, 78),
 	Black = Color3.fromRGB(28, 28, 30),
-	White = Color3.fromRGB(248, 248, 246),
-	OfficeChair = Color3.fromRGB(52, 56, 66),
-	Lamp = Color3.fromRGB(36, 92, 96),
-	Bulb = Color3.fromRGB(255, 226, 170),
-	Rug = Color3.fromRGB(40, 110, 170),
-	GreenRug = Color3.fromRGB(70, 140, 90),
-	Paper = Color3.fromRGB(248, 248, 244),
-	Cardboard = Color3.fromRGB(196, 150, 96),
-	Tape = Color3.fromRGB(226, 196, 140),
-	Glass = Color3.fromRGB(190, 225, 240),
-	DoorGlass = Color3.fromRGB(150, 205, 230),
-	Plant = Color3.fromRGB(70, 160, 70),
-	Pot = Color3.fromRGB(230, 120, 70),
-	Cork = Color3.fromRGB(190, 140, 90),
-	SignBlue = Color3.fromRGB(30, 130, 135),
-	Ghost = Color3.fromRGB(90, 230, 140),
+	White = Color3.fromRGB(244, 244, 240),
+	OfficeChair = Color3.fromRGB(46, 48, 54),
+	Rug = Color3.fromRGB(52, 62, 80),
+	GreenRug = Color3.fromRGB(84, 90, 96),
+	Paper = Color3.fromRGB(244, 244, 238),
+	Cardboard = Color3.fromRGB(178, 140, 94),
+	Tape = Color3.fromRGB(206, 176, 128),
+	Glass = Color3.fromRGB(190, 215, 230),
+	DoorGlass = Color3.fromRGB(170, 195, 210),
+	Plant = Color3.fromRGB(62, 112, 64),
+	Pot = Color3.fromRGB(90, 90, 92),
+	Cork = Color3.fromRGB(172, 132, 92),
+	SignBlue = Color3.fromRGB(34, 52, 78),
+	Ghost = Color3.fromRGB(90, 220, 130),
 }
 
--- Couleurs vives des objets.
+-- Couleurs réalistes des objets.
 local FOLDER_COLORS = {
-	Color3.fromRGB(245, 170, 50),
-	Color3.fromRGB(60, 130, 220),
-	Color3.fromRGB(230, 80, 70),
-	Color3.fromRGB(90, 180, 100),
-	Color3.fromRGB(170, 100, 200),
-	Color3.fromRGB(250, 215, 80),
+	Color3.fromRGB(214, 190, 140),
+	Color3.fromRGB(70, 92, 132),
+	Color3.fromRGB(120, 44, 44),
+	Color3.fromRGB(62, 92, 72),
+	Color3.fromRGB(150, 150, 152),
 }
 local CHAIR_COLORS = {
-	Color3.fromRGB(240, 140, 60),
-	Color3.fromRGB(40, 170, 175),
-	Color3.fromRGB(245, 200, 60),
-	Color3.fromRGB(110, 180, 80),
+	Color3.fromRGB(55, 60, 70),
+	Color3.fromRGB(40, 55, 85),
+	Color3.fromRGB(85, 85, 90),
 }
 local STICKER_COLORS = {
-	Color3.fromRGB(230, 80, 70),
-	Color3.fromRGB(60, 130, 220),
-	Color3.fromRGB(90, 180, 100),
-	Color3.fromRGB(245, 190, 50),
+	Color3.fromRGB(240, 240, 236),
+	Color3.fromRGB(230, 210, 120),
 }
 local SHEET_COLORS = {
-	Color3.fromRGB(255, 240, 170),
-	Color3.fromRGB(200, 230, 255),
-	Color3.fromRGB(255, 210, 210),
-	Color3.fromRGB(215, 245, 210),
+	Color3.fromRGB(250, 248, 240),
+	Color3.fromRGB(236, 240, 246),
+	Color3.fromRGB(246, 242, 226),
 }
 local MUG_COLORS = {
-	Color3.fromRGB(250, 250, 248),
-	Color3.fromRGB(230, 80, 70),
-	Color3.fromRGB(60, 130, 220),
-	Color3.fromRGB(245, 200, 60),
-	Color3.fromRGB(40, 170, 175),
+	Color3.fromRGB(244, 244, 240),
+	Color3.fromRGB(70, 74, 82),
+	Color3.fromRGB(40, 55, 85),
+	Color3.fromRGB(150, 60, 50),
 }
 local POT_COLORS = {
-	Color3.fromRGB(230, 120, 70),
-	Color3.fromRGB(250, 250, 248),
-	Color3.fromRGB(60, 130, 220),
-	Color3.fromRGB(200, 90, 120),
+	Color3.fromRGB(90, 90, 92),
+	Color3.fromRGB(235, 235, 230),
+	Color3.fromRGB(170, 110, 80),
 }
 
 ---------------------------------------------------------------------------
@@ -243,7 +235,7 @@ local function addSignText(board, face, text, textColor)
 	label.AnchorPoint = Vector2.new(0.5, 0.5)
 	label.Position = UDim2.fromScale(0.5, 0.5)
 	label.Size = UDim2.fromScale(0.92, 0.8)
-	label.Font = Enum.Font.FredokaOne
+	label.Font = Enum.Font.GothamBold
 	label.Text = text
 	label.TextColor3 = textColor or Color3.fromRGB(245, 245, 245)
 	label.TextScaled = true
@@ -310,7 +302,7 @@ local function makeZone(model, itemType, anchorPart, billboardHeight)
 	label.Size = UDim2.fromScale(1, 1)
 	label.BackgroundColor3 = COLORS.SignBlue
 	label.BackgroundTransparency = 0.1
-	label.Font = Enum.Font.FredokaOne
+	label.Font = Enum.Font.GothamBold
 	label.Text = TidyConfig.ItemTypes[itemType].PlaceName
 	label.TextColor3 = Color3.fromRGB(245, 245, 245)
 	label.TextScaled = true
@@ -430,7 +422,7 @@ local function createLockedDoor(parent, door)
 		{ Transparency = 0.35 }
 	)
 	barrier:SetAttribute("Room", door.Room)
-	local text = room.Name .. "\nVERROUILLÉE\n" .. room.Cost .. " points\nCliquez pour ouvrir"
+	local text = room.Name .. "\nLOCKED\n" .. room.Cost .. " points\nClick to open"
 	addSignText(barrier, Enum.NormalId.Front, text, COLORS.White)
 	addSignText(barrier, Enum.NormalId.Back, text, COLORS.White)
 	CollectionService:AddTag(barrier, TidyConfig.DoorTag)
@@ -475,13 +467,13 @@ local function buildStructure(parent)
 	end
 
 	-- Sols de chaque pièce (ils se touchent sans se chevaucher).
-	floor("AccueilFloor", -30, 30, 20, 60, COLORS.Tiles, "CeramicTiles", { Reflectance = 0.12 })
-	floor("BureauxFloor", -80, 0, -60, 20, COLORS.Carpet, "Carpet")
-	floor("CouloirFloor", 0, 80, -10, 20, COLORS.WoodFloor, "WoodPlanks")
-	floor("PauseFloor", -80, -30, 20, 60, COLORS.MintTiles, "CeramicTiles", { Reflectance = 0.1 })
+	floor("ReceptionFloor", -30, 30, 20, 60, COLORS.Tiles, "CeramicTiles", { Reflectance = 0.05 })
+	floor("OfficesFloor", -80, 0, -60, 20, COLORS.Carpet, "Carpet")
+	floor("HallwayFloor", 0, 80, -10, 20, COLORS.WoodFloor, "CeramicTiles")
+	floor("BreakRoomFloor", -80, -30, 20, 60, COLORS.MintTiles, "CeramicTiles", { Reflectance = 0.04 })
 	floor("ArchivesFloor", 0, 50, -60, -10, COLORS.WarmCarpet, "Carpet")
-	floor("ReserveFloor", 50, 80, -60, -10, COLORS.Concrete, "Concrete")
-	floor("FormationFloor", 30, 80, 20, 60, COLORS.GreenCarpet, "Carpet")
+	floor("StorageFloor", 50, 80, -60, -10, COLORS.Concrete, "Concrete")
+	floor("TrainingFloor", 30, 80, 20, 60, COLORS.GreenCarpet, "Carpet")
 
 	-- Murs extérieurs (hors de la zone intérieure).
 	local wallHeight = CEILING_BOTTOM
@@ -517,11 +509,11 @@ local function buildStructure(parent)
 		end
 		return d
 	end
-	interiorWallAlongX(parent, 20, -80, 80, { door(-19, -11, "Bureaux"), door(11, 19, nil) })
-	interiorWallAlongZ(parent, -30, 20, 60, { door(36, 44, "Pause") })
-	interiorWallAlongZ(parent, 30, 20, 60, { door(36, 44, "Formation") })
-	interiorWallAlongZ(parent, 0, -60, 20, { door(1, 9, "Bureaux") })
-	interiorWallAlongX(parent, -10, 0, 80, { door(21, 29, "Archives"), door(61, 69, "Reserve") })
+	interiorWallAlongX(parent, 20, -80, 80, { door(-19, -11, "Offices"), door(11, 19, nil) })
+	interiorWallAlongZ(parent, -30, 20, 60, { door(36, 44, "BreakRoom") })
+	interiorWallAlongZ(parent, 30, 20, 60, { door(36, 44, "Training") })
+	interiorWallAlongZ(parent, 0, -60, 20, { door(1, 9, "Offices") })
+	interiorWallAlongX(parent, -10, 0, 80, { door(21, 29, "Archives"), door(61, 69, "Storage") })
 	interiorWallAlongZ(parent, 50, -60, -10, {})
 	for _, d in doors do
 		createLockedDoor(parent, d)
@@ -530,74 +522,49 @@ local function buildStructure(parent)
 	-- Nom des pièces au-dessus des portes.
 	local signY = FLOOR_TOP + DOOR_HEIGHT + 1.5
 	local roomSigns = {
-		{ "BUREAUX", Vector3.new(-15, signY, 20.3), Vector3.new(0, 0, 1) },
-		{ "COULOIR", Vector3.new(15, signY, 20.3), Vector3.new(0, 0, 1) },
-		{ "SALLE DE PAUSE", Vector3.new(-29.7, signY, 40), Vector3.new(1, 0, 0) },
-		{ "FORMATION", Vector3.new(29.7, signY, 40), Vector3.new(-1, 0, 0) },
+		{ "OFFICES", Vector3.new(-15, signY, 20.3), Vector3.new(0, 0, 1) },
+		{ "HALLWAY", Vector3.new(15, signY, 20.3), Vector3.new(0, 0, 1) },
+		{ "BREAK ROOM", Vector3.new(-29.7, signY, 40), Vector3.new(1, 0, 0) },
+		{ "TRAINING", Vector3.new(29.7, signY, 40), Vector3.new(-1, 0, 0) },
 		{ "ARCHIVES", Vector3.new(25, signY, -9.7), Vector3.new(0, 0, 1) },
-		{ "RÉSERVE", Vector3.new(65, signY, -9.7), Vector3.new(0, 0, 1) },
-		{ "BUREAUX", Vector3.new(0.3, signY, 5), Vector3.new(1, 0, 0) },
+		{ "STORAGE", Vector3.new(65, signY, -9.7), Vector3.new(0, 0, 1) },
+		{ "OFFICES", Vector3.new(0.3, signY, 5), Vector3.new(1, 0, 0) },
 	}
 	for _, sign in roomSigns do
 		newSign(parent, "RoomSign", sign[1], Vector3.new(7, 1.2, 0.1), sign[2], sign[3])
 	end
 
-	-- Plafond : fond sombre, lattes de bois, et puits de lumière.
+	-- Faux plafond à dalles : fond clair et grille métallique.
 	block(parent, "Ceiling", Vector3.new(fullLengthX, 1, fullLengthZ), Vector3.new(0, CEILING_BOTTOM + 0.5, 0), COLORS.Ceiling, "SmoothPlastic")
-	local skylightXs = { -55, -15, 25, 65 }
-	local x = -HALF_X + 0.75
-	while x < HALF_X do
-		local nearSkylight = false
-		for _, skylightX in skylightXs do
-			if math.abs(x - skylightX) < 3.2 then
-				nearSkylight = true
-			end
-		end
-		if not nearSkylight then
-			block(parent, "CeilingSlat", Vector3.new(0.9, 0.35, HALF_Z * 2), Vector3.new(x, CEILING_BOTTOM - 0.175, 0), COLORS.Slat, "Wood", { CanCollide = false, CastShadow = false })
-		end
-		x += 1.5
+	local gridX = -HALF_X + 4
+	while gridX < HALF_X do
+		block(parent, "CeilingGrid", Vector3.new(0.12, 0.06, HALF_Z * 2), Vector3.new(gridX, CEILING_BOTTOM - 0.03, 0), COLORS.CeilingGrid, "Metal", { CanCollide = false, CastShadow = false })
+		gridX += 4
 	end
-	for _, skylightX in skylightXs do
-		local skylight = block(parent, "Skylight", Vector3.new(5.6, 0.1, HALF_Z * 2), Vector3.new(skylightX, CEILING_BOTTOM - 0.05, 0), COLORS.Skylight, "Neon", { CanCollide = false, CastShadow = false })
-		local daylight = Instance.new("SurfaceLight")
-		daylight.Face = Enum.NormalId.Bottom
-		daylight.Angle = 120
-		daylight.Range = 20
-		daylight.Brightness = 1
-		daylight.Color = Color3.fromRGB(235, 245, 255)
-		daylight.Shadows = false
-		daylight.Parent = skylight
-		for _, side in { -1, 1 } do
-			block(parent, "SkylightBeam", Vector3.new(0.4, 0.6, HALF_Z * 2), Vector3.new(skylightX + side * 3, CEILING_BOTTOM - 0.3, 0), COLORS.DarkWood, "Wood", { CanCollide = false, CastShadow = false })
-		end
+	local gridZ = -HALF_Z + 4
+	while gridZ < HALF_Z do
+		block(parent, "CeilingGrid", Vector3.new(HALF_X * 2, 0.06, 0.12), Vector3.new(0, CEILING_BOTTOM - 0.03, gridZ), COLORS.CeilingGrid, "Metal", { CanCollide = false, CastShadow = false })
+		gridZ += 4
 	end
 
-	-- Lampes globes suspendues, réparties dans chaque pièce.
+	-- Luminaires encastrés, répartis dans chaque pièce (alignés sur la grille du plafond).
 	for _, room in TidyConfig.Rooms do
-		local lampX = room.MinX + 8
+		local lampX = room.MinX + 10
 		while lampX <= room.MaxX - 6 do
-			local lampZ = room.MinZ + 8
+			local lampZ = room.MinZ + 10
 			while lampZ <= room.MaxZ - 6 do
-				local globeY = FLOOR_TOP + 9.2
-				local capY = globeY + 0.95
-				local wireTop = CEILING_BOTTOM - 0.35
-				local wireLength = wireTop - (capY + 0.15)
-				block(parent, "LampWire", Vector3.new(0.06, wireLength, 0.06), Vector3.new(lampX, capY + 0.15 + wireLength / 2, lampZ), COLORS.Black, "Metal", { CanCollide = false, CastShadow = false })
-				local cap = cylinder(parent, "LampCap", 0.3, 0.6, Vector3.new(lampX, capY, lampZ), COLORS.Lamp, "Metal")
-				cap.CanCollide = false
-				cap.CastShadow = false
-				local globe = block(parent, "LampGlobe", Vector3.new(1.6, 1.6, 1.6), Vector3.new(lampX, globeY, lampZ), COLORS.Bulb, "Neon", { CanCollide = false, CastShadow = false, Transparency = 0.15 })
-				globe.Shape = Enum.PartType.Ball
-				local light = Instance.new("PointLight")
+				local panel = block(parent, "CeilingLight", Vector3.new(3.6, 0.1, 1.8), Vector3.new(lampX, CEILING_BOTTOM - 0.05, lampZ), COLORS.Light, "Neon", { CanCollide = false, CastShadow = false })
+				local light = Instance.new("SurfaceLight")
+				light.Face = Enum.NormalId.Bottom
+				light.Angle = 120
 				light.Range = 18
-				light.Brightness = 0.8
-				light.Color = Color3.fromRGB(255, 214, 160)
+				light.Brightness = 1.2
+				light.Color = Color3.fromRGB(250, 248, 242)
 				light.Shadows = false
-				light.Parent = globe
-				lampZ += 18
+				light.Parent = panel
+				lampZ += 16
 			end
-			lampX += 18
+			lampX += 16
 		end
 	end
 
@@ -698,7 +665,7 @@ local function createReception(parent, cx, cz)
 
 	block(model, "CounterBody", Vector3.new(12, COUNTER_HEIGHT - 0.25, 2.5), Vector3.new(cx, FLOOR_TOP + (COUNTER_HEIGHT - 0.25) / 2, cz), COLORS.DarkWood, "Wood")
 	local counterTop = block(model, "CounterTop", Vector3.new(12.4, 0.25, 2.9), Vector3.new(cx, top - 0.125, cz), COLORS.Tiles, "Marble")
-	newSign(model, "ReceptionSign", "ACCUEIL", Vector3.new(5, 1, 0.05), Vector3.new(cx, FLOOR_TOP + 2.2, cz + 1.275), Vector3.new(0, 0, 1))
+	newSign(model, "ReceptionSign", "RECEPTION", Vector3.new(5, 1, 0.05), Vector3.new(cx, FLOOR_TOP + 2.2, cz + 1.275), Vector3.new(0, 0, 1))
 	block(model, "MonitorStand", Vector3.new(0.4, 0.5, 0.3), Vector3.new(cx, top + 0.25, cz - 0.6), COLORS.Black, "SmoothPlastic")
 	block(model, "Monitor", Vector3.new(2.2, 1.3, 0.1), Vector3.new(cx, top + 1.15, cz - 0.6), COLORS.Black, "SmoothPlastic")
 	createOfficeChair(model, Vector3.new(cx, FLOOR_TOP, cz - 3), math.pi)
@@ -868,7 +835,7 @@ local function createTicketMachine(parent, x, z)
 	block(model, "Base", Vector3.new(1.2, 0.15, 1.2), Vector3.new(x, FLOOR_TOP + 0.075, z), COLORS.DarkMetal, "Metal")
 	block(model, "Pole", Vector3.new(0.25, 3, 0.25), Vector3.new(x, FLOOR_TOP + 1.65, z), COLORS.Metal, "Metal")
 	block(model, "Box", Vector3.new(1, 1.2, 0.7), Vector3.new(x, FLOOR_TOP + 3.75, z), Color3.fromRGB(230, 80, 70), "SmoothPlastic")
-	newSign(model, "Label", "TICKET", Vector3.new(0.8, 0.35, 0.02), Vector3.new(x, FLOOR_TOP + 3.95, z + 0.36), Vector3.new(0, 0, 1), COLORS.Trim, COLORS.Black)
+	newSign(model, "Label", "TICKETS", Vector3.new(0.8, 0.35, 0.02), Vector3.new(x, FLOOR_TOP + 3.95, z + 0.36), Vector3.new(0, 0, 1), COLORS.Trim, COLORS.Black)
 end
 
 local function createWaterCooler(parent, x, z)
@@ -903,7 +870,7 @@ end
 -- Tableau blanc de la salle de formation (mur côté -Z).
 local function createWhiteboard(parent, cx, wallZ)
 	local model = newModel(parent, "Whiteboard")
-	newSign(model, "Board", "BIENVENUE EN FORMATION\nAtelier : réussir son entretien", Vector3.new(12, 4, 0.1), Vector3.new(cx, FLOOR_TOP + 6, wallZ + 0.4), Vector3.new(0, 0, 1), COLORS.White, Color3.fromRGB(40, 60, 120))
+	newSign(model, "Board", "INTERVIEW SKILLS WORKSHOP\nWednesday 10:00", Vector3.new(12, 4, 0.1), Vector3.new(cx, FLOOR_TOP + 6, wallZ + 0.4), Vector3.new(0, 0, 1), COLORS.White, Color3.fromRGB(40, 60, 120))
 	block(model, "Frame", Vector3.new(12.4, 4.4, 0.08), Vector3.new(cx, FLOOR_TOP + 6, wallZ + 0.3), COLORS.Metal, "Metal", { CanCollide = false })
 	block(model, "Tray", Vector3.new(10, 0.15, 0.4), Vector3.new(cx, FLOOR_TOP + 3.9, wallZ + 0.5), COLORS.Metal, "Metal", { CanCollide = false })
 end
@@ -918,15 +885,15 @@ end
 local function furnishAccueil(parent)
 	createReception(parent, 0, 34)
 	createChairRug(parent, "WaitingArea", Vector2.new(19, 50), Vector2.new(16, 16), { 14, 18, 22 }, { 44, 46.5, 49, 51.5, 54, 56.5 }, -90, COLORS.Rug, 6)
-	newSign(parent, "NowServingScreen", "NUMÉRO APPELÉ   A-047", Vector3.new(6, 2, 0.2), Vector3.new(29.65, FLOOR_TOP + 6.5, 50), Vector3.new(-1, 0, 0), COLORS.Black, Color3.fromRGB(255, 90, 70))
-	newSign(parent, "WaitingSign", "SALLE D'ATTENTE", Vector3.new(6, 0.9, 0.2), Vector3.new(29.65, FLOOR_TOP + 8.6, 50), Vector3.new(-1, 0, 0))
+	newSign(parent, "NowServingScreen", "NOW SERVING   A-047", Vector3.new(6, 2, 0.2), Vector3.new(29.65, FLOOR_TOP + 6.5, 50), Vector3.new(-1, 0, 0), COLORS.Black, Color3.fromRGB(255, 90, 70))
+	newSign(parent, "WaitingSign", "WAITING AREA", Vector3.new(6, 0.9, 0.2), Vector3.new(29.65, FLOOR_TOP + 8.6, 50), Vector3.new(-1, 0, 0))
 	createTicketMachine(parent, -8, 50)
 	createWaterCooler(parent, -28.5, 52)
 
 	local board = newModel(parent, "JobOffersBoard")
 	local boardZ = HALF_Z - 0.08
 	block(board, "Cork", Vector3.new(8, 4, 0.15), Vector3.new(-18, FLOOR_TOP + 5, boardZ), COLORS.Cork, "Fabric")
-	newSign(board, "Title", "OFFRES D'EMPLOI", Vector3.new(8, 0.9, 0.1), Vector3.new(-18, FLOOR_TOP + 7.6, HALF_Z - 0.05), Vector3.new(0, 0, -1))
+	newSign(board, "Title", "JOB BOARD", Vector3.new(8, 0.9, 0.1), Vector3.new(-18, FLOOR_TOP + 7.6, HALF_Z - 0.05), Vector3.new(0, 0, -1))
 	local tilt = { -4, 3, -2, 5, -3, 2 }
 	local n = 0
 	for _, y in { FLOOR_TOP + 5.9, FLOOR_TOP + 4.1 } do
@@ -936,7 +903,7 @@ local function furnishAccueil(parent)
 		end
 	end
 
-	poster(parent, "TROUVEZ\nVOTRE VOIE", Vector3.new(0, FLOOR_TOP + 7, 20.3), Vector3.new(0, 0, 1), Color3.fromRGB(240, 140, 60))
+	poster(parent, "PLEASE TAKE\nA TICKET", Vector3.new(0, FLOOR_TOP + 7, 20.3), Vector3.new(0, 0, 1), COLORS.SignBlue)
 	createClock(parent, Vector3.new(12, FLOOR_TOP + 8, HALF_Z - 0.1), Vector3.new(0, 0, -1))
 	for _, p in { { -28, 58 }, { 27, 23 }, { -27, 23 } } do
 		createPlant(parent, p[1], p[2])
@@ -953,8 +920,8 @@ local function furnishBureaux(parent)
 	end
 	createPlanter(parent, 1, -60, -59.3)
 	createPlanter(parent, 2, -30, -59.3)
-	poster(parent, "ATELIER CV\nMARDI 14H", Vector3.new(-45, FLOOR_TOP + 7, -HALF_Z + 0.05), Vector3.new(0, 0, 1), COLORS.SignBlue)
-	poster(parent, "ENTRETIENS\nSUR RENDEZ-VOUS", Vector3.new(-15, FLOOR_TOP + 7, -HALF_Z + 0.05), Vector3.new(0, 0, 1), Color3.fromRGB(170, 100, 200))
+	poster(parent, "CV WORKSHOP\nTUESDAYS 2 PM", Vector3.new(-45, FLOOR_TOP + 7, -HALF_Z + 0.05), Vector3.new(0, 0, 1), COLORS.SignBlue)
+	poster(parent, "INTERVIEWS BY\nAPPOINTMENT ONLY", Vector3.new(-15, FLOOR_TOP + 7, -HALF_Z + 0.05), Vector3.new(0, 0, 1), Color3.fromRGB(70, 74, 82))
 	createClock(parent, Vector3.new(-75, FLOOR_TOP + 8, -HALF_Z + 0.1), Vector3.new(0, 0, 1))
 	createWaterCooler(parent, -4, -56)
 	for _, p in { { -77, -57 }, { -77, 17 }, { -3, 17 } } do
@@ -967,8 +934,8 @@ local function furnishCouloir(parent)
 	createPlanter(parent, 4, 58, 19.05)
 	createBench(parent, 45, -8.6)
 	createBench(parent, 10, -8.6)
-	poster(parent, "FORMATIONS\nPROFESSIONNELLES", Vector3.new(HALF_X - 0.05, FLOOR_TOP + 7, 17), Vector3.new(-1, 0, 0), Color3.fromRGB(100, 170, 70))
-	poster(parent, "ON RECRUTE\nPRÈS DE CHEZ VOUS", Vector3.new(40, FLOOR_TOP + 7, -9.7), Vector3.new(0, 0, 1), Color3.fromRGB(240, 140, 60))
+	poster(parent, "CAREER TRAINING\nPROGRAMS", Vector3.new(HALF_X - 0.05, FLOOR_TOP + 7, 17), Vector3.new(-1, 0, 0), Color3.fromRGB(52, 80, 70))
+	poster(parent, "LOCAL EMPLOYERS\nARE HIRING", Vector3.new(40, FLOOR_TOP + 7, -9.7), Vector3.new(0, 0, 1), COLORS.SignBlue)
 	createPlant(parent, 77, -7)
 end
 
@@ -983,7 +950,7 @@ local function furnishPause(parent)
 			createCafeTable(parent, index, x, z)
 		end
 	end
-	poster(parent, "PAUSE CAFÉ\n10H - 16H", Vector3.new(-55, FLOOR_TOP + 7, HALF_Z - 0.05), Vector3.new(0, 0, -1), Color3.fromRGB(150, 98, 60))
+	poster(parent, "PLEASE CLEAN UP\nAFTER YOURSELF", Vector3.new(-55, FLOOR_TOP + 7, HALF_Z - 0.05), Vector3.new(0, 0, -1), Color3.fromRGB(70, 74, 82))
 	createClock(parent, Vector3.new(-40, FLOOR_TOP + 8, HALF_Z - 0.1), Vector3.new(0, 0, -1))
 	block(parent, "Fridge", Vector3.new(2.4, 6, 2.2), Vector3.new(-78.5, FLOOR_TOP + 3, 57.5), COLORS.White, "SmoothPlastic")
 	createPlant(parent, -33, 57)
@@ -1022,7 +989,7 @@ local function furnishFormation(parent)
 	createTeacherDesk(parent, 55, 28)
 	createChairRug(parent, "TrainingRows", Vector2.new(55, 45), Vector2.new(30, 16), { 45, 50, 55, 60, 65 }, { 39, 43, 47, 51 }, 0, COLORS.GreenRug, 6)
 	createPlanter(parent, 5, 70, 59.3)
-	poster(parent, "RÉUSSIR SON\nENTRETIEN", Vector3.new(40, FLOOR_TOP + 7, HALF_Z - 0.05), Vector3.new(0, 0, -1), COLORS.SignBlue)
+	poster(parent, "PREPARING FOR\nYOUR INTERVIEW", Vector3.new(40, FLOOR_TOP + 7, HALF_Z - 0.05), Vector3.new(0, 0, -1), COLORS.SignBlue)
 	createClock(parent, Vector3.new(78, FLOOR_TOP + 8, HALF_Z - 0.1), Vector3.new(0, 0, -1))
 	createPlant(parent, 33, 23)
 end
@@ -1146,13 +1113,13 @@ end
 -- Éclairage et point d'apparition
 ---------------------------------------------------------------------------
 local function setupLighting()
-	Lighting.ClockTime = 13
+	Lighting.ClockTime = 14
 	Lighting.Brightness = 2
-	Lighting.ExposureCompensation = -0.3
-	Lighting.Ambient = Color3.fromRGB(104, 97, 90)
-	Lighting.OutdoorAmbient = Color3.fromRGB(150, 145, 140)
-	Lighting.EnvironmentDiffuseScale = 1
-	Lighting.EnvironmentSpecularScale = 0.6
+	Lighting.ExposureCompensation = 0
+	Lighting.Ambient = Color3.fromRGB(110, 110, 112)
+	Lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 130)
+	Lighting.EnvironmentDiffuseScale = 0.8
+	Lighting.EnvironmentSpecularScale = 0.5
 	Lighting.GlobalShadows = true
 
 	local colorCorrection = Lighting:FindFirstChild("AgencyColorCorrection")
@@ -1162,9 +1129,9 @@ local function setupLighting()
 		colorCorrection.Parent = Lighting
 	end
 	colorCorrection.Brightness = 0
-	colorCorrection.Saturation = 0.06
-	colorCorrection.Contrast = 0.1
-	colorCorrection.TintColor = Color3.fromRGB(255, 249, 238)
+	colorCorrection.Saturation = -0.05
+	colorCorrection.Contrast = 0.05
+	colorCorrection.TintColor = Color3.fromRGB(250, 250, 255)
 
 	local bloom = Lighting:FindFirstChild("AgencyBloom")
 	if not bloom then
@@ -1172,9 +1139,9 @@ local function setupLighting()
 		bloom.Name = "AgencyBloom"
 		bloom.Parent = Lighting
 	end
-	bloom.Intensity = 0.15
-	bloom.Size = 24
-	bloom.Threshold = 2.4
+	bloom.Intensity = 0.1
+	bloom.Size = 20
+	bloom.Threshold = 2.5
 end
 
 local function createSpawn(parent)
@@ -1230,13 +1197,13 @@ function AgencyBuilder.Build()
 
 	collectObstacles = true
 	buildStructure(structure)
-	furnishAccueil(newFolder(furniture, "Accueil"))
-	furnishBureaux(newFolder(furniture, "Bureaux"))
-	furnishCouloir(newFolder(furniture, "Couloir"))
-	furnishPause(newFolder(furniture, "Pause"))
+	furnishAccueil(newFolder(furniture, "Reception"))
+	furnishBureaux(newFolder(furniture, "Offices"))
+	furnishCouloir(newFolder(furniture, "Hallway"))
+	furnishPause(newFolder(furniture, "BreakRoom"))
 	furnishArchives(newFolder(furniture, "Archives"))
-	furnishReserve(newFolder(furniture, "Reserve"))
-	furnishFormation(newFolder(furniture, "Formation"))
+	furnishReserve(newFolder(furniture, "Storage"))
+	furnishFormation(newFolder(furniture, "Training"))
 	collectObstacles = false
 
 	-- Endroit laissé libre : arrivée du joueur.
