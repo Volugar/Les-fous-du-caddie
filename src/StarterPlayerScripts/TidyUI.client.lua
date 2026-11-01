@@ -559,27 +559,27 @@ local closeCompleteButton = makeButton(completePanel, {
 ---------------------------------------------------------------------------
 local lobbyPanel = makePanel({
 	Name = "Lobby",
-	AnchorPoint = Vector2.new(0.5, 0.5),
-	Position = UDim2.fromScale(0.5, 0.5),
-	Size = UDim2.new(0.9, 0, 0, 340),
+	Size = UDim2.new(0.9, 0, 0, 230),
+	AnchorPoint = Vector2.new(0.5, 1),
+	Position = UDim2.new(0.5, 0, 1, -20),
 	BackgroundTransparency = 0.05,
 	Visible = false,
 	Parent = screenGui,
 })
-make("UISizeConstraint", { MaxSize = Vector2.new(440, 340), Parent = lobbyPanel })
+make("UISizeConstraint", { MaxSize = Vector2.new(440, 230), Parent = lobbyPanel })
 makeLabel(lobbyPanel, {
 	Name = "Title",
 	Position = UDim2.new(0, 20, 0, 16),
 	Size = UDim2.new(1, -40, 0, 30),
 	Font = Enum.Font.GothamBold,
-	Text = "Staff Lobby",
+	Text = "Private rooms",
 	MaxTextSize = 26,
 })
 makeLabel(lobbyPanel, {
 	Name = "Body",
 	Position = UDim2.new(0, 20, 0, 50),
 	Size = UDim2.new(1, -40, 0, 40),
-	Text = "Tidy up the agency here with everyone on this server, or create a private room for you and your friends.",
+	Text = "Create a private room and share its code, or enter a friend's code to join their room.",
 	TextColor3 = MUTED_COLOR,
 	MaxTextSize = 15,
 })
@@ -591,15 +591,15 @@ local playHereButton = makeButton(lobbyPanel, {
 })
 local createRoomButton = makeButton(lobbyPanel, {
 	Name = "CreateRoom",
-	Position = UDim2.new(0, 20, 0, 154),
-	Size = UDim2.new(1, -40, 0, 44),
+	Position = UDim2.new(0, 20, 0, 110),
+	Size = UDim2.new(1, -40, 0, 50),
 	Text = "Create private room",
 	BackgroundColor3 = Color3.fromRGB(70, 110, 160),
 })
 local codeBox = make("TextBox", {
 	Name = "CodeBox",
-	Position = UDim2.new(0, 20, 0, 210),
-	Size = UDim2.new(0.6, -26, 0, 44),
+	Position = UDim2.new(0, 20, 0, 110),
+	Size = UDim2.new(0.6, -26, 0, 50),
 	BackgroundColor3 = SOFT_COLOR,
 	BorderSizePixel = 0,
 	ClearTextOnFocus = false,
@@ -615,18 +615,31 @@ addCorner(codeBox, 6)
 local joinRoomButton = makeButton(lobbyPanel, {
 	Name = "JoinRoom",
 	AnchorPoint = Vector2.new(1, 0),
-	Position = UDim2.new(1, -20, 0, 210),
-	Size = UDim2.new(0.4, -14, 0, 44),
+	Position = UDim2.new(1, -20, 0, 110),
+	Size = UDim2.new(0.4, -14, 0, 50),
 	Text = "Join",
 	BackgroundColor3 = Color3.fromRGB(70, 110, 160),
 })
 local lobbyStatus = makeLabel(lobbyPanel, {
 	Name = "Status",
-	Position = UDim2.new(0, 20, 0, 266),
-	Size = UDim2.new(1, -40, 0, 50),
+	Position = UDim2.new(0, 20, 0, 172),
+	Size = UDim2.new(1, -40, 0, 44),
 	Text = "",
 	TextColor3 = GOLD_COLOR,
 	MaxTextSize = 15,
+})
+
+-- Bandeau du lobby.
+local lobbyBanner = makeLabel(screenGui, {
+	Name = "LobbyBanner",
+	AnchorPoint = Vector2.new(0.5, 0),
+	Position = UDim2.new(0.5, 0, 0, 10),
+	Size = UDim2.new(0.6, 0, 0, 40),
+	Font = Enum.Font.GothamBlack,
+	Text = "Step on a portal to play",
+	TextColor3 = OVERLAY_COLOR,
+	TextStrokeTransparency = 0.2,
+	MaxTextSize = 30,
 })
 
 -- Code du salon privé (affiché dans le salon pour inviter des amis).
@@ -1486,15 +1499,29 @@ task.spawn(function()
 end)
 
 -- Zone d'accueil ou agence : on montre le bon écran.
-local hudElements = { progressPanel, leftPanel, hotbar, bagBar, areaLabel, hintLabel, timerLabel, aimLabel, musicButton }
+local hudElements = { progressPanel, hotbar, bagBar, areaLabel, hintLabel, timerLabel, aimLabel }
 local enteredAgency = false
+local lobbyMode = nil -- portail sur lequel le joueur se trouve : "Create", "Join" ou nil
+
+local function updateLobbyPanel()
+	local inAgency = player:GetAttribute("InAgency") == true
+	lobbyPanel.Visible = not inAgency and (lobbyMode == "Create" or lobbyMode == "Join")
+	playHereButton.Visible = false
+	createRoomButton.Visible = lobbyMode == "Create"
+	codeBox.Visible = lobbyMode == "Join"
+	joinRoomButton.Visible = lobbyMode == "Join"
+end
+
 local function updateMode()
 	local inAgency = player:GetAttribute("InAgency") == true
 	for _, element in hudElements do
 		element.Visible = inAgency
 	end
+	leftPanel.Visible = true
+	musicButton.Visible = true
+	lobbyBanner.Visible = not inAgency
 	controlsLabel.Visible = inAgency and not isTouchOnly
-	lobbyPanel.Visible = not inAgency
+	updateLobbyPanel()
 	if inAgency and not enteredAgency then
 		enteredAgency = true
 		introPanel.Visible = true
@@ -1504,6 +1531,37 @@ local function updateMode()
 end
 player:GetAttributeChangedSignal("InAgency"):Connect(updateMode)
 updateMode()
+
+-- Portails du lobby : on marche dessus pour jouer, créer ou rejoindre un salon.
+local playRequested = false
+task.spawn(function()
+	while true do
+		task.wait(0.2)
+		local root = getRoot()
+		local newMode = nil
+		if root and player:GetAttribute("InAgency") ~= true then
+			for _, pad in CollectionService:GetTagged("LobbyPad") do
+				local offset = root.Position - pad.Position
+				if math.abs(offset.X) < 4.5 and math.abs(offset.Z) < 4.5 and offset.Y < 8 then
+					newMode = pad:GetAttribute("Action")
+				end
+			end
+		end
+		if newMode == "Play" then
+			if not playRequested then
+				playRequested = true
+				task.spawn(lobbyRequest, "PlayHere")
+			end
+		else
+			playRequested = false
+		end
+		if newMode ~= lobbyMode then
+			lobbyMode = newMode
+			lobbyStatus.Text = ""
+			updateLobbyPanel()
+		end
+	end
+end)
 
 updateCounters()
 updateHint()

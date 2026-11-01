@@ -25,7 +25,10 @@ local isRoomServer = game.PrivateServerId ~= "" and game.PrivateServerOwnerId ==
 local agency = AgencyBuilder.Build()
 local itemsFolder = AgencyBuilder.GetItemsFolder()
 local agencySpawn = agency.Spawn
-local lobbySpawn = if isRoomServer then nil else AgencyBuilder.BuildHub()
+local lobbySpawn, leaderboardGui = nil, nil
+if not isRoomServer then
+	lobbySpawn, leaderboardGui = AgencyBuilder.BuildHub()
+end
 ReplicatedStorage:SetAttribute("IsRoomServer", isRoomServer)
 
 local MAX_DISTANCE = TidyConfig.ReachDistance + TidyConfig.ServerDistanceMargin
@@ -81,8 +84,17 @@ for _, room in TidyConfig.Rooms do
 	unlockedRooms[room.Id] = room.Cost <= 0
 end
 
+-- Une pièce est ouverte si elle a été payée et si la pièce dont elle dépend est ouverte
+-- (les pièces de l'étage dépendent du hall de l'étage, ouvert avec l'ascenseur).
 local function isRoomUnlocked(roomId)
-	return unlockedRooms[roomId] == true
+	if unlockedRooms[roomId] ~= true then
+		return false
+	end
+	local room = TidyConfig.GetRoom(roomId)
+	if room and room.Requires then
+		return isRoomUnlocked(room.Requires)
+	end
+	return true
 end
 
 local function updateBillboards()
@@ -113,7 +125,7 @@ local function publishProgress()
 	for _, room in TidyConfig.Rooms do
 		ReplicatedStorage:SetAttribute("RoomTotal_" .. room.Id, roomTotals[room.Id] or 0)
 		ReplicatedStorage:SetAttribute("RoomPlaced_" .. room.Id, roomPlaced[room.Id] or 0)
-		ReplicatedStorage:SetAttribute("Unlocked_" .. room.Id, unlockedRooms[room.Id] == true)
+		ReplicatedStorage:SetAttribute("Unlocked_" .. room.Id, isRoomUnlocked(room.Id))
 	end
 	ReplicatedStorage:SetAttribute("AgencyInOrder", totalItems > 0 and remainingItems <= 0)
 	updateBillboards()
@@ -305,8 +317,9 @@ local function announceRoom(player, roomId)
 	end
 end
 
--- Déclarée ici, définie plus bas avec la sauvegarde.
+-- Déclarées ici, définies plus bas (sauvegarde et classement).
 local saveData
+local updateLeaderboard
 
 ---------------------------------------------------------------------------
 -- Actions du joueur
@@ -497,7 +510,7 @@ local function findSurfaceY(position, character)
 	if result then
 		return result.Position.Y
 	end
-	return AgencyBuilder.FloorTop
+	return position.Y - 3
 end
 
 local function drop(player, state)
@@ -514,7 +527,7 @@ local function drop(player, state)
 
 	local front = (root.CFrame * CFrame.new(0, 0, -3)).Position
 	local x = math.clamp(front.X, -AgencyBuilder.HalfX + 1.5, AgencyBuilder.HalfX - 1.5)
-	local z = math.clamp(front.Z, -AgencyBuilder.HalfZ + 1.5, AgencyBuilder.HalfZ - 1.5)
+	local z = math.clamp(front.Z, AgencyBuilder.MinZ + 1.5, AgencyBuilder.MaxZ - 1.5)
 	local surfaceY = findSurfaceY(Vector3.new(x, root.Position.Y, z), player.Character)
 	local home = CFrame.new(x, surfaceY + item:GetAttribute("RestHeight"), z) * root.CFrame.Rotation
 
@@ -683,6 +696,16 @@ do
 	end
 end
 
+local lifetimeStore = nil
+do
+	local ok, store = pcall(function()
+		return DataStoreService:GetOrderedDataStore("NorthfieldLifetime_v1")
+	end)
+	if ok then
+		lifetimeStore = store
+	end
+end
+
 local function saveKey(player)
 	return "player_" .. player.UserId
 end
@@ -736,6 +759,11 @@ function saveData(player, state)
 			end)
 		end)
 		if ok then
+			if lifetimeStore then
+				pcall(function()
+					lifetimeStore:SetAsync(tostring(player.UserId), state.Lifetime)
+				end)
+			end
 			return
 		end
 		task.wait(attempt)
@@ -983,10 +1011,83 @@ local function onPlayerAdded(player)
 		giveDailyBonus(player, state)
 		applyWalkSpeed(player, state)
 		publishPlayer(player, state)
+		task.spawn(updateLeaderboard)
 	end)
 end
 
+---------------------------------------------------------------------------
+-- Ascenseur : marcher sur le plateau de la cabine fait changer d'étage
+---------------------------------------------------------------------------
+local lastLift = {}
+for _, pad in CollectionService:GetTagged("TidyLift") do
+	pad.Touched:Connect(function(hit)
+		local character = hit.Parent
+		local player = character and Players:GetPlayerFromCharacter(character)
+		if not player then
+			return
+		end
+		local now = os.clock()
+		if lastLift[player] and now - lastLift[player] < 2 then
+			return
+		end
+		local requires = pad:GetAttribute("RequiresRoom")
+		if requires and not isRoomUnlocked(requires) then
+			return
+		end
+		local target = pad:GetAttribute("Target")
+		if typeof(target) ~= "Vector3" then
+			return
+		end
+		lastLift[player] = now
+		character:PivotTo(CFrame.new(target) * CFrame.Angles(0, math.pi, 0))
+		notify(player, "info", if target.Y > 10 then "Upper floor" else "Ground floor")
+	end)
+end
+
+---------------------------------------------------------------------------
+-- Classement du lobby : meilleurs ranger (sauvegarde globale, sinon joueurs présents)
+---------------------------------------------------------------------------
+function updateLeaderboard()
+	if not leaderboardGui then
+		return
+	end
+	local entries = {}
+	local ok = pcall(function()
+		local pages = lifetimeStore:GetSortedAsync(false, 10)
+		for _, entry in pages:GetCurrentPage() do
+			local name = "Player"
+			pcall(function()
+				name = Players:GetNameFromUserIdAsync(tonumber(entry.key))
+			end)
+			table.insert(entries, { Name = name, Items = entry.value })
+		end
+	end)
+	if not ok or #entries == 0 then
+		entries = {}
+		for player, state in states do
+			table.insert(entries, { Name = player.Name, Items = state.Lifetime })
+		end
+		table.sort(entries, function(a, b)
+			return a.Items > b.Items
+		end)
+	end
+	for i = 1, 10 do
+		local line = leaderboardGui:FindFirstChild("Line" .. i)
+		local entry = entries[i]
+		if line then
+			line.Text = if entry then (i .. ".  " .. entry.Name .. "  -  " .. entry.Items .. " items") else (i .. ".  ---")
+		end
+	end
+end
+
 startRound()
+
+task.spawn(function()
+	while true do
+		updateLeaderboard()
+		task.wait(60)
+	end
+end)
 
 Players.PlayerAdded:Connect(onPlayerAdded)
 for _, player in Players:GetPlayers() do

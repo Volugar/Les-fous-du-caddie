@@ -27,6 +27,14 @@ local MID_Z = (MIN_Z + MAX_Z) / 2
 local DEPTH_Z = MAX_Z - MIN_Z
 local WALL_HEIGHT = 12
 local CEILING_BOTTOM = FLOOR_TOP + WALL_HEIGHT
+local GROUND_TOP = FLOOR_TOP
+local UPPER_TOP = TidyConfig.FloorHeights[2]
+
+-- Change l'étage en cours de construction (toutes les hauteurs suivent).
+local function setFloor(top)
+	FLOOR_TOP = top
+	CEILING_BOTTOM = top + WALL_HEIGHT
+end
 local DOOR_HEIGHT = 8
 local DESK_HEIGHT = 2.5
 local COUNTER_HEIGHT = 3.75
@@ -41,6 +49,8 @@ local ITEM_SIZES = {
 	Plant = Vector3.new(1, 1.9, 1),
 	Book = Vector3.new(0.3, 1.1, 0.8),
 	Parcel = Vector3.new(0.8, 0.6, 0.8),
+	Laptop = Vector3.new(1.2, 0.1, 0.9),
+	Cushion = Vector3.new(1.2, 0.4, 1.2),
 }
 
 -- Distance entre le sol et le centre de la pièce principale de chaque objet.
@@ -53,6 +63,8 @@ local REST_HEIGHTS = {
 	Plant = 0.95,
 	Book = 0.55,
 	Parcel = 0.3,
+	Laptop = 0.05,
+	Cushion = 0.2,
 }
 
 -- Objets qui peuvent être renversés : hauteur et rayon une fois couchés.
@@ -73,6 +85,8 @@ local ITEM_RADIUS = {
 	Plant = 0.8,
 	Book = 0.7,
 	Parcel = 0.7,
+	Laptop = 0.8,
+	Cushion = 0.9,
 }
 
 local COLORS = {
@@ -110,6 +124,9 @@ local COLORS = {
 	SignBlue = Color3.fromRGB(34, 52, 78),
 	BoothFabric = Color3.fromRGB(122, 132, 144),
 	BookcaseWood = Color3.fromRGB(120, 92, 66),
+	Sofa = Color3.fromRGB(70, 82, 100),
+	Laptop = Color3.fromRGB(60, 62, 68),
+	Bulb = Color3.fromRGB(255, 226, 170),
 	Ghost = Color3.fromRGB(90, 220, 130),
 }
 
@@ -141,6 +158,12 @@ local MUG_COLORS = {
 	Color3.fromRGB(40, 55, 85),
 	Color3.fromRGB(150, 60, 50),
 }
+local CUSHION_COLORS = {
+	Color3.fromRGB(196, 170, 120),
+	Color3.fromRGB(150, 70, 60),
+	Color3.fromRGB(90, 120, 110),
+	Color3.fromRGB(220, 214, 200),
+}
 local POT_COLORS = {
 	Color3.fromRGB(90, 90, 92),
 	Color3.fromRGB(235, 235, 230),
@@ -155,7 +178,7 @@ local obstacles = {}
 local collectObstacles = false
 
 local function addObstacle(minX, maxX, minZ, maxZ)
-	table.insert(obstacles, { minX, maxX, minZ, maxZ })
+	table.insert(obstacles, { minX, maxX, minZ, maxZ, FLOOR_TOP })
 end
 
 -- Enregistre l'emprise au sol d'une pièce si elle gêne le passage.
@@ -455,16 +478,20 @@ local function createLockedDoor(parent, door)
 end
 
 -- Mur extérieur le long de l'axe Z (côtés est et ouest), avec des fenêtres.
-local function windowedSideWall(parent, name, x, windows, insideDirection)
+local function windowedSideWall(parent, name, x, windows, insideDirection, minZ, maxZ, baseY)
+	minZ = minZ or MIN_Z
+	maxZ = maxZ or MAX_Z
+	baseY = baseY or 0
 	local sillY = FLOOR_TOP + 3
 	local windowTop = FLOOR_TOP + 9
 	local wallHeight = CEILING_BOTTOM
-	local length = DEPTH_Z
-	block(parent, name .. "Low", Vector3.new(1, sillY, length), Vector3.new(x, sillY / 2, MID_Z), COLORS.Wall, "Plaster")
-	block(parent, name .. "High", Vector3.new(1, wallHeight - windowTop, length), Vector3.new(x, (windowTop + wallHeight) / 2, MID_Z), COLORS.Wall, "Plaster")
+	local length = maxZ - minZ
+	local midZ = (minZ + maxZ) / 2
+	block(parent, name .. "Low", Vector3.new(1, sillY - baseY, length), Vector3.new(x, (baseY + sillY) / 2, midZ), COLORS.Wall, "Plaster")
+	block(parent, name .. "High", Vector3.new(1, wallHeight - windowTop, length), Vector3.new(x, (windowTop + wallHeight) / 2, midZ), COLORS.Wall, "Plaster")
 	local windowHeight = windowTop - sillY
 	local windowY = (sillY + windowTop) / 2
-	local cursor = MIN_Z
+	local cursor = minZ
 	for _, window in windows do
 		local pillar = window[1] - cursor
 		if pillar > 0.01 then
@@ -475,7 +502,7 @@ local function windowedSideWall(parent, name, x, windows, insideDirection)
 		block(parent, name .. "Sill", Vector3.new(0.6, 0.2, glassLength), Vector3.new(x + insideDirection * 0.8, sillY + 0.1, window[1] + glassLength / 2), COLORS.Trim, "SmoothPlastic")
 		cursor = window[2]
 	end
-	local last = MAX_Z - cursor
+	local last = maxZ - cursor
 	if last > 0.01 then
 		block(parent, name .. "Pillar", Vector3.new(1, windowHeight, last), Vector3.new(x, windowY, cursor + last / 2), COLORS.Wall, "Plaster")
 	end
@@ -584,6 +611,9 @@ local function buildStructure(parent)
 
 	-- Luminaires encastrés, répartis dans chaque pièce (alignés sur la grille du plafond).
 	for _, room in TidyConfig.Rooms do
+		if TidyConfig.FloorHeights[room.Floor or 1] ~= FLOOR_TOP then
+			continue
+		end
 		local lampX = room.MinX + 10
 		while lampX <= room.MaxX - 6 do
 			local lampZ = room.MinZ + 10
@@ -1082,6 +1112,159 @@ local function createMailCart(parent, cx, cz)
 	block(model, "Handle", Vector3.new(0.15, 1.2, 1.8), Vector3.new(cx - 1.7, FLOOR_TOP + 2.2, cz), COLORS.Metal, "Metal")
 end
 
+-- Ascenseur entre le rez-de-chaussée et l'étage (cabine ouverte vers +Z).
+-- Le sol de la cabine est un "plateau" : on marche dessus pour changer d'étage.
+local function createElevator(parent, cx, backZ, targetPosition, label, lockedRoom)
+	local model = newModel(parent, "Elevator")
+	local frontZ = backZ + 6.6
+	local midZ = (backZ + frontZ) / 2
+	for _, side in { -1, 1 } do
+		block(model, "SideWall", Vector3.new(0.3, 9, 6.6), Vector3.new(cx + side * 3.35, FLOOR_TOP + 4.5, midZ), COLORS.Metal, "Metal")
+		block(model, "FrontWall", Vector3.new(1.55, 9, 0.3), Vector3.new(cx + side * 2.725, FLOOR_TOP + 4.5, frontZ + 0.15), COLORS.Metal, "Metal")
+	end
+	block(model, "Lintel", Vector3.new(3.9, 2, 0.3), Vector3.new(cx, FLOOR_TOP + 8, frontZ + 0.15), COLORS.Metal, "Metal")
+	block(model, "Roof", Vector3.new(7, 0.3, 6.9), Vector3.new(cx, FLOOR_TOP + 9.15, midZ + 0.15), COLORS.DarkMetal, "Metal")
+	local pad = block(model, "LiftPad", Vector3.new(6.3, 0.1, 6.3), Vector3.new(cx, FLOOR_TOP + 0.05, midZ), Color3.fromRGB(150, 190, 220), "Neon", { Transparency = 0.4 })
+	pad:SetAttribute("Target", targetPosition)
+	if lockedRoom then
+		pad:SetAttribute("RequiresRoom", lockedRoom)
+	end
+	CollectionService:AddTag(pad, "TidyLift")
+	local light = Instance.new("PointLight")
+	light.Range = 10
+	light.Brightness = 1
+	light.Parent = pad
+	newSign(model, "ElevatorSign", label, Vector3.new(6, 0.9, 0.1), Vector3.new(cx, FLOOR_TOP + 9.9, frontZ + 0.36), Vector3.new(0, 0, 1))
+	addObstacle(cx - 4.5, cx + 4.5, frontZ, frontZ + 4.5)
+	if lockedRoom then
+		createLockedDoor(parent, {
+			Room = lockedRoom,
+			Center = Vector3.new(cx, FLOOR_TOP + 3.5, frontZ + 0.15),
+			Size = Vector3.new(3.6, 7, 0.3),
+			Facing = Vector3.new(0, 0, 1),
+		})
+	end
+	return pad
+end
+
+-- Canapé avec 6 coussins (3 assise + 3 dossier). Le canapé regarde vers -Z avant rotation.
+local function createSofa(parent, index, cx, cz, yaw)
+	local model = newModel(parent, "Sofa" .. index)
+	local base = CFrame.new(cx, FLOOR_TOP, cz) * CFrame.Angles(0, yaw, 0)
+	local seat = newPart(model, "Base", Vector3.new(6, 1.1, 2.4), base * CFrame.new(0, 0.55, 0), COLORS.Sofa, "Fabric")
+	newPart(model, "Back", Vector3.new(6, 1.9, 0.5), base * CFrame.new(0, 2.05, 0.95), COLORS.Sofa, "Fabric")
+	for _, side in { -1, 1 } do
+		newPart(model, "Arm", Vector3.new(0.5, 1.7, 2.4), base * CFrame.new(side * 3.25, 0.85, 0), COLORS.Sofa, "Fabric")
+	end
+	local spots = makeZone(model, "Cushion", seat, 3.5)
+	for _, x in { -1.9, 0, 1.9 } do
+		createSlot(spots, "Cushion", base * CFrame.new(x, 1.3, -0.25))
+		createSlot(spots, "Cushion", base * CFrame.new(x, 2.1, 0.45) * CFrame.Angles(math.rad(90), 0, 0))
+	end
+end
+
+local function createCoffeeTable(parent, cx, cz)
+	local model = newModel(parent, "CoffeeTable")
+	block(model, "Top", Vector3.new(4, 0.15, 2), Vector3.new(cx, FLOOR_TOP + 1.325, cz), COLORS.Wood, "Wood")
+	for _, sx in { -1, 1 } do
+		block(model, "Leg", Vector3.new(0.2, 1.25, 1.6), Vector3.new(cx + sx * 1.7, FLOOR_TOP + 0.625, cz), COLORS.DarkMetal, "Metal")
+	end
+	block(model, "Magazine", Vector3.new(0.9, 0.04, 1.2), Vector3.new(cx - 0.8, FLOOR_TOP + 1.42, cz), Color3.fromRGB(200, 70, 60), "SmoothPlastic", { CanCollide = false })
+end
+
+-- Chariot de recharge : 2 niveaux de 6 ordinateurs portables debout. Dos côté -Z.
+local function createLaptopCart(parent, index, cx, cz)
+	local model = newModel(parent, "LaptopCart" .. index)
+	block(model, "BackPanel", Vector3.new(5, 3.5, 0.08), Vector3.new(cx, FLOOR_TOP + 0.3 + 1.75, cz - 0.86), COLORS.DarkMetal, "Metal")
+	for _, side in { -1, 1 } do
+		block(model, "SidePanel", Vector3.new(0.15, 3.5, 1.7), Vector3.new(cx + side * 2.425, FLOOR_TOP + 0.3 + 1.75, cz + 0.03), COLORS.DarkMetal, "Metal")
+	end
+	local levels = { 0.5, 2, 3.8 }
+	local boards = {}
+	for _, level in levels do
+		table.insert(boards, block(model, "Shelf", Vector3.new(4.7, 0.15, 1.7), Vector3.new(cx, FLOOR_TOP + level - 0.075, cz + 0.03), COLORS.Metal, "Metal"))
+	end
+	for _, sx in { -1, 1 } do
+		for _, sz in { -1, 1 } do
+			cylinder(model, "Wheel", 0.25, 0.3, Vector3.new(cx + sx * 2.1, FLOOR_TOP + 0.15, cz + sz * 0.6), COLORS.Black, "SmoothPlastic")
+		end
+	end
+	block(model, "PowerLight", Vector3.new(1.2, 0.08, 0.02), Vector3.new(cx, FLOOR_TOP + 3.6, cz + 0.89), Color3.fromRGB(80, 220, 120), "Neon", { CanCollide = false })
+	local spots = makeZone(model, "Laptop", boards[3], 2)
+	for level = 1, 2 do
+		for i = 0, 5 do
+			createSlot(spots, "Laptop", CFrame.new(cx - 2 + i * 0.8, FLOOR_TOP + levels[level] + 0.6, cz + 0.03) * CFrame.Angles(0, 0, math.rad(90)))
+		end
+	end
+end
+
+local function createServerRack(parent, cx, cz)
+	local model = newModel(parent, "ServerRack")
+	block(model, "Cabinet", Vector3.new(2, 7, 3), Vector3.new(cx, FLOOR_TOP + 3.5, cz), COLORS.Black, "Metal")
+	for i = 0, 5 do
+		local color = if i % 2 == 0 then Color3.fromRGB(80, 220, 120) else Color3.fromRGB(80, 160, 240)
+		block(model, "Led", Vector3.new(1.4, 0.06, 0.02), Vector3.new(cx, FLOOR_TOP + 1.2 + i * 0.9, cz + 1.51), color, "Neon", { CanCollide = false })
+	end
+end
+
+-- Grande table de réunion avec 14 places de chaises.
+local function createConferenceTable(parent, index, cx, cz)
+	local model = newModel(parent, "ConferenceTable" .. index)
+	local top = block(model, "TableTop", Vector3.new(16, 0.2, 5), Vector3.new(cx, FLOOR_TOP + 2.5, cz), COLORS.DarkWood, "Wood")
+	for _, sx in { -1, 1 } do
+		block(model, "Pedestal", Vector3.new(1.2, 2.4, 2.4), Vector3.new(cx + sx * 5, FLOOR_TOP + 1.2, cz), COLORS.DarkMetal, "Metal")
+	end
+	local spots = makeZone(model, "Chair", top, 4)
+	for i = 0, 5 do
+		local x = cx - 6.25 + i * 2.5
+		for _, sz in { -1, 1 } do
+			local position = Vector3.new(x, FLOOR_TOP + REST_HEIGHTS.Chair, cz + sz * 3.7)
+			createSlot(spots, "Chair", CFrame.lookAt(position, Vector3.new(x, position.Y, cz)))
+		end
+	end
+	for _, sx in { -1, 1 } do
+		local position = Vector3.new(cx + sx * 9.7, FLOOR_TOP + REST_HEIGHTS.Chair, cz)
+		createSlot(spots, "Chair", CFrame.lookAt(position, Vector3.new(cx, position.Y, cz)))
+	end
+end
+
+-- Buffet bas contre un mur, avec 2 bacs à documents.
+local function createCredenza(parent, index, cx, cz)
+	local model = newModel(parent, "Credenza" .. index)
+	local body = block(model, "Body", Vector3.new(1.8, 2.5, 6), Vector3.new(cx, FLOOR_TOP + 1.25, cz), COLORS.Wood, "Wood")
+	local spots = makeZone(model, "Paper", body, 3)
+	createTray(model, spots, Vector3.new(cx, FLOOR_TOP + 2.5, cz - 1.5))
+	createTray(model, spots, Vector3.new(cx, FLOOR_TOP + 2.5, cz + 1.5))
+end
+
+-- Poste de travail partagé : bureau avec bac à documents, et une place de chaise.
+local function createHotDesk(parent, index, cx, cz)
+	local model = newModel(parent, "HotDesk" .. index)
+	local top = FLOOR_TOP + DESK_HEIGHT
+	local desktop = block(model, "Desktop", Vector3.new(4, 0.15, 1.8), Vector3.new(cx, top - 0.075, cz), COLORS.White, "SmoothPlastic")
+	for _, side in { -1, 1 } do
+		block(model, "Side", Vector3.new(0.15, DESK_HEIGHT - 0.15, 1.6), Vector3.new(cx + side * 1.9, FLOOR_TOP + (DESK_HEIGHT - 0.15) / 2, cz), COLORS.Metal, "SmoothPlastic")
+	end
+	block(model, "MonitorStand", Vector3.new(0.4, 0.5, 0.3), Vector3.new(cx - 0.6, top + 0.25, cz - 0.5), COLORS.Black, "SmoothPlastic")
+	block(model, "Monitor", Vector3.new(1.8, 1.1, 0.1), Vector3.new(cx - 0.6, top + 1.05, cz - 0.5), COLORS.Black, "SmoothPlastic")
+	block(model, "Keyboard", Vector3.new(1.4, 0.06, 0.45), Vector3.new(cx - 0.6, top + 0.03, cz + 0.3), COLORS.Black, "SmoothPlastic")
+	local paperSpots = makeZone(model, "Paper", desktop, 3.5)
+	createTray(model, paperSpots, Vector3.new(cx + 1.2, top, cz))
+	local chairZone = newModel(model, "DeskChair")
+	local mat = block(chairZone, "ChairMat", Vector3.new(2.6, 0.05, 2.6), Vector3.new(cx, FLOOR_TOP + 0.025, cz + 2), Color3.fromRGB(150, 156, 164), "SmoothPlastic", { CanCollide = false })
+	mat.CanCollide = true
+	local chairSpots = makeZone(chairZone, "Chair", mat, 3.5)
+	createSlot(chairSpots, "Chair", CFrame.new(cx, FLOOR_TOP + REST_HEIGHTS.Chair, cz + 2))
+end
+
+-- Tableau décoratif (toile de couleur dans un cadre).
+local function createWallArt(parent, position, facing, size, color)
+	local model = newModel(parent, "WallArt")
+	newPart(model, "Frame", Vector3.new(size.X + 0.3, size.Y + 0.3, 0.1), CFrame.lookAt(position, position + facing), COLORS.DarkWood, "Wood", { CanCollide = false })
+	newPart(model, "Canvas", Vector3.new(size.X, size.Y, 0.04), CFrame.lookAt(position + facing * 0.06, position + facing * 2), color, "SmoothPlastic", { CanCollide = false })
+	newPart(model, "Stripe", Vector3.new(size.X, size.Y * 0.2, 0.02), CFrame.lookAt(position + facing * 0.09 + Vector3.new(0, -size.Y * 0.15, 0), position + facing * 2), COLORS.Trim, "SmoothPlastic", { CanCollide = false })
+end
+
 ---------------------------------------------------------------------------
 -- Aménagement de chaque pièce
 ---------------------------------------------------------------------------
@@ -1107,7 +1290,10 @@ local function furnishReception(parent)
 		end
 	end
 
-	poster(parent, "PLEASE TAKE\nA TICKET", Vector3.new(0, FLOOR_TOP + 7, 20.3), Vector3.new(0, 0, 1), COLORS.SignBlue)
+	poster(parent, "PLEASE TAKE\nA TICKET", Vector3.new(6, FLOOR_TOP + 7, 20.3), Vector3.new(0, 0, 1), COLORS.SignBlue)
+	createElevator(parent, -3.5, 20.25, Vector3.new(-3.5, UPPER_TOP + 3, 30.5), "ELEVATOR  -  UPPER FLOOR", "UpperHall")
+	createWallArt(parent, Vector3.new(-29.7, FLOOR_TOP + 6.5, 50), Vector3.new(1, 0, 0), Vector2.new(4, 3), Color3.fromRGB(70, 110, 150))
+	createWallArt(parent, Vector3.new(20, FLOOR_TOP + 6.5, 59.9), Vector3.new(0, 0, -1), Vector2.new(5, 3), Color3.fromRGB(160, 120, 70))
 	createClock(parent, Vector3.new(12, FLOOR_TOP + 8, HALF_Z - 0.1), Vector3.new(0, 0, -1))
 	createFireExtinguisher(parent, Vector3.new(-29.7, FLOOR_TOP + 1.2, 30), Vector3.new(1, 0, 0))
 	createTrashBin(parent, 8, 57)
@@ -1271,6 +1457,165 @@ local function furnishMailRoom(parent)
 end
 
 ---------------------------------------------------------------------------
+-- Étage (accessible par l'ascenseur) : 6 pièces au-dessus de la partie sud de l'agence
+---------------------------------------------------------------------------
+local function buildUpperFloor(parent)
+	local slabY = FLOOR_TOP - 0.5
+	local function floor(name, minX, maxX, minZ, maxZ, color, material, options)
+		block(parent, name, Vector3.new(maxX - minX, 1, maxZ - minZ), Vector3.new((minX + maxX) / 2, slabY, (minZ + maxZ) / 2), color, material, options)
+	end
+	floor("UpperHallFloor", -20, 20, 20, 60, COLORS.Tiles, "CeramicTiles", { Reflectance = 0.05 })
+	floor("LoungeFloor", -80, -20, 20, 60, COLORS.WarmCarpet, "Carpet")
+	floor("ConferenceFloor", 20, 80, 20, 60, COLORS.Carpet, "Carpet")
+	floor("WorkspaceFloor", -20, 20, -60, 20, COLORS.WoodFloor, "WoodPlanks")
+	floor("ITRoomFloor", 20, 80, -60, 20, COLORS.Concrete, "SmoothPlastic")
+	floor("DirectorFloor", -80, -20, -60, 20, COLORS.DarkWood, "WoodPlanks")
+
+	-- Murs extérieurs de l'étage.
+	local baseY = FLOOR_TOP - 1
+	local height = CEILING_BOTTOM - baseY
+	block(parent, "UpperNorthWall", Vector3.new(HALF_X * 2 + 2, height, 1), Vector3.new(0, baseY + height / 2, -60.5), COLORS.Wall, "Plaster")
+	block(parent, "UpperSouthWall", Vector3.new(HALF_X * 2 + 2, height, 1), Vector3.new(0, baseY + height / 2, 60.5), COLORS.Wall, "Plaster")
+	windowedSideWall(parent, "UpperWestWall", -HALF_X - 0.5, { { -50, -30 }, { -10, 10 }, { 30, 50 } }, 1, -60, 60, baseY)
+	windowedSideWall(parent, "UpperEastWall", HALF_X + 0.5, { { -50, -30 }, { -10, 10 }, { 30, 50 } }, -1, -60, 60, baseY)
+
+	-- Cloisons de l'étage (portes ouvertes : tout l'étage s'ouvre avec l'ascenseur).
+	interiorWallAlongX(parent, 20, -80, 80, { { From = 8, To = 16 } })
+	interiorWallAlongZ(parent, -20, -60, 60, { { From = -24, To = -16 }, { From = 36, To = 44 } })
+	interiorWallAlongZ(parent, 20, -60, 60, { { From = -24, To = -16 }, { From = 36, To = 44 } })
+
+	local signY = FLOOR_TOP + DOOR_HEIGHT + 1.5
+	for _, sign in {
+		{ "EMPLOYER LOUNGE", Vector3.new(-19.7, signY, 40), Vector3.new(1, 0, 0) },
+		{ "CONFERENCE", Vector3.new(19.7, signY, 40), Vector3.new(-1, 0, 0) },
+		{ "OPEN WORKSPACE", Vector3.new(12, signY, 20.3), Vector3.new(0, 0, 1) },
+		{ "DIRECTOR", Vector3.new(-19.7, signY, -20), Vector3.new(1, 0, 0) },
+		{ "IT ROOM", Vector3.new(19.7, signY, -20), Vector3.new(-1, 0, 0) },
+	} do
+		newSign(parent, "RoomSign", sign[1], Vector3.new(7, 1.2, 0.1), sign[2], sign[3])
+	end
+
+	-- Faux plafond et luminaires de l'étage.
+	block(parent, "UpperCeiling", Vector3.new(HALF_X * 2 + 2, 1, 122), Vector3.new(0, CEILING_BOTTOM + 0.5, 0), COLORS.Ceiling, "SmoothPlastic")
+	local gridX = -HALF_X + 4
+	while gridX < HALF_X do
+		block(parent, "CeilingGrid", Vector3.new(0.12, 0.06, 120), Vector3.new(gridX, CEILING_BOTTOM - 0.03, 0), COLORS.CeilingGrid, "Metal", { CanCollide = false, CastShadow = false })
+		gridX += 4
+	end
+	local gridZ = -60 + 4
+	while gridZ < 60 do
+		block(parent, "CeilingGrid", Vector3.new(HALF_X * 2, 0.06, 0.12), Vector3.new(0, CEILING_BOTTOM - 0.03, gridZ), COLORS.CeilingGrid, "Metal", { CanCollide = false, CastShadow = false })
+		gridZ += 4
+	end
+	for _, room in TidyConfig.Rooms do
+		if (room.Floor or 1) == 2 then
+			local lampX = room.MinX + 10
+			while lampX <= room.MaxX - 6 do
+				local lampZ = room.MinZ + 10
+				while lampZ <= room.MaxZ - 6 do
+					local panel = block(parent, "CeilingLight", Vector3.new(3.6, 0.1, 1.8), Vector3.new(lampX, CEILING_BOTTOM - 0.05, lampZ), COLORS.Light, "Neon", { CanCollide = false, CastShadow = false })
+					local light = Instance.new("SurfaceLight")
+					light.Face = Enum.NormalId.Bottom
+					light.Angle = 120
+					light.Range = 18
+					light.Brightness = 1.2
+					light.Color = Color3.fromRGB(250, 248, 242)
+					light.Shadows = false
+					light.Parent = panel
+					lampZ += 16
+				end
+				lampX += 16
+			end
+		end
+	end
+end
+
+local function furnishUpperHall(parent)
+	createElevator(parent, -3.5, 20.25, Vector3.new(-3.5, GROUND_TOP + 3, 30.5), "ELEVATOR  -  GROUND FLOOR", nil)
+	createChairRug(parent, "HallSeating", Vector2.new(0, 46), Vector2.new(14, 8), { -4.5, -1.5, 1.5, 4.5 }, { 44, 48 }, 0, COLORS.Rug, 5)
+	createPlanter(parent, 6, 12, 59.2)
+	newSign(parent, "UpperHallSign", "UPPER FLOOR  -  EMPLOYER SERVICES", Vector3.new(14, 1.2, 0.1), Vector3.new(0, FLOOR_TOP + 9.4, 59.9), Vector3.new(0, 0, -1))
+	createWallArt(parent, Vector3.new(-19.7, FLOOR_TOP + 6.5, 52), Vector3.new(1, 0, 0), Vector2.new(4, 3), Color3.fromRGB(90, 130, 110))
+	createPlant(parent, -17, 57)
+	createPlant(parent, 17, 24)
+	createTrashBin(parent, -12, 58)
+end
+
+local function furnishLounge(parent)
+	local index = 0
+	for _, center in { { -65, 30 }, { -35, 30 }, { -65, 50 }, { -35, 50 } } do
+		local gx, gz = center[1], center[2]
+		index += 1
+		createSofa(parent, index, gx, gz - 3.6, math.pi)
+		index += 1
+		createSofa(parent, index, gx, gz + 3.6, 0)
+		createCoffeeTable(parent, gx, gz)
+	end
+	createPlanter(parent, 7, -50, 59.2)
+	createWallArt(parent, Vector3.new(-50, FLOOR_TOP + 6.5, 20.3), Vector3.new(0, 0, 1), Vector2.new(6, 3.5), Color3.fromRGB(180, 140, 90))
+	createWaterCooler(parent, -78.5, 40)
+	createPlant(parent, -77, 23)
+	createPlant(parent, -23, 57)
+end
+
+local function furnishConference(parent)
+	createConferenceTable(parent, 1, 48, 30)
+	createConferenceTable(parent, 2, 48, 50)
+	createCredenza(parent, 1, 78.5, 30)
+	createCredenza(parent, 2, 78.5, 50)
+	for _, z in { 30, 50 } do
+		newSign(parent, "MeetingScreen", "MEETING ROOM", Vector3.new(7, 3.5, 0.15), Vector3.new(48, FLOOR_TOP + 6, if z == 30 then 20.35 else 59.9), Vector3.new(0, 0, if z == 30 then 1 else -1), COLORS.Black, Color3.fromRGB(120, 170, 220))
+	end
+	createPlant(parent, 23, 57)
+	createPlant(parent, 23, 23)
+end
+
+local function furnishWorkspace(parent)
+	local index = 0
+	for _, z in { -45, -30, -15, 0 } do
+		for _, x in { -10, 8 } do
+			index += 1
+			createHotDesk(parent, index, x, z)
+		end
+	end
+	createPlanter(parent, 8, 0, -59.2)
+	createWallArt(parent, Vector3.new(-19.7, FLOOR_TOP + 6.5, -45), Vector3.new(1, 0, 0), Vector2.new(4, 3), Color3.fromRGB(150, 90, 80))
+	createWallArt(parent, Vector3.new(19.7, FLOOR_TOP + 6.5, -45), Vector3.new(-1, 0, 0), Vector2.new(4, 3), Color3.fromRGB(70, 100, 140))
+	createTrashBin(parent, 17, 10)
+end
+
+local function furnishITRoom(parent)
+	local index = 0
+	for _, z in { -5, -25 } do
+		for _, x in { 32, 44, 56 } do
+			index += 1
+			createLaptopCart(parent, index, x, z)
+		end
+	end
+	for i = 0, 5 do
+		createServerRack(parent, 30 + i * 2.4, -48)
+	end
+	for i, x in { 56, 65, 74 } do
+		createStorageShelf(parent, 20 + i, x, -58.2)
+	end
+	newSign(parent, "ITSign", "IT ROOM  -  RETURN LAPTOPS TO THE CHARGING CARTS", Vector3.new(16, 1.2, 0.1), Vector3.new(50, FLOOR_TOP + 9.4, 19.7), Vector3.new(0, 0, -1))
+	createFireExtinguisher(parent, Vector3.new(20.3, FLOOR_TOP + 1.2, 5), Vector3.new(1, 0, 0))
+end
+
+local function furnishDirector(parent)
+	for i, x in { -70, -62, -54, -46 } do
+		createArchiveShelf(parent, 20 + i, x, -58.6)
+	end
+	createTeacherDesk(parent, -50, -20)
+	createPlanter(parent, 9, -30, -59.2)
+	block(parent, "DirectorRug", Vector3.new(14, 0.05, 10), Vector3.new(-50, FLOOR_TOP + 0.025, -16), Color3.fromRGB(120, 60, 50), "Fabric", { CanCollide = false })
+	createWallArt(parent, Vector3.new(-50, FLOOR_TOP + 6.5, 19.7), Vector3.new(0, 0, -1), Vector2.new(6, 4), Color3.fromRGB(60, 80, 110))
+	createCoatRack(parent, -24, 16)
+	createPlant(parent, -77, 17)
+	createPlant(parent, -23, -57)
+end
+
+---------------------------------------------------------------------------
 -- Objets à ranger
 ---------------------------------------------------------------------------
 
@@ -1351,6 +1696,16 @@ local function buildItemParts(itemType, index, categoryId)
 		local band = newPart(model, "Band", Vector3.new(size.X + 0.02, 0.14, size.Z + 0.02), CFrame.new(0, 0.3, 0), Color3.fromRGB(236, 230, 210), "SmoothPlastic")
 		band.CanCollide = false
 		weldToMain(main, band)
+	elseif itemType == "Laptop" then
+		main = newPart(model, "Main", size, CFrame.new(), COLORS.Laptop, "SmoothPlastic")
+		local logo = newPart(model, "Logo", Vector3.new(0.22, 0.02, 0.22), CFrame.new(0, size.Y / 2 + 0.01, 0), Color3.fromRGB(200, 204, 210), "SmoothPlastic")
+		logo.CanCollide = false
+		weldToMain(main, logo)
+	elseif itemType == "Cushion" then
+		main = newPart(model, "Main", size, CFrame.new(), CUSHION_COLORS[(index - 1) % #CUSHION_COLORS + 1], "Fabric")
+		local seam = newPart(model, "Seam", Vector3.new(size.X + 0.02, 0.06, size.Z + 0.02), CFrame.new(), Color3.fromRGB(240, 236, 226), "Fabric")
+		seam.CanCollide = false
+		weldToMain(main, seam)
 	elseif itemType == "Parcel" then
 		local category = TidyConfig.GetCategory("Parcel", categoryId) or TidyConfig.Categories.Parcel[1]
 		main = newPart(model, "Main", size, CFrame.new(), COLORS.Cardboard, "Cardboard")
@@ -1386,7 +1741,7 @@ end
 
 local function overlapsObstacle(x, z, radius)
 	for _, o in obstacles do
-		if x + radius > o[1] and x - radius < o[2] and z + radius > o[3] and z - radius < o[4] then
+		if o[5] == FLOOR_TOP and x + radius > o[1] and x - radius < o[2] and z + radius > o[3] and z - radius < o[4] then
 			return true
 		end
 	end
@@ -1396,7 +1751,7 @@ end
 local function overlapsItems(placed, x, z, radius)
 	for _, p in placed do
 		local dx, dz = p[1] - x, p[2] - z
-		if dx * dx + dz * dz < (p[3] + radius) ^ 2 then
+		if p[4] == FLOOR_TOP and dx * dx + dz * dz < (p[3] + radius) ^ 2 then
 			return true
 		end
 	end
@@ -1426,6 +1781,16 @@ local function setupLighting()
 	colorCorrection.Saturation = -0.05
 	colorCorrection.Contrast = 0.05
 	colorCorrection.TintColor = Color3.fromRGB(250, 250, 255)
+
+	local atmosphere = Lighting:FindFirstChild("AgencyAtmosphere")
+	if not atmosphere then
+		atmosphere = Instance.new("Atmosphere")
+		atmosphere.Name = "AgencyAtmosphere"
+		atmosphere.Parent = Lighting
+	end
+	atmosphere.Density = 0.25
+	atmosphere.Haze = 1
+	atmosphere.Color = Color3.fromRGB(200, 215, 230)
 
 	local bloom = Lighting:FindFirstChild("AgencyBloom")
 	if not bloom then
@@ -1501,6 +1866,18 @@ function AgencyBuilder.Build()
 	furnishBooths(newFolder(furniture, "Booths"))
 	furnishLibrary(newFolder(furniture, "Library"))
 	furnishMailRoom(newFolder(furniture, "MailRoom"))
+
+	-- Étage
+	setFloor(UPPER_TOP)
+	buildUpperFloor(newFolder(root, "UpperBuilding"))
+	local upperFurniture = newFolder(root, "UpperFurniture")
+	furnishUpperHall(newFolder(upperFurniture, "UpperHall"))
+	furnishLounge(newFolder(upperFurniture, "Lounge"))
+	furnishConference(newFolder(upperFurniture, "Conference"))
+	furnishWorkspace(newFolder(upperFurniture, "Workspace"))
+	furnishITRoom(newFolder(upperFurniture, "ITRoom"))
+	furnishDirector(newFolder(upperFurniture, "Director"))
+	setFloor(GROUND_TOP)
 	collectObstacles = false
 
 	-- Endroit laissé libre : arrivée du joueur.
@@ -1533,6 +1910,7 @@ function AgencyBuilder.ScatterItems(seed)
 	local placed = {}
 	local counters = {}
 	for _, room in TidyConfig.Rooms do
+		setFloor(TidyConfig.FloorHeights[room.Floor or 1])
 		for _, itemType in TidyConfig.TypeOrder do
 			local count = room.Items[itemType] or 0
 			for _ = 1, count do
@@ -1554,7 +1932,7 @@ function AgencyBuilder.ScatterItems(seed)
 					end
 				end
 				if found then
-					table.insert(placed, { x, z, radius })
+					table.insert(placed, { x, z, radius, FLOOR_TOP })
 					local base = CFrame.new(x, FLOOR_TOP, z) * CFrame.Angles(0, rng:NextNumber(0, math.pi * 2), 0)
 					local home
 					if tipped then
@@ -1570,67 +1948,312 @@ function AgencyBuilder.ScatterItems(seed)
 		end
 	end
 
+	setFloor(GROUND_TOP)
 	return table.clone(currentItems)
 end
 
--- Zone d'accueil (hub) : un hall séparé, au sud de l'agence, où l'on choisit
--- de jouer ici, de créer un salon privé ou d'en rejoindre un avec un code.
--- Renvoie le point d'apparition du hall.
+-- Zone d'accueil (lobby) : une grande place en plein air devant une façade de l'agence,
+-- avec fontaine, arbres, lampadaires, et 3 portails sur lesquels on marche :
+-- PLAY (jouer ici), CREATE ROOM (salon privé), JOIN ROOM (rejoindre avec un code).
+-- Renvoie le point d'apparition et la liste des panneaux à mettre à jour.
+local function createTree(parent, x, z, scale)
+	local model = newModel(parent, "Tree")
+	block(model, "Trunk", Vector3.new(1.2, 8 * scale, 1.2) , Vector3.new(x, GROUND_TOP + 4 * scale, z), Color3.fromRGB(96, 70, 48), "Wood")
+	for i, offset in { Vector3.new(0, 9, 0), Vector3.new(1.6, 7.6, 0.8), Vector3.new(-1.4, 7.8, -1) } do
+		local size = (if i == 1 then 7 else 5) * scale
+		local leaves = block(model, "Leaves", Vector3.new(size, size, size), Vector3.new(x, GROUND_TOP, z) + offset * scale, if i == 2 then Color3.fromRGB(80, 140, 70) else Color3.fromRGB(64, 120, 60), "Grass", { CanCollide = false })
+		leaves.Shape = Enum.PartType.Ball
+	end
+end
+
+local function createLampPost(parent, x, z)
+	local model = newModel(parent, "LampPost")
+	block(model, "Pole", Vector3.new(0.4, 9, 0.4), Vector3.new(x, GROUND_TOP + 4.5, z), COLORS.Black, "Metal")
+	block(model, "Base", Vector3.new(1, 0.6, 1), Vector3.new(x, GROUND_TOP + 0.3, z), COLORS.Black, "Metal")
+	local head = block(model, "Lamp", Vector3.new(1.3, 1, 1.3), Vector3.new(x, GROUND_TOP + 9.4, z), COLORS.Bulb, "Neon")
+	local light = Instance.new("PointLight")
+	light.Range = 22
+	light.Brightness = 1.2
+	light.Color = Color3.fromRGB(255, 220, 170)
+	light.Parent = head
+end
+
+local function createFlowerBed(parent, cx, cz, length)
+	local model = newModel(parent, "FlowerBed")
+	block(model, "Curb", Vector3.new(length, 0.8, 3), Vector3.new(cx, GROUND_TOP + 0.4, cz), Color3.fromRGB(170, 166, 158), "Concrete")
+	block(model, "Soil", Vector3.new(length - 0.4, 0.1, 2.6), Vector3.new(cx, GROUND_TOP + 0.85, cz), Color3.fromRGB(90, 64, 44), "Ground")
+	local flowerColors = { Color3.fromRGB(230, 90, 110), Color3.fromRGB(250, 210, 80), Color3.fromRGB(170, 110, 220), Color3.fromRGB(250, 250, 250) }
+	local count = math.floor(length / 0.9)
+	for i = 0, count - 1 do
+		local x = cx - length / 2 + 0.6 + i * 0.9
+		local flower = block(model, "Flower", Vector3.new(0.6, 0.6, 0.6), Vector3.new(x, GROUND_TOP + 1.2, cz + ((i % 2) - 0.5) * 1), flowerColors[i % #flowerColors + 1], "SmoothPlastic", { CanCollide = false })
+		flower.Shape = Enum.PartType.Ball
+	end
+end
+
+local function createFlag(parent, x, z, color)
+	local model = newModel(parent, "Flag")
+	block(model, "Pole", Vector3.new(0.3, 16, 0.3), Vector3.new(x, GROUND_TOP + 8, z), COLORS.White, "Metal")
+	block(model, "Cloth", Vector3.new(4, 2.5, 0.1), Vector3.new(x + 2.15, GROUND_TOP + 14.5, z), color, "Fabric", { CanCollide = false })
+end
+
+-- Portail du lobby : plateforme lumineuse, arche et nom flottant. "action" = Play, Create ou Join.
+local function createPortal(parent, cx, cz, action, title, subtitle, color)
+	local model = newModel(parent, "Portal_" .. action)
+	block(model, "Platform", Vector3.new(11, 0.6, 11), Vector3.new(cx, GROUND_TOP + 0.3, cz), Color3.fromRGB(60, 64, 72), "Slate")
+	local pad = block(model, "Pad", Vector3.new(8, 0.1, 8), Vector3.new(cx, GROUND_TOP + 0.65, cz), color, "Neon", { Transparency = 0.25, CanCollide = false })
+	pad:SetAttribute("Action", action)
+	CollectionService:AddTag(pad, "LobbyPad")
+	for _, side in { -1, 1 } do
+		block(model, "Pillar", Vector3.new(1.2, 11, 1.2), Vector3.new(cx + side * 4.9, GROUND_TOP + 6.1, cz - 4.9), Color3.fromRGB(40, 44, 52), "Metal")
+		block(model, "PillarGlow", Vector3.new(0.3, 10.6, 0.3), Vector3.new(cx + side * 4.9, GROUND_TOP + 6.1, cz - 4.2), color, "Neon", { CanCollide = false })
+	end
+	block(model, "Beam", Vector3.new(11, 1.2, 1.2), Vector3.new(cx, GROUND_TOP + 12.2, cz - 4.9), Color3.fromRGB(40, 44, 52), "Metal")
+	block(model, "PortalGlass", Vector3.new(8.6, 10.4, 0.2), Vector3.new(cx, GROUND_TOP + 6.1, cz - 4.9), color, "Neon", { Transparency = 0.65, CanCollide = false })
+
+	local sparkles = Instance.new("ParticleEmitter")
+	sparkles.Name = "Sparkles"
+	sparkles.Rate = 12
+	sparkles.Lifetime = NumberRange.new(1.5, 2.5)
+	sparkles.Speed = NumberRange.new(2, 4)
+	sparkles.SpreadAngle = Vector2.new(20, 20)
+	sparkles.EmissionDirection = Enum.NormalId.Top
+	sparkles.Color = ColorSequence.new(color)
+	sparkles.Size = NumberSequence.new(0.35)
+	sparkles.LightEmission = 0.8
+	sparkles.Parent = pad
+	local glow = Instance.new("PointLight")
+	glow.Color = color
+	glow.Range = 16
+	glow.Brightness = 1.5
+	glow.Parent = pad
+
+	local billboard = Instance.new("BillboardGui")
+	billboard.Name = "PortalLabel"
+	billboard.Adornee = pad
+	billboard.Size = UDim2.fromOffset(260, 90)
+	billboard.StudsOffsetWorldSpace = Vector3.new(0, 15, 0)
+	billboard.MaxDistance = 150
+	billboard.LightInfluence = 0
+	billboard.Parent = model
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Name = "Title"
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Size = UDim2.fromScale(1, 0.62)
+	titleLabel.Font = Enum.Font.GothamBlack
+	titleLabel.Text = title
+	titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+	titleLabel.TextStrokeColor3 = color
+	titleLabel.TextStrokeTransparency = 0
+	titleLabel.TextScaled = true
+	titleLabel.Parent = billboard
+	local subtitleLabel = Instance.new("TextLabel")
+	subtitleLabel.Name = "Subtitle"
+	subtitleLabel.BackgroundTransparency = 1
+	subtitleLabel.Position = UDim2.fromScale(0, 0.62)
+	subtitleLabel.Size = UDim2.fromScale(1, 0.38)
+	subtitleLabel.Font = Enum.Font.GothamBold
+	subtitleLabel.Text = subtitle
+	subtitleLabel.TextColor3 = Color3.fromRGB(240, 240, 240)
+	subtitleLabel.TextStrokeTransparency = 0.4
+	subtitleLabel.TextScaled = true
+	subtitleLabel.Parent = billboard
+	return pad
+end
+
+-- Grand panneau avec titre et lignes de texte (classement, rangs, règles).
+local function createBoard(parent, name, position, facing, title, lineCount, color)
+	local model = newModel(parent, name)
+	local board = newPart(model, "Board", Vector3.new(14, 12, 0.6), CFrame.lookAt(position, position + facing), color, "SmoothPlastic")
+	for _, side in { -1, 1 } do
+		local post = position + board.CFrame.RightVector * side * 7.4
+		block(model, "Post", Vector3.new(0.6, position.Y + 6 - GROUND_TOP, 0.6), Vector3.new(post.X, (position.Y + 6 + GROUND_TOP) / 2, post.Z), COLORS.DarkMetal, "Metal")
+	end
+	local gui = Instance.new("SurfaceGui")
+	gui.Name = "BoardGui"
+	gui.Face = Enum.NormalId.Front
+	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	gui.PixelsPerStud = 30
+	gui.LightInfluence = 0
+	gui.Parent = board
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Name = "Title"
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Position = UDim2.fromScale(0.04, 0.03)
+	titleLabel.Size = UDim2.fromScale(0.92, 0.14)
+	titleLabel.Font = Enum.Font.GothamBlack
+	titleLabel.Text = title
+	titleLabel.TextColor3 = Color3.fromRGB(255, 220, 120)
+	titleLabel.TextScaled = true
+	titleLabel.Parent = gui
+	for i = 1, lineCount do
+		local line = Instance.new("TextLabel")
+		line.Name = "Line" .. i
+		line.BackgroundTransparency = 1
+		line.Position = UDim2.fromScale(0.06, 0.18 + (i - 1) * (0.78 / lineCount))
+		line.Size = UDim2.fromScale(0.88, 0.78 / lineCount * 0.9)
+		line.Font = Enum.Font.GothamBold
+		line.Text = ""
+		line.TextColor3 = Color3.fromRGB(240, 240, 240)
+		line.TextXAlignment = Enum.TextXAlignment.Left
+		line.TextScaled = true
+		line.Parent = gui
+	end
+	return gui
+end
+
 function AgencyBuilder.BuildHub()
 	local old = Workspace:FindFirstChild("AgencyLobby")
 	if old then
 		old:Destroy()
 	end
+	setFloor(GROUND_TOP)
 	local root = Instance.new("Model")
 	root.Name = "AgencyLobby"
-	local cz = 230
-	local halfX, halfZ = 30, 20
-	local minZ, maxZ = cz - halfZ, cz + halfZ
-	local wallHeight = CEILING_BOTTOM
+	local cz = 200
+	local half = 60
+	local minZ, maxZ = cz - half, cz + half
 
-	block(root, "LobbyFloor", Vector3.new(halfX * 2, 1, halfZ * 2), Vector3.new(0, FLOOR_TOP / 2, cz), COLORS.Tiles, "CeramicTiles", { Reflectance = 0.05 })
-	block(root, "LobbyCeiling", Vector3.new(halfX * 2 + 2, 1, halfZ * 2 + 2), Vector3.new(0, CEILING_BOTTOM + 0.5, cz), COLORS.Ceiling, "SmoothPlastic")
-	block(root, "NorthWall", Vector3.new(halfX * 2 + 2, wallHeight, 1), Vector3.new(0, wallHeight / 2, minZ - 0.5), COLORS.Wall, "Plaster")
-	block(root, "SouthWall", Vector3.new(halfX * 2 + 2, wallHeight, 1), Vector3.new(0, wallHeight / 2, maxZ + 0.5), COLORS.Wall, "Plaster")
-	block(root, "WestWall", Vector3.new(1, wallHeight, halfZ * 2), Vector3.new(-halfX - 0.5, wallHeight / 2, cz), COLORS.Wall, "Plaster")
-	block(root, "EastWall", Vector3.new(1, wallHeight, halfZ * 2), Vector3.new(halfX + 0.5, wallHeight / 2, cz), COLORS.Wall, "Plaster")
-	block(root, "Band", Vector3.new(halfX * 2, 3, 0.1), Vector3.new(0, FLOOR_TOP + 1.5, minZ + 0.05), COLORS.WallBand, "SmoothPlastic", { CanCollide = false })
+	-- Sol de la place, allée centrale, et limites invisibles.
+	block(root, "Plaza", Vector3.new(half * 2, 1, half * 2), Vector3.new(0, GROUND_TOP / 2, cz), Color3.fromRGB(196, 190, 178), "Pavement")
+	block(root, "Walkway", Vector3.new(12, 0.1, 80), Vector3.new(0, GROUND_TOP + 0.05, cz + 15), Color3.fromRGB(160, 120, 96), "Brick", { CanCollide = false })
+	for _, wall in {
+		{ Vector3.new(half * 2, 40, 1), Vector3.new(0, 20, minZ - 0.5) },
+		{ Vector3.new(half * 2, 40, 1), Vector3.new(0, 20, maxZ + 0.5) },
+		{ Vector3.new(1, 40, half * 2), Vector3.new(-half - 0.5, 20, cz) },
+		{ Vector3.new(1, 40, half * 2), Vector3.new(half + 0.5, 20, cz) },
+	} do
+		block(root, "Boundary", wall[1], wall[2], COLORS.White, "SmoothPlastic", { Transparency = 1 })
+	end
+	-- Haies tout autour.
+	for _, hedge in {
+		{ Vector3.new(half * 2, 3, 2), Vector3.new(0, GROUND_TOP + 1.5, maxZ - 1) },
+		{ Vector3.new(2, 3, half * 2 - 20), Vector3.new(-half + 1, GROUND_TOP + 1.5, cz + 10) },
+		{ Vector3.new(2, 3, half * 2 - 20), Vector3.new(half - 1, GROUND_TOP + 1.5, cz + 10) },
+	} do
+		block(root, "Hedge", hedge[1], hedge[2], Color3.fromRGB(60, 110, 56), "Grass")
+	end
 
-	for _, x in { -18, 0, 18 } do
-		for _, z in { cz - 10, cz + 8 } do
-			local panel = block(root, "CeilingLight", Vector3.new(3.6, 0.1, 1.8), Vector3.new(x, CEILING_BOTTOM - 0.05, z), COLORS.Light, "Neon", { CanCollide = false, CastShadow = false })
-			local light = Instance.new("SurfaceLight")
-			light.Face = Enum.NormalId.Bottom
-			light.Angle = 120
-			light.Range = 18
-			light.Brightness = 1.2
-			light.Color = Color3.fromRGB(250, 248, 242)
-			light.Shadows = false
-			light.Parent = panel
+	-- Façade de l'agence au nord de la place.
+	local facadeZ = minZ + 1
+	block(root, "Facade", Vector3.new(100, 30, 2), Vector3.new(0, 15, facadeZ), COLORS.Wall, "Plaster")
+	for row = 0, 1 do
+		for col = 0, 7 do
+			local x = -42 + col * 12
+			if math.abs(x) > 8 or row == 1 then
+				block(root, "FacadeWindow", Vector3.new(8, 6, 0.3), Vector3.new(x, 8 + row * 10, facadeZ + 1.1), COLORS.Glass, "Glass", { Transparency = 0.3, CanCollide = false })
+			end
 		end
 	end
-
-	newSign(root, "LobbySign", string.upper(TidyConfig.AgencyName) .. "\nSTAFF LOBBY", Vector3.new(24, 4, 0.2), Vector3.new(0, FLOOR_TOP + 8, minZ + 0.1), Vector3.new(0, 0, 1))
-	newSign(root, "HowToPlay", "HOW TO PLAY\n\nAim at an item and click to pick it up.\nAim at its place and click to put it away.\nOpen new rooms with your points.\nYour progress is saved.", Vector3.new(12, 7, 0.1), Vector3.new(-halfX + 0.06, FLOOR_TOP + 5.5, cz), Vector3.new(1, 0, 0), COLORS.White, COLORS.SignBlue)
-	newSign(root, "RoomsInfo", "PLAY WITH FRIENDS\n\nCreate a private room,\nthen share its code.\nFriends join with the code\nand tidy up together.", Vector3.new(12, 7, 0.1), Vector3.new(halfX - 0.06, FLOOR_TOP + 5.5, cz), Vector3.new(-1, 0, 0), COLORS.White, COLORS.SignBlue)
-
-	local desk = newModel(root, "LobbyDesk")
-	block(desk, "CounterBody", Vector3.new(14, COUNTER_HEIGHT - 0.25, 2.5), Vector3.new(0, FLOOR_TOP + (COUNTER_HEIGHT - 0.25) / 2, cz - 8), COLORS.DarkWood, "Wood")
-	block(desk, "CounterTop", Vector3.new(14.4, 0.25, 2.9), Vector3.new(0, FLOOR_TOP + COUNTER_HEIGHT - 0.125, cz - 8), COLORS.Tiles, "Marble")
-	newSign(desk, "DeskSign", "ROOMS", Vector3.new(5, 1, 0.05), Vector3.new(0, FLOOR_TOP + 2.2, cz - 8 + 1.275), Vector3.new(0, 0, 1))
-
-	for _, x in { -16, 16 } do
-		createBench(root, x, cz + 2)
+	block(root, "EntranceGlass", Vector3.new(10, 8, 0.3), Vector3.new(0, GROUND_TOP + 4, facadeZ + 1.1), COLORS.Glass, "Glass", { Transparency = 0.4 })
+	block(root, "Canopy", Vector3.new(16, 0.6, 6), Vector3.new(0, GROUND_TOP + 9.5, facadeZ + 3.5), COLORS.SignBlue, "Metal")
+	newSign(root, "FacadeSign", string.upper(TidyConfig.AgencyName), Vector3.new(60, 5, 0.3), Vector3.new(0, 25.5, facadeZ + 1.2), Vector3.new(0, 0, 1), COLORS.SignBlue)
+	for i, color in { Color3.fromRGB(52, 92, 160), Color3.fromRGB(240, 240, 236), Color3.fromRGB(176, 58, 50) } do
+		createFlag(root, -12 + (i - 1) * 12, facadeZ + 10, color)
 	end
-	for _, p in { { -27, minZ + 3 }, { 27, minZ + 3 }, { -27, maxZ - 3 }, { 27, maxZ - 3 } } do
-		createPlant(root, p[1], p[2])
+
+	-- Fontaine au centre.
+	local fountain = newModel(root, "Fountain")
+	cylinder(fountain, "Basin", 1.6, 18, Vector3.new(0, GROUND_TOP + 0.8, cz), Color3.fromRGB(176, 172, 164), "Concrete")
+	local water = cylinder(fountain, "Water", 0.2, 16.4, Vector3.new(0, GROUND_TOP + 1.55, cz), Color3.fromRGB(80, 150, 200), "Glass")
+	water.Transparency = 0.25
+	cylinder(fountain, "Column", 4, 2, Vector3.new(0, GROUND_TOP + 3.6, cz), Color3.fromRGB(190, 186, 178), "Marble")
+	local bowl = cylinder(fountain, "Bowl", 0.6, 6, Vector3.new(0, GROUND_TOP + 5.6, cz), Color3.fromRGB(190, 186, 178), "Marble")
+	local spray = Instance.new("ParticleEmitter")
+	spray.Name = "Spray"
+	spray.Rate = 40
+	spray.Lifetime = NumberRange.new(0.8, 1.2)
+	spray.Speed = NumberRange.new(6, 9)
+	spray.SpreadAngle = Vector2.new(25, 25)
+	spray.Acceleration = Vector3.new(0, -18, 0)
+	spray.EmissionDirection = Enum.NormalId.Top
+	spray.Color = ColorSequence.new(Color3.fromRGB(200, 230, 255))
+	spray.Transparency = NumberSequence.new(0.3)
+	spray.Size = NumberSequence.new(0.3)
+	spray.Parent = bowl
+
+	-- Portails.
+	local portalZ = cz + 32
+	createPortal(root, -24, portalZ, "Create", "CREATE ROOM", "Private game with friends", Color3.fromRGB(70, 140, 230))
+	createPortal(root, 0, portalZ, "Play", "PLAY", "Tidy up the agency", Color3.fromRGB(80, 200, 120))
+	createPortal(root, 24, portalZ, "Join", "JOIN ROOM", "Enter a friend's code", Color3.fromRGB(160, 100, 220))
+
+	-- Panneaux : classement, règles, rangs, bonus quotidien.
+	local leaderboard = createBoard(root, "Leaderboard", Vector3.new(-50, GROUND_TOP + 7, cz - 8), Vector3.new(1, 0, 0), "TOP TIDIERS", 10, Color3.fromRGB(26, 34, 52))
+	local howTo = createBoard(root, "HowToPlay", Vector3.new(-50, GROUND_TOP + 7, cz + 14), Vector3.new(1, 0, 0), "HOW TO PLAY", 6, Color3.fromRGB(30, 52, 60))
+	local ranks = createBoard(root, "RankBoard", Vector3.new(50, GROUND_TOP + 7, cz - 8), Vector3.new(-1, 0, 0), "RANKS", #TidyConfig.Ranks, Color3.fromRGB(46, 36, 60))
+	local howToLines = {
+		"Aim at an item and click to pick it up.",
+		"Aim at its place and click to put it away.",
+		"Books and parcels go to the matching color.",
+		"Spend points to open new rooms and upgrades.",
+		"Take the elevator to the upper floor.",
+		"Your progress is saved. Come back daily!",
+	}
+	for i, text in howToLines do
+		howTo:FindFirstChild("Line" .. i).Text = text
+	end
+	for i, rank in TidyConfig.Ranks do
+		ranks:FindFirstChild("Line" .. i).Text = rank.Name .. "  -  " .. rank.Items .. " items"
+	end
+
+	-- Stand du bonus quotidien : cadeau sur un socle.
+	local gift = newModel(root, "DailyBonusStand")
+	block(gift, "Pedestal", Vector3.new(5, 2, 5), Vector3.new(48, GROUND_TOP + 1, cz + 14), Color3.fromRGB(60, 64, 72), "Slate")
+	local box = block(gift, "GiftBox", Vector3.new(3, 3, 3), Vector3.new(48, GROUND_TOP + 3.5, cz + 14), Color3.fromRGB(196, 60, 60), "SmoothPlastic")
+	block(gift, "RibbonA", Vector3.new(3.1, 3.1, 0.5), Vector3.new(48, GROUND_TOP + 3.5, cz + 14), Color3.fromRGB(250, 210, 80), "SmoothPlastic", { CanCollide = false })
+	block(gift, "RibbonB", Vector3.new(0.5, 3.1, 3.1), Vector3.new(48, GROUND_TOP + 3.5, cz + 14), Color3.fromRGB(250, 210, 80), "SmoothPlastic", { CanCollide = false })
+	local giftGlow = Instance.new("PointLight")
+	giftGlow.Color = Color3.fromRGB(255, 210, 120)
+	giftGlow.Range = 12
+	giftGlow.Parent = box
+	local giftLabel = Instance.new("BillboardGui")
+	giftLabel.Name = "GiftLabel"
+	giftLabel.Adornee = box
+	giftLabel.Size = UDim2.fromOffset(240, 70)
+	giftLabel.StudsOffsetWorldSpace = Vector3.new(0, 4, 0)
+	giftLabel.MaxDistance = 80
+	giftLabel.Parent = gift
+	local giftText = Instance.new("TextLabel")
+	giftText.BackgroundTransparency = 1
+	giftText.Size = UDim2.fromScale(1, 1)
+	giftText.Font = Enum.Font.GothamBlack
+	giftText.Text = "DAILY BONUS\nCome back every day!"
+	giftText.TextColor3 = Color3.fromRGB(255, 230, 140)
+	giftText.TextStrokeTransparency = 0.2
+	giftText.TextScaled = true
+	giftText.Parent = giftLabel
+
+	-- Arbres, lampadaires, bancs, parterres de fleurs.
+	for _, z in { cz - 45, cz - 25, cz + 34, cz + 52 } do
+		createTree(root, -54, z, 1)
+		createTree(root, 54, z, 1)
+	end
+	for _, p in { { -30, cz - 30 }, { 30, cz - 30 }, { -34, cz + 50 }, { 34, cz + 50 } } do
+		createTree(root, p[1], p[2], 0.8)
+	end
+	for _, z in { cz - 30, cz - 12, cz + 12, cz + 48 } do
+		createLampPost(root, -9, z)
+		createLampPost(root, 9, z)
+	end
+	for _, b in { { 0, cz - 13, 0 }, { 0, cz + 13, math.pi }, { -13, cz, math.pi / 2 }, { 13, cz, -math.pi / 2 } } do
+		local bench = newModel(root, "Bench")
+		local base = CFrame.new(b[1], GROUND_TOP, b[2]) * CFrame.Angles(0, b[3], 0)
+		newPart(bench, "Seat", Vector3.new(6, 0.3, 1.4), base * CFrame.new(0, 1.4, 0), COLORS.Wood, "Wood")
+		newPart(bench, "Back", Vector3.new(6, 1.4, 0.25), base * CFrame.new(0, 2.2, 0.6), COLORS.Wood, "Wood")
+		for _, side in { -1, 1 } do
+			newPart(bench, "Leg", Vector3.new(0.3, 1.25, 1.2), base * CFrame.new(side * 2.6, 0.625, 0), COLORS.DarkMetal, "Metal")
+		end
+	end
+	for _, bed in { { -24, cz - 18 }, { 24, cz - 18 }, { -24, cz + 8 }, { 24, cz + 8 } } do
+		createFlowerBed(root, bed[1], bed[2], 12)
 	end
 
 	local spawn = Instance.new("SpawnLocation")
 	spawn.Name = "LobbySpawn"
 	spawn.Anchored = true
 	spawn.Size = Vector3.new(6, 0.2, 6)
-	spawn.CFrame = CFrame.new(0, FLOOR_TOP + 0.1, maxZ - 6)
+	spawn.CFrame = CFrame.new(0, GROUND_TOP + 0.1, maxZ - 8)
 	spawn.Transparency = 1
 	spawn.CanCollide = false
 	spawn.CanTouch = false
@@ -1642,7 +2265,7 @@ function AgencyBuilder.BuildHub()
 	spawn.Parent = root
 
 	root.Parent = Workspace
-	return spawn
+	return spawn, leaderboard
 end
 
 -- Dossier où vivent les objets qui traînent.

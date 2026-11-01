@@ -71,6 +71,22 @@ TidyConfig.ItemTypes = {
 		Points = 8,
 		CarryOffset = CFrame.new(0.8, -0.3, -1.6),
 	},
+	Laptop = {
+		DisplayName = "Laptop",
+		Plural = "Laptops",
+		PlaceName = "Charging Cart",
+		Hint = "Put it in a charging cart in the IT Room (upstairs).",
+		Points = 12,
+		CarryOffset = CFrame.new(0.8, -0.3, -1.7),
+	},
+	Cushion = {
+		DisplayName = "Cushion",
+		Plural = "Cushions",
+		PlaceName = "Sofa",
+		Hint = "Put it back on a sofa in the Employer Lounge (upstairs).",
+		Points = 8,
+		CarryOffset = CFrame.new(0.8, -0.4, -1.8),
+	},
 	Parcel = {
 		DisplayName = "Parcel",
 		Plural = "Parcels",
@@ -82,7 +98,7 @@ TidyConfig.ItemTypes = {
 }
 
 -- Ordre d'affichage des catégories.
-TidyConfig.TypeOrder = { "Folder", "Paper", "Chair", "Box", "Mug", "Plant", "Book", "Parcel" }
+TidyConfig.TypeOrder = { "Folder", "Paper", "Chair", "Box", "Mug", "Plant", "Book", "Parcel", "Laptop", "Cushion" }
 
 -- Sous-catégories : un livre ou un colis doit aller sur le meuble de SA couleur.
 TidyConfig.Categories = {
@@ -100,8 +116,13 @@ TidyConfig.Categories = {
 	},
 }
 
+-- Hauteur du sol de chaque étage (rez-de-chaussée et étage).
+TidyConfig.FloorHeights = { 1, 15 }
+
 -- Les pièces de l'agence (organisation inspirée d'une agence publique pour l'emploi).
+-- Floor = étage (1 = rez-de-chaussée, 2 = étage, accessible par l'ascenseur).
 -- Cost = points pour ouvrir la pièce (0 = ouverte dès le début).
+-- Requires = pièce qu'il faut avoir ouverte avant (toutes les pièces de l'étage dépendent du hall).
 -- Items = objets qui traînent dans la pièce à chaque journée de travail.
 -- La première pièce qui contient le joueur donne le nom affiché « You are in: … ».
 TidyConfig.Rooms = {
@@ -115,6 +136,13 @@ TidyConfig.Rooms = {
 	{ Id = "Booths", Name = "Interview Booths", MinX = -80, MaxX = -20, MinZ = -100, MaxZ = -60, Cost = 1200, Items = { Chair = 16, Paper = 24 } },
 	{ Id = "Library", Name = "Resource Library", MinX = -20, MaxX = 30, MinZ = -100, MaxZ = -60, Cost = 1500, Items = { Book = 192 } },
 	{ Id = "MailRoom", Name = "Mail Room", MinX = 30, MaxX = 80, MinZ = -100, MaxZ = -60, Cost = 1800, Items = { Parcel = 144 } },
+	-- Étage
+	{ Id = "UpperHall", Name = "Upper Hall", Floor = 2, MinX = -20, MaxX = 20, MinZ = 20, MaxZ = 60, Cost = 2200, Items = { Chair = 8, Plant = 6 } },
+	{ Id = "Lounge", Name = "Employer Lounge", Floor = 2, MinX = -80, MaxX = -20, MinZ = 20, MaxZ = 60, Cost = 0, Requires = "UpperHall", Items = { Cushion = 48, Plant = 6 } },
+	{ Id = "Conference", Name = "Conference Rooms", Floor = 2, MinX = 20, MaxX = 80, MinZ = 20, MaxZ = 60, Cost = 0, Requires = "UpperHall", Items = { Chair = 28, Paper = 12 } },
+	{ Id = "Workspace", Name = "Open Workspace", Floor = 2, MinX = -20, MaxX = 20, MinZ = -60, MaxZ = 20, Cost = 0, Requires = "UpperHall", Items = { Chair = 8, Paper = 24, Plant = 6 } },
+	{ Id = "ITRoom", Name = "IT Room", Floor = 2, MinX = 20, MaxX = 80, MinZ = -60, MaxZ = 20, Cost = 0, Requires = "UpperHall", Items = { Laptop = 72, Box = 18 } },
+	{ Id = "Director", Name = "Director's Office", Floor = 2, MinX = -80, MaxX = -20, MinZ = -60, MaxZ = 20, Cost = 0, Requires = "UpperHall", Items = { Folder = 72, Paper = 6, Plant = 6 } },
 }
 
 -- Points bonus quand toute une pièce est rangée.
@@ -200,10 +228,19 @@ function TidyConfig.GetRoom(id)
 	return nil
 end
 
+-- Étage d'une position (1 = rez-de-chaussée, 2 = étage).
+function TidyConfig.GetFloorAt(position)
+	if position.Y >= TidyConfig.FloorHeights[2] - 1 then
+		return 2
+	end
+	return 1
+end
+
 -- Renvoie la pièce qui contient une position (ou nil).
 function TidyConfig.GetRoomAt(position)
+	local floor = TidyConfig.GetFloorAt(position)
 	for _, room in TidyConfig.Rooms do
-		if position.X >= room.MinX and position.X <= room.MaxX and position.Z >= room.MinZ and position.Z <= room.MaxZ then
+		if (room.Floor or 1) == floor and position.X >= room.MinX and position.X <= room.MaxX and position.Z >= room.MinZ and position.Z <= room.MaxZ then
 			return room
 		end
 	end

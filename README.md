@@ -36,17 +36,21 @@ effacez le texte par défaut et collez le contenu du fichier.
 ## Comment on joue
 
 Un jeu de rangement **calme et satisfaisant**, en vue à la première personne : chaque objet a sa place,
-on range à son rythme une grande agence de **10 pièces** (organisation inspirée d'une agence publique
+on range à son rythme une grande agence de **16 pièces sur 2 étages** (organisation inspirée d'une agence publique
 pour l'emploi : accueil, espace libre-service, bureaux des conseillers, box d'entretien, ateliers,
-centre de ressources, courrier...). Environ **800 objets** par journée de travail.
+centre de ressources, courrier, et à l'étage : salon des recruteurs, salles de réunion, espace de
+travail partagé, salle informatique, bureau du directeur). Environ **1 100 objets** par journée de travail.
+L'étage s'ouvre avec l'**ascenseur** de l'accueil (2 200 points), puis on monte en marchant dans la cabine.
 
 ### Zone d'accueil (lobby)
-En arrivant, le joueur est dans le **Staff Lobby** :
-- **Play here** : ranger l'agence de ce serveur, avec les autres joueurs présents ;
-- **Create private room** : crée un salon privé et y envoie le joueur ; le **code du salon** s'affiche en haut à gauche ;
-- **Join** : rejoindre le salon d'un ami avec son code à 6 caractères.
+En arrivant, le joueur est sur une **grande place en plein air** devant la façade de l'agence :
+fontaine, arbres, lampadaires, bancs, parterres de fleurs, drapeaux, **tableau des meilleurs joueurs**,
+panneau des rangs, règles du jeu et stand du **bonus quotidien**. On marche sur un des **3 portails** :
+- **PLAY** (vert) : entrer dans l'agence de ce serveur et ranger avec les autres joueurs ;
+- **CREATE ROOM** (bleu) : créer un salon privé ; le **code du salon** s'affiche en haut à gauche ;
+- **JOIN ROOM** (violet) : taper le code d'un ami pour rejoindre son salon.
 
-Les salons privés ne fonctionnent que dans le **jeu publié** (pas dans Studio). Dans Studio, utilisez **Play here**.
+Les salons privés ne fonctionnent que dans le **jeu publié** (pas dans Studio). Dans Studio, utilisez le portail **PLAY**.
 
 ### Commandes
 - **Viseur** au centre : visez un objet (« Click to pick up ») et cliquez ; visez sa place (« Click to put away ») et cliquez.
@@ -74,8 +78,14 @@ Les salons privés ne fonctionnent que dans le **jeu publié** (pas dans Studio)
 | Box d'entretien (Interview Booths) | 1200   | 16 chaises, 24 piles de papiers                   |
 | Centre de ressources (Resource Library) | 1500 | 192 livres, à trier par couleur              |
 | Courrier (Mail Room)             | 1800     | 144 colis, à trier par couleur                    |
+| **Étage** (ascenseur) - Upper Hall | 2200   | 8 chaises, 6 plantes                              |
+| Salon des recruteurs (Employer Lounge) | inclus | 48 coussins à remettre sur les canapés     |
+| Salles de réunion (Conference Rooms) | inclus | 28 chaises, 12 piles de papiers               |
+| Espace de travail (Open Workspace) | inclus | 8 chaises, 24 piles de papiers, 6 plantes       |
+| Salle informatique (IT Room)     | inclus   | 72 ordinateurs portables, 18 cartons              |
+| Bureau du directeur (Director's Office) | inclus | 72 dossiers, 6 piles de papiers, 6 plantes |
 
-Total : **802 objets** par journée.
+Total : **1 122 objets** par journée.
 
 ## Musique d'ambiance (originale, libre de droits)
 
@@ -88,7 +98,13 @@ Le fichier **`assets/chill_loop.mp3`** est une musique calme **composée pour ce
 
 ## Plan (vue de dessus)
 
-![Plan](docs/plan_vue_dessus.png)
+Rez-de-chaussée :
+
+![Rez-de-chaussée](docs/plan_rez_de_chaussee.png)
+
+Étage :
+
+![Étage](docs/plan_etage.png)
 
 Exemple de partie. En rouge : les objets qui traînent (placés au hasard). En vert : les places de rangement.
 
