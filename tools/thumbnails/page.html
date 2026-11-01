@@ -1,0 +1,74 @@
+<!DOCTYPE html><html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: 'Luckiest Guy'; src: url(node_modules/@fontsource/luckiest-guy/files/luckiest-guy-latin-400-normal.woff2); }
+@font-face { font-family: 'Fredoka'; font-weight: 700; src: url(node_modules/@fontsource/fredoka/files/fredoka-latin-700-normal.woff2); }
+@font-face { font-family: 'Fredoka'; font-weight: 600; src: url(node_modules/@fontsource/fredoka/files/fredoka-latin-600-normal.woff2); }
+html,body{margin:0;}
+.o.full{left:0;top:0;width:100%;height:100%}
+html,body{padding:0;overflow:hidden;background:#000}
+#wrap{position:relative}
+canvas{display:block;filter:saturate(1.3) contrast(1.12)}
+.o{position:absolute;font-family:'Luckiest Guy';color:#fff;}
+.title{font-size:var(--fs);line-height:0.95;color:#ffe25a;-webkit-text-stroke:var(--st) #4a2a0a;paint-order:stroke fill;
+  text-shadow:0 calc(var(--st)*0.8) 0 #4a2a0a, 0 calc(var(--st)*1.4) calc(var(--st)*1.2) rgba(0,0,0,.45);letter-spacing:2px}
+.title .w{color:#fff}
+.badge{font-family:'Luckiest Guy';background:linear-gradient(#ff5a4a,#d8282a);color:#fff;border:6px solid #fff;border-radius:22px;padding:10px 26px 4px;
+  box-shadow:0 8px 0 #7a1414, 0 14px 24px rgba(0,0,0,.4);-webkit-text-stroke:3px #7a1414;paint-order:stroke fill}
+.badge.green{background:linear-gradient(#5ad46a,#2a9a3c);box-shadow:0 8px 0 #145a1e,0 14px 24px rgba(0,0,0,.4);-webkit-text-stroke:3px #145a1e}
+.badge.blue{background:linear-gradient(#5ab4ff,#2a78d8);box-shadow:0 8px 0 #143e7a,0 14px 24px rgba(0,0,0,.4);-webkit-text-stroke:3px #143e7a}
+.badge.gold{background:linear-gradient(#ffd86a,#e0a028);box-shadow:0 8px 0 #7a4a10,0 14px 24px rgba(0,0,0,.4);-webkit-text-stroke:3px #7a4a10}
+.side{position:absolute;left:28px;font-family:'Fredoka';font-weight:600;font-size:30px;color:#60422a;background:#fcf6e6;width:240px;height:60px;border-radius:8px;
+  border:3px solid #eee2c8;display:flex;align-items:center;box-sizing:border-box;padding-left:28px;box-shadow:0 4px 10px rgba(0,0,0,.18)}
+.side:before{content:'';position:absolute;left:10px;top:12px;width:5px;height:32px;background:#dea842;border-radius:3px}
+.side .k{position:absolute;right:10px;top:9px;width:46px;height:38px;border-radius:8px;background:#cebA96;color:#fff;display:flex;align-items:center;justify-content:center}
+.side.shop{border:4px solid transparent;background:linear-gradient(#fcf6e6,#fcf6e6) padding-box, linear-gradient(90deg,#ff5050,#ffdc3c,#50e678,#50a0ff,#e65aff) border-box}
+.hud{font-family:'Fredoka';font-weight:700;color:#fff;-webkit-text-stroke:5px #281e16;paint-order:stroke fill}
+.slot{position:absolute;bottom:14px;width:104px;height:108px;background:#fcf6e6;border:3px solid #eee2c8;border-radius:16px;box-sizing:border-box;font-size:58px;
+  display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(0,0,0,.2);font-family:'Noto Color Emoji'}
+.slot .n{position:absolute;left:8px;top:8px;width:26px;height:26px;border-radius:6px;background:#f09628;color:#fff;font:700 20px Fredoka;display:flex;align-items:center;justify-content:center}
+.slot.sel{border:5px solid #f09628}
+.card{position:absolute;background:#fcf6e6;border:3px solid #dea842;border-radius:14px;text-align:center;font-family:Georgia,serif;color:#4a3624;box-shadow:0 6px 14px rgba(0,0,0,.25)}
+</style>
+<script type="importmap">{"imports":{"three":"./node_modules/three/build/three.module.js","three/addons/":"./node_modules/three/examples/jsm/"}}</script>
+</head><body><div id="wrap"><canvas id="c"></canvas><div id="ov"></div></div>
+<script>
+const p = new URLSearchParams(location.search);
+const W = +p.get('w') || 1920, H = +p.get('h') || 1080;
+document.getElementById('c').style.width = W + 'px'; document.getElementById('c').style.height = H + 'px';
+document.getElementById('wrap').style.width = W + 'px'; document.getElementById('wrap').style.height = H + 'px';
+const ov = document.getElementById('ov');
+function el(html, style) { const d = document.createElement('div'); d.className = Object.keys(style).length ? 'o' : 'o full'; d.innerHTML = html; Object.assign(d.style, style); ov.appendChild(d); return d; }
+function hud(opts) {
+  for (const [i, [t, k, cls]] of [['Upgrades','G',''],['Shop','F','shop'],['Settings','R','']].entries())
+    el(`<div class="side ${cls}" style="top:${opts.sideTop + i*72}px">${t}<div class="k">${k}</div></div>`, {});
+  el(`<div class="hud" style="font-size:66px;font-family:'Luckiest Guy'">${opts.timer}</div>`, { left: '50%', top: '40px', transform: 'translateX(-50%)' });
+  el(`<div class="hud" style="font-size:46px;display:flex;align-items:center;gap:14px">${opts.counter}<span style="font-family:'Noto Color Emoji';-webkit-text-stroke:0">🗄️</span></div>`, { right: '34px', top: '40px' });
+  el(`<div class="hud" style="font-size:46px;display:flex;align-items:center;gap:14px">${opts.bag}<span style="font-family:'Noto Color Emoji';-webkit-text-stroke:0">🧺</span></div>`, { right: '34px', top: '112px' });
+  const icons = ['🖐️','🧲','🔍','🗄️'];
+  icons.forEach((ic, i) => el(`<div class="slot ${i===0?'sel':''}" style="left:${W/2 - 230 + i*116}px">${ic}<div class="n">${i+1}</div></div>`, {}));
+  if (opts.item) el(`<div class="card" style="width:400px;height:112px;left:${W/2-200}px;top:${H-300}px"><div style="font-size:26px;margin-top:10px">${opts.item[0]}</div><div style="width:80%;height:2px;background:#dea842;margin:8px auto"></div><div style="font-size:38px">${opts.item[1]}</div></div>`, {});
+}
+const S = p.get('scene');
+if (S === 'office') {
+  el(`<div class="title" style="--fs:132px;--st:14px;transform:rotate(-3deg)">TIDY UP!<br><span class="w" style="font-size:92px">WORKPLACE CHAOS</span></div>`, { left: '330px', top: '150px' });
+  el(`<div class="badge" style="font-size:48px;transform:rotate(4deg)">3 WORKPLACES!</div>`, { left: '420px', top: '470px' });
+  hud({ sideTop: 560, timer: '02:45', counter: '312/1,122', bag: '4/5' });
+} else if (S === 'warehouse') {
+  el(`<div class="title" style="--fs:120px;--st:13px;transform:rotate(-3deg);text-align:center">SORT THE<br><span class="w">WAREHOUSE!</span></div>`, { left: '60px', top: '170px' });
+  el(`<div class="badge gold" style="font-size:52px;transform:rotate(-5deg)">2,300+ ITEMS!</div>`, { left: '150px', top: '470px' });
+  el(`<div class="badge blue" style="font-size:44px;transform:rotate(4deg)">STACK &amp; CARRY!</div>`, { right: '120px', top: '230px' });
+} else if (S === 'hq') {
+  el(`<div class="title" style="--fs:120px;--st:13px;transform:rotate(-2deg);text-align:center">CLEAN THE<br><span class="w">BOSS'S HQ!</span></div>`, { left: '50%', top: '120px', transform: 'translateX(-50%)' });
+  el(`<div class="badge gold" style="font-size:46px;transform:rotate(-4deg)">LUXURY OFFICES</div>`, { left: '170px', top: '560px' });
+  el(`<div class="badge" style="font-size:46px;transform:rotate(5deg)">NEW LEVEL!</div>`, { right: '170px', top: '560px' });
+} else if (S === 'lobby') {
+  el(`<div class="title" style="--fs:126px;--st:14px;transform:rotate(-2deg);text-align:center">PLAY WITH<br><span class="w">FRIENDS!</span></div>`, { left: '50%', top: '70px', transform: 'translateX(-50%)' });
+  el(`<div class="badge green" style="font-size:52px;transform:rotate(-4deg)">UP TO 4 PLAYERS</div>`, { left: '170px', top: '880px' });
+  el(`<div class="badge blue" style="font-size:52px;transform:rotate(4deg)">DAILY QUESTS</div>`, { right: '190px', top: '880px' });
+  el(`<div class="badge gold" style="font-size:44px;transform:rotate(-2deg)">3 WORKPLACES TO TIDY</div>`, { left: '50%', top: '900px', transform: 'translateX(-50%)' });
+} else if (S === 'icon') {
+  el(`<div class="title" style="--fs:108px;--st:12px;transform:rotate(-4deg);text-align:center">TIDY<br>UP!</div>`, { left: '24px', top: '18px' });
+}
+</script>
+<script type="module" src="scene.js"></script>
+</body></html>
