@@ -5,157 +5,243 @@
 
 local TidyConfig = {}
 
--- Nom de l'agence fictive (affiché en majuscules sur les panneaux).
+-- Nom du jeu (affiché dans le hall d'accueil) et nom de l'agence (premier niveau).
+TidyConfig.GameTitle = "Tidy Up! Workplace Chaos"
 TidyConfig.AgencyName = "Northfield Employment Agency"
 
--- Chaque type d'objet que le joueur peut ranger.
--- DisplayName : nom d'un objet.        Plural : nom au pluriel (compteurs).
--- PlaceName   : nom de l'endroit où il se range.
--- Hint        : consigne affichée quand l'objet est en main.
--- Points      : points gagnés en le rangeant.
--- CarryOffset : position de l'objet tenu (vue à la première personne), par rapport au corps du joueur.
+---------------------------------------------------------------------------
+-- Objets
+---------------------------------------------------------------------------
+-- DisplayName : nom d'un objet.          Plural : nom au pluriel (compteurs).
+-- Section     : rayon / catégorie affiché sur la carte de l'objet en main.
+-- Variants    : noms précis possibles (affichés sur la carte de l'objet).
+-- PlaceName   : nom du meuble où il se range.   Hint : consigne quand il est en main.
+-- Points      : points gagnés en le rangeant.   Icon : petit symbole de l'interface.
+-- Height      : hauteur de l'objet debout (pour empiler les objets portés).
 TidyConfig.ItemTypes = {
 	Folder = {
-		DisplayName = "Case Folder",
-		Plural = "Case Folders",
-		PlaceName = "Archive Shelf",
-		Hint = "Put it on an archive shelf in the Archives.",
-		Points = 10,
-		CarryOffset = CFrame.new(0.8, -0.3, -1.8),
+		DisplayName = "Case Folder", Plural = "Case Folders", Section = "Office Supplies",
+		Variants = { "Case Folder", "Client File", "Archive Folder", "Job Seeker File" },
+		PlaceName = "Archive Shelf", Hint = "Follow the signs to an Archive Shelf.", Points = 10, Icon = "📁", Height = 0.3,
 	},
 	Paper = {
-		DisplayName = "Stack of Papers",
-		Plural = "Paper Stacks",
-		PlaceName = "Document Tray",
-		Hint = "Put it in a document tray (desks, reception, printers, booths).",
-		Points = 10,
-		CarryOffset = CFrame.new(0.8, -0.3, -1.8),
+		DisplayName = "Stack of Papers", Plural = "Paper Stacks", Section = "Office Supplies",
+		Variants = { "Stack of Papers", "Application Forms", "Printed Reports", "Meeting Notes" },
+		PlaceName = "Document Tray", Hint = "Put it in a Document Tray (desks, counters, printers).", Points = 10, Icon = "📄", Height = 0.35,
 	},
 	Chair = {
-		DisplayName = "Chair",
-		Plural = "Chairs",
-		PlaceName = "Chair Spot",
-		Hint = "Put it back in a free chair spot.",
-		Points = 20,
-		CarryOffset = CFrame.new(0, -1, -2.6),
+		DisplayName = "Chair", Plural = "Chairs", Section = "Furniture",
+		Variants = { "Office Chair", "Visitor Chair", "Meeting Chair" },
+		PlaceName = "Chair Spot", Hint = "Put it back in a free Chair Spot (green outline).", Points = 20, Icon = "🪑", Height = 4,
 	},
 	Box = {
-		DisplayName = "Cardboard Box",
-		Plural = "Boxes",
-		PlaceName = "Storage Shelf",
-		Hint = "Put it on a shelf in the Storage room.",
-		Points = 15,
-		CarryOffset = CFrame.new(0, -0.6, -2.4),
+		DisplayName = "Cardboard Box", Plural = "Boxes", Section = "Storage",
+		Variants = { "Cardboard Box", "Supply Box", "Moving Box", "Archive Box" },
+		PlaceName = "Storage Shelf", Hint = "Follow the signs to a Storage Shelf.", Points = 15, Icon = "📦", Height = 1.6,
 	},
 	Mug = {
-		DisplayName = "Mug",
-		Plural = "Mugs",
-		PlaceName = "Cupboard",
-		Hint = "Put it in a cupboard in the Break Room.",
-		Points = 10,
-		CarryOffset = CFrame.new(0.8, -0.2, -1.6),
+		DisplayName = "Mug", Plural = "Mugs", Section = "Kitchen",
+		Variants = { "Coffee Mug", "Tea Cup", "Office Mug", "\"World's Best Boss\" Mug" },
+		PlaceName = "Cupboard", Hint = "Put it in a Cupboard (break room, café).", Points = 10, Icon = "☕", Height = 0.6,
 	},
 	Plant = {
-		DisplayName = "Potted Plant",
-		Plural = "Plants",
-		PlaceName = "Planter",
-		Hint = "Put it on a planter.",
-		Points = 15,
-		CarryOffset = CFrame.new(0.9, -0.4, -2),
+		DisplayName = "Potted Plant", Plural = "Plants", Section = "Decor",
+		Variants = { "Potted Plant", "Fern", "Rubber Plant", "Little Succulent" },
+		PlaceName = "Planter", Hint = "Put it on a Planter.", Points = 15, Icon = "🪴", Height = 1.9,
 	},
 	Book = {
-		DisplayName = "Book",
-		Plural = "Books",
-		PlaceName = "Bookcase",
-		Hint = "Put it on a bookcase with the same colored label in the Resource Library.",
-		Points = 8,
-		CarryOffset = CFrame.new(0.8, -0.3, -1.6),
+		DisplayName = "Book", Plural = "Books", Section = "Library",
+		Variants = { "Book", "Guide", "Handbook", "Workbook" },
+		PlaceName = "Bookcase", Hint = "Put it on the Bookcase with the same colored label.", Points = 8, Icon = "📘", Height = 1.1,
+	},
+	Parcel = {
+		DisplayName = "Parcel", Plural = "Parcels", Section = "Mail & Shipping",
+		Variants = { "Parcel", "Small Package", "Express Parcel", "Padded Parcel" },
+		PlaceName = "Parcel Shelf", Hint = "Put it on the shelf with the same colored label.", Points = 12, Icon = "📮", Height = 0.6,
 	},
 	Laptop = {
-		DisplayName = "Laptop",
-		Plural = "Laptops",
-		PlaceName = "Charging Cart",
-		Hint = "Put it in a charging cart in the IT Room (upstairs).",
-		Points = 12,
-		CarryOffset = CFrame.new(0.8, -0.3, -1.7),
+		DisplayName = "Laptop", Plural = "Laptops", Section = "IT Equipment",
+		Variants = { "Laptop", "Work Laptop", "Ultrabook" },
+		PlaceName = "Charging Cart", Hint = "Put it in a Charging Cart.", Points = 12, Icon = "💻", Height = 0.15,
 	},
 	Cushion = {
-		DisplayName = "Cushion",
-		Plural = "Cushions",
-		PlaceName = "Sofa",
-		Hint = "Put it back on a sofa in the Employer Lounge (upstairs).",
-		Points = 8,
-		CarryOffset = CFrame.new(0.8, -0.4, -1.8),
+		DisplayName = "Cushion", Plural = "Cushions", Section = "Furniture",
+		Variants = { "Cushion", "Sofa Pillow", "Velvet Cushion" },
+		PlaceName = "Sofa", Hint = "Put it back on a Sofa.", Points = 8, Icon = "🛋️", Height = 0.45,
 	},
-	Parcel = {
-		DisplayName = "Parcel",
-		Plural = "Parcels",
-		PlaceName = "Pigeonhole Shelf",
-		Hint = "Put it in the pigeonhole shelf with the same colored label in the Mail Room.",
-		Points = 12,
-		CarryOffset = CFrame.new(0.8, -0.4, -1.8),
+	ShoeBox = {
+		DisplayName = "Shoe Box", Plural = "Shoe Boxes", Section = "Footwear",
+		Variants = { "Running Shoes", "Sneakers", "Leather Boots", "Sandals", "Kids' Shoes", "Hiking Boots" },
+		PlaceName = "Footwear Rack", Hint = "Follow the hanging signs to the FOOTWEAR racks.", Points = 10, Icon = "👟", Height = 0.85,
+	},
+	Toy = {
+		DisplayName = "Toy", Plural = "Toys", Section = "Toys & Games",
+		Variants = { "Teddy Bear", "Toy Car", "Beach Ball", "Toy Robot" },
+		PlaceName = "Toy Rack", Hint = "Follow the hanging signs to the TOYS racks.", Points = 12, Icon = "🧸", Height = 1.4,
+	},
+	Bottle = {
+		DisplayName = "Bottle", Plural = "Bottles", Section = "Household & Cleaning",
+		Variants = { "Laundry Detergent", "Dish Soap", "Glass Cleaner", "Fabric Softener" },
+		PlaceName = "Household Rack", Hint = "Follow the hanging signs to the HOUSEHOLD racks.", Points = 10, Icon = "🧴", Height = 1.4,
+	},
+	Can = {
+		DisplayName = "Canned Food", Plural = "Cans", Section = "Pantry",
+		Variants = { "Tomato Soup", "Baked Beans", "Sweetcorn", "Chickpeas", "Peaches in Syrup" },
+		PlaceName = "Pantry Rack", Hint = "Follow the hanging signs to the PANTRY racks.", Points = 8, Icon = "🥫", Height = 0.65,
+	},
+	Gadget = {
+		DisplayName = "Electronics Box", Plural = "Electronics", Section = "Electronics",
+		Variants = { "Headphones", "Smartphone", "Game Controller", "Smart Speaker" },
+		PlaceName = "Electronics Rack", Hint = "Follow the hanging signs to the ELECTRONICS racks.", Points = 15, Icon = "🎧", Height = 1.2,
+	},
+	Tape = {
+		DisplayName = "Tape Roll", Plural = "Tape Rolls", Section = "Packaging",
+		Variants = { "Packing Tape", "Fragile Tape", "Masking Tape" },
+		PlaceName = "Packaging Rack", Hint = "Follow the hanging signs to the PACKAGING racks.", Points = 8, Icon = "🧻", Height = 0.45,
+	},
+	Trophy = {
+		DisplayName = "Trophy", Plural = "Trophies", Section = "Awards",
+		Variants = { "Gold Trophy", "Silver Trophy", "Bronze Trophy", "Employee of the Month Cup" },
+		PlaceName = "Trophy Cabinet", Hint = "Put it in a Trophy Cabinet in the Hall of Fame.", Points = 15, Icon = "🏆", Height = 1.4,
+	},
+	Frame = {
+		DisplayName = "Photo Frame", Plural = "Photo Frames", Section = "Decor",
+		Variants = { "Team Photo", "Landscape Print", "Award Certificate", "Founder Portrait" },
+		PlaceName = "Frame Shelf", Hint = "Put it on a Frame Shelf.", Points = 12, Icon = "🖼️", Height = 0.95,
+	},
+	Binder = {
+		DisplayName = "Ring Binder", Plural = "Binders", Section = "Records",
+		Variants = { "Ring Binder", "Annual Report", "Contracts Binder", "Policy Binder" },
+		PlaceName = "Records Shelf", Hint = "Put it on the Records Shelf with the same colored label.", Points = 10, Icon = "📗", Height = 1.3,
 	},
 }
 
--- Ordre d'affichage des catégories.
-TidyConfig.TypeOrder = { "Folder", "Paper", "Chair", "Box", "Mug", "Plant", "Book", "Parcel", "Laptop", "Cushion" }
+-- Ordre d'affichage des types d'objets.
+TidyConfig.TypeOrder = {
+	"Folder", "Paper", "Chair", "Box", "Mug", "Plant", "Book", "Parcel", "Laptop", "Cushion",
+	"ShoeBox", "Toy", "Bottle", "Can", "Gadget", "Tape", "Trophy", "Frame", "Binder",
+}
 
--- Sous-catégories : un livre ou un colis doit aller sur le meuble de SA couleur.
+-- Sous-catégories : ces objets doivent aller sur le meuble de LEUR couleur.
 TidyConfig.Categories = {
 	Book = {
-		{ Id = "CV", Name = "CV & Cover Letters", Color = Color3.fromRGB(176, 58, 50) },
-		{ Id = "Interview", Name = "Interview Skills", Color = Color3.fromRGB(52, 92, 160) },
-		{ Id = "Training", Name = "Training & Courses", Color = Color3.fromRGB(58, 128, 80) },
-		{ Id = "Careers", Name = "Careers & Sectors", Color = Color3.fromRGB(196, 156, 52) },
+		{ Id = "CV", Name = "CV & Cover Letters", Color = Color3.fromRGB(214, 64, 56) },
+		{ Id = "Interview", Name = "Interview Skills", Color = Color3.fromRGB(52, 112, 210) },
+		{ Id = "Training", Name = "Training & Courses", Color = Color3.fromRGB(56, 160, 86) },
+		{ Id = "Careers", Name = "Careers & Sectors", Color = Color3.fromRGB(236, 176, 40) },
 	},
 	Parcel = {
-		{ Id = "Red", Name = "Red Label", Color = Color3.fromRGB(196, 60, 52) },
-		{ Id = "Blue", Name = "Blue Label", Color = Color3.fromRGB(52, 100, 180) },
-		{ Id = "Green", Name = "Green Label", Color = Color3.fromRGB(60, 140, 80) },
-		{ Id = "Yellow", Name = "Yellow Label", Color = Color3.fromRGB(214, 176, 48) },
+		{ Id = "Red", Name = "Red Label", Color = Color3.fromRGB(226, 62, 52) },
+		{ Id = "Blue", Name = "Blue Label", Color = Color3.fromRGB(46, 116, 222) },
+		{ Id = "Green", Name = "Green Label", Color = Color3.fromRGB(52, 170, 86) },
+		{ Id = "Yellow", Name = "Yellow Label", Color = Color3.fromRGB(246, 196, 40) },
+	},
+	Binder = {
+		{ Id = "Finance", Name = "Finance", Color = Color3.fromRGB(46, 150, 96) },
+		{ Id = "Legal", Name = "Legal", Color = Color3.fromRGB(44, 70, 150) },
+		{ Id = "HR", Name = "Human Resources", Color = Color3.fromRGB(150, 70, 180) },
+		{ Id = "Marketing", Name = "Marketing", Color = Color3.fromRGB(240, 120, 40) },
 	},
 }
 
--- Hauteur du sol de chaque étage (rez-de-chaussée et étage).
-TidyConfig.FloorHeights = { 1, 15 }
-
--- Les pièces de l'agence (organisation inspirée d'une agence publique pour l'emploi).
--- Floor = étage (1 = rez-de-chaussée, 2 = étage, accessible par l'ascenseur).
--- Cost = points pour ouvrir la pièce (0 = ouverte dès le début).
--- Requires = pièce qu'il faut avoir ouverte avant (toutes les pièces de l'étage dépendent du hall).
--- Items = objets qui traînent dans la pièce à chaque journée de travail.
--- La première pièce qui contient le joueur donne le nom affiché « You are in: … ».
-TidyConfig.Rooms = {
-	{ Id = "Reception", Name = "Reception", MinX = -30, MaxX = 30, MinZ = 20, MaxZ = 60, Cost = 0, Items = { Paper = 12, Chair = 18 } },
-	{ Id = "SelfService", Name = "Self-Service Area", MinX = 0, MaxX = 80, MinZ = -10, MaxZ = 20, Cost = 0, Items = { Chair = 12, Paper = 6, Plant = 12 } },
-	{ Id = "Offices", Name = "Advisor Offices", MinX = -80, MaxX = 0, MinZ = -60, MaxZ = 20, Cost = 200, Items = { Paper = 36, Plant = 12 } },
-	{ Id = "BreakRoom", Name = "Break Room", MinX = -80, MaxX = -30, MinZ = 20, MaxZ = 60, Cost = 400, Items = { Mug = 72, Chair = 16 } },
-	{ Id = "Archives", Name = "Archives", MinX = 0, MaxX = 50, MinZ = -60, MaxZ = -10, Cost = 600, Items = { Folder = 144 } },
-	{ Id = "Storage", Name = "Storage", MinX = 50, MaxX = 80, MinZ = -60, MaxZ = -10, Cost = 800, Items = { Box = 54 } },
-	{ Id = "Training", Name = "Workshop Room", MinX = 30, MaxX = 80, MinZ = 20, MaxZ = 60, Cost = 1000, Items = { Chair = 20, Paper = 6, Plant = 6 } },
-	{ Id = "Booths", Name = "Interview Booths", MinX = -80, MaxX = -20, MinZ = -100, MaxZ = -60, Cost = 1200, Items = { Chair = 16, Paper = 24 } },
-	{ Id = "Library", Name = "Resource Library", MinX = -20, MaxX = 30, MinZ = -100, MaxZ = -60, Cost = 1500, Items = { Book = 192 } },
-	{ Id = "MailRoom", Name = "Mail Room", MinX = 30, MaxX = 80, MinZ = -100, MaxZ = -60, Cost = 1800, Items = { Parcel = 144 } },
-	-- Étage
-	{ Id = "UpperHall", Name = "Upper Hall", Floor = 2, MinX = -20, MaxX = 20, MinZ = 20, MaxZ = 60, Cost = 2200, Items = { Chair = 8, Plant = 6 } },
-	{ Id = "Lounge", Name = "Employer Lounge", Floor = 2, MinX = -80, MaxX = -20, MinZ = 20, MaxZ = 60, Cost = 0, Requires = "UpperHall", Items = { Cushion = 48, Plant = 6 } },
-	{ Id = "Conference", Name = "Conference Rooms", Floor = 2, MinX = 20, MaxX = 80, MinZ = 20, MaxZ = 60, Cost = 0, Requires = "UpperHall", Items = { Chair = 28, Paper = 12 } },
-	{ Id = "Workspace", Name = "Open Workspace", Floor = 2, MinX = -20, MaxX = 20, MinZ = -60, MaxZ = 20, Cost = 0, Requires = "UpperHall", Items = { Chair = 8, Paper = 24, Plant = 6 } },
-	{ Id = "ITRoom", Name = "IT Room", Floor = 2, MinX = 20, MaxX = 80, MinZ = -60, MaxZ = 20, Cost = 0, Requires = "UpperHall", Items = { Laptop = 72, Box = 18 } },
-	{ Id = "Director", Name = "Director's Office", Floor = 2, MinX = -80, MaxX = -20, MinZ = -60, MaxZ = 20, Cost = 0, Requires = "UpperHall", Items = { Folder = 72, Paper = 6, Plant = 6 } },
+---------------------------------------------------------------------------
+-- Niveaux (cartes). WinsRequired = journées terminées nécessaires pour y jouer.
+---------------------------------------------------------------------------
+TidyConfig.Maps = {
+	{
+		Id = "Agency",
+		Name = "Employment Agency",
+		Description = "16 rooms on 2 floors: offices, archives, library, mail room...",
+		WinsRequired = 0,
+		Icon = "🏢",
+		Color = Color3.fromRGB(64, 150, 230),
+		Spawn = Vector3.new(0, 1, 54),
+	},
+	{
+		Id = "Warehouse",
+		Name = "Distribution Warehouse",
+		Description = "A giant warehouse: 9 sections, over 2,300 items to sort onto the racks.",
+		WinsRequired = 1,
+		Icon = "🏭",
+		Color = Color3.fromRGB(240, 150, 40),
+		Spawn = Vector3.new(1000, 1, 112),
+	},
+	{
+		Id = "Headquarters",
+		Name = "Corporate Headquarters",
+		Description = "A luxury head office: boardroom, hall of fame, CEO suite, records vault...",
+		WinsRequired = 3,
+		Icon = "🏙️",
+		Color = Color3.fromRGB(180, 120, 230),
+		Spawn = Vector3.new(-1030, 1, 94),
+	},
 }
 
--- Points bonus quand toute une pièce est rangée.
+-- Hauteur du sol de chaque étage de l'agence (rez-de-chaussée et étage).
+TidyConfig.FloorHeights = { 1, 15 }
+
+---------------------------------------------------------------------------
+-- Pièces de chaque niveau
+---------------------------------------------------------------------------
+-- Map     : niveau de la pièce.          Floor : étage (agence seulement).
+-- Unlock  : la pièce s'ouvre toute seule quand le joueur a GAGNÉ ce total de points
+--           sur ce niveau (les points dépensés comptent aussi : rien n'est perdu).
+-- Requires: pièce qu'il faut avoir ouverte avant.
+-- Items   : objets qui traînent dans la pièce à chaque journée de travail.
+TidyConfig.Rooms = {
+	-- Agence pour l'emploi (rez-de-chaussée)
+	{ Id = "Reception", Map = "Agency", Name = "Reception", MinX = -30, MaxX = 30, MinZ = 20, MaxZ = 60, Unlock = 0, Items = { Paper = 12, Chair = 18 } },
+	{ Id = "SelfService", Map = "Agency", Name = "Self-Service Area", MinX = 0, MaxX = 80, MinZ = -10, MaxZ = 20, Unlock = 0, Items = { Chair = 12, Paper = 6, Plant = 12 } },
+	{ Id = "Offices", Map = "Agency", Name = "Advisor Offices", MinX = -80, MaxX = 0, MinZ = -60, MaxZ = 20, Unlock = 800, Items = { Paper = 36, Plant = 12 } },
+	{ Id = "BreakRoom", Map = "Agency", Name = "Break Room", MinX = -80, MaxX = -30, MinZ = 20, MaxZ = 60, Unlock = 1300, Items = { Mug = 72, Chair = 16 } },
+	{ Id = "Archives", Map = "Agency", Name = "Archives", MinX = 0, MaxX = 50, MinZ = -60, MaxZ = -10, Unlock = 2200, Items = { Folder = 144 } },
+	{ Id = "Storage", Map = "Agency", Name = "Storage", MinX = 50, MaxX = 80, MinZ = -60, MaxZ = -10, Unlock = 3300, Items = { Box = 54 } },
+	{ Id = "Training", Map = "Agency", Name = "Workshop Room", MinX = 30, MaxX = 80, MinZ = 20, MaxZ = 60, Unlock = 4000, Items = { Chair = 20, Paper = 6, Plant = 6 } },
+	{ Id = "Booths", Map = "Agency", Name = "Interview Booths", MinX = -80, MaxX = -20, MinZ = -100, MaxZ = -60, Unlock = 4500, Items = { Chair = 16, Paper = 24 } },
+	{ Id = "Library", Map = "Agency", Name = "Resource Library", MinX = -20, MaxX = 30, MinZ = -100, MaxZ = -60, Unlock = 5000, Items = { Book = 192 } },
+	{ Id = "MailRoom", Map = "Agency", Name = "Mail Room", MinX = 30, MaxX = 80, MinZ = -100, MaxZ = -60, Unlock = 6200, Items = { Parcel = 144 } },
+	-- Agence (étage, par l'ascenseur)
+	{ Id = "UpperHall", Map = "Agency", Name = "Upper Hall", Floor = 2, MinX = -20, MaxX = 20, MinZ = 20, MaxZ = 60, Unlock = 7600, Items = { Chair = 8, Plant = 6 } },
+	{ Id = "Lounge", Map = "Agency", Name = "Employer Lounge", Floor = 2, MinX = -80, MaxX = -20, MinZ = 20, MaxZ = 60, Unlock = 0, Requires = "UpperHall", Items = { Cushion = 48, Plant = 6 } },
+	{ Id = "Conference", Map = "Agency", Name = "Conference Rooms", Floor = 2, MinX = 20, MaxX = 80, MinZ = 20, MaxZ = 60, Unlock = 0, Requires = "UpperHall", Items = { Chair = 28, Paper = 12 } },
+	{ Id = "Workspace", Map = "Agency", Name = "Open Workspace", Floor = 2, MinX = -20, MaxX = 20, MinZ = -60, MaxZ = 20, Unlock = 0, Requires = "UpperHall", Items = { Chair = 8, Paper = 24, Plant = 6 } },
+	{ Id = "ITRoom", Map = "Agency", Name = "IT Room", Floor = 2, MinX = 20, MaxX = 80, MinZ = -60, MaxZ = 20, Unlock = 0, Requires = "UpperHall", Items = { Laptop = 72, Box = 18 } },
+	{ Id = "Director", Map = "Agency", Name = "Director's Office", Floor = 2, MinX = -80, MaxX = -20, MinZ = -60, MaxZ = 20, Unlock = 0, Requires = "UpperHall", Items = { Folder = 72, Paper = 6, Plant = 6 } },
+
+	-- Entrepôt de distribution (un immense hall découpé en sections, sans murs)
+	{ Id = "WReceiving", Map = "Warehouse", Name = "Receiving Dock", MinX = 820, MaxX = 1180, MinZ = 80, MaxZ = 120, Unlock = 0, Items = { Box = 90 } },
+	{ Id = "WFootwear", Map = "Warehouse", Name = "Footwear", MinX = 820, MaxX = 910, MinZ = -20, MaxZ = 80, Unlock = 0, Items = { ShoeBox = 240, Box = 20 } },
+	{ Id = "WToys", Map = "Warehouse", Name = "Toys & Games", MinX = 910, MaxX = 1000, MinZ = -20, MaxZ = 80, Unlock = 3100, Items = { Toy = 260, ShoeBox = 30 } },
+	{ Id = "WHousehold", Map = "Warehouse", Name = "Household & Cleaning", MinX = 1000, MaxX = 1090, MinZ = -20, MaxZ = 80, Unlock = 5800, Items = { Bottle = 260, Toy = 30 } },
+	{ Id = "WPantry", Map = "Warehouse", Name = "Pantry", MinX = 1090, MaxX = 1180, MinZ = -20, MaxZ = 80, Unlock = 8100, Items = { Can = 300, Bottle = 30 } },
+	{ Id = "WElectronics", Map = "Warehouse", Name = "Electronics", MinX = 1090, MaxX = 1180, MinZ = -120, MaxZ = -20, Unlock = 10200, Items = { Gadget = 240, Box = 20 } },
+	{ Id = "WPackaging", Map = "Warehouse", Name = "Packaging", MinX = 1000, MaxX = 1090, MinZ = -120, MaxZ = -20, Unlock = 13200, Items = { Tape = 240, Gadget = 20 } },
+	{ Id = "WOutbound", Map = "Warehouse", Name = "Outbound Shipping", MinX = 910, MaxX = 1000, MinZ = -120, MaxZ = -20, Unlock = 14900, Items = { Parcel = 320, Tape = 20 } },
+	{ Id = "WReturns", Map = "Warehouse", Name = "Returns", MinX = 820, MaxX = 910, MinZ = -120, MaxZ = -20, Unlock = 18000, Items = { ShoeBox = 40, Toy = 40, Bottle = 40, Can = 40, Gadget = 40 } },
+
+	-- Siège social (bureaux de direction luxueux)
+	{ Id = "HLobby", Map = "Headquarters", Name = "Grand Lobby", MinX = -1080, MaxX = -980, MinZ = 20, MaxZ = 100, Unlock = 0, Items = { Chair = 30, Plant = 20, Paper = 30 } },
+	{ Id = "HAtrium", Map = "Headquarters", Name = "Atrium", MinX = -1080, MaxX = -980, MinZ = -40, MaxZ = 20, Unlock = 0, Items = { Plant = 20, Paper = 20, Frame = 10 } },
+	{ Id = "HOpenOffice", Map = "Headquarters", Name = "Open Office", MinX = -1180, MaxX = -1080, MinZ = 20, MaxZ = 100, Unlock = 1500, Items = { Paper = 80, Chair = 40, Mug = 60 } },
+	{ Id = "HCafe", Map = "Headquarters", Name = "Executive Café", MinX = -980, MaxX = -880, MinZ = 20, MaxZ = 100, Unlock = 3200, Items = { Mug = 120, Cushion = 60, Chair = 24 } },
+	{ Id = "HTrophy", Map = "Headquarters", Name = "Hall of Fame", MinX = -1180, MaxX = -1080, MinZ = -40, MaxZ = 20, Unlock = 4900, Items = { Trophy = 180, Frame = 110 } },
+	{ Id = "HBoard", Map = "Headquarters", Name = "Boardroom", MinX = -980, MaxX = -880, MinZ = -40, MaxZ = 20, Unlock = 8000, Items = { Chair = 48, Paper = 60, Laptop = 60 } },
+	{ Id = "HArchive", Map = "Headquarters", Name = "Records Vault", MinX = -1180, MaxX = -1080, MinZ = -100, MaxZ = -40, Unlock = 9800, Items = { Binder = 240, Folder = 120 } },
+	{ Id = "HExecutive", Map = "Headquarters", Name = "CEO Suite", MinX = -1080, MaxX = -980, MinZ = -100, MaxZ = -40, Unlock = 12500, Items = { Folder = 100, Frame = 60, Cushion = 30, Plant = 12 } },
+	{ Id = "HServer", Map = "Headquarters", Name = "Server Hub", MinX = -980, MaxX = -880, MinZ = -100, MaxZ = -40, Unlock = 14200, Items = { Laptop = 140, Box = 40 } },
+}
+
+-- Points bonus quand toute une pièce est rangée, et quand tout le niveau est rangé.
 TidyConfig.RoomBonus = 100
+TidyConfig.DayBonus = 1000
 
 -- Distance maximale (en studs) pour ramasser ou ranger d'un clic.
 TidyConfig.ReachDistance = 14
-
 -- Marge supplémentaire utilisée par le serveur quand il revérifie la distance.
 TidyConfig.ServerDistanceMargin = 4
 
 -- Sac et vitesse de départ.
-TidyConfig.BaseCapacity = 3
+TidyConfig.BaseCapacity = 5
 TidyConfig.BaseWalkSpeed = 16
 
 -- Aimant : portée au niveau 1, puis gain de portée par niveau.
@@ -164,27 +250,93 @@ TidyConfig.MagnetRadiusPerLevel = 4
 
 -- Améliorations achetées avec les points. Prix = BaseCost x (niveau visé).
 TidyConfig.Upgrades = {
-	{ Id = "Capacity", Name = "Bigger Bag", Description = "Carry one more item", MaxLevel = 10, BaseCost = 30 },
-	{ Id = "Speed", Name = "Comfortable Shoes", Description = "Walk a little faster", MaxLevel = 5, BaseCost = 40 },
-	{ Id = "Magnet", Name = "Magnet", Description = "Unlocks the magnet, then increases its range", MaxLevel = 5, BaseCost = 80 },
-	{ Id = "Magnifier", Name = "Magnifier", Description = "Unlocks the magnifier that shows where to go", MaxLevel = 1, BaseCost = 60 },
+	{ Id = "Capacity", Name = "Bigger Basket", Icon = "🧺", Description = "Carry one more item", MaxLevel = 12, BaseCost = 60 },
+	{ Id = "Speed", Name = "Comfy Sneakers", Icon = "👟", Description = "Walk a little faster", MaxLevel = 6, BaseCost = 90 },
+	{ Id = "Magnet", Name = "Magnet", Icon = "🧲", Description = "Unlocks the magnet (tool 2), then increases its range", MaxLevel = 6, BaseCost = 150 },
+	{ Id = "Magnifier", Name = "Magnifier", Icon = "🔍", Description = "Unlocks the magnifier (tool 3): a light beam shows where to go", MaxLevel = 1, BaseCost = 120 },
+	{ Id = "QuickStock", Name = "Quick Stock", Icon = "🗄️", Description = "Unlocks Quick Stock (tool 4): put away ALL matching items in one click", MaxLevel = 1, BaseCost = 600 },
 }
 
--- Rangs du joueur, selon le nombre total d'objets rangés (sauvegardé d'une session à l'autre).
+---------------------------------------------------------------------------
+-- Boutique Robux
+---------------------------------------------------------------------------
+-- Créez les pass et les produits sur le Creator Hub, puis collez leur numéro ici
+-- (GamePassId / ProductId). Tant que le numéro vaut 0, l'article est "bientôt disponible"
+-- dans le jeu publié ; dans Studio, il est offert pour la session afin de le tester.
+-- Price = prix conseillé en Robux (affiché dans la boutique ; le vrai prix est celui du Creator Hub).
+TidyConfig.GamePasses = {
+	{ Id = "Carry5", Name = "+5 Carry", Icon = "🧺", Description = "Carry 5 more items, forever.", Price = 49, GamePassId = 0 },
+	{ Id = "Carry15", Name = "+15 Carry", Icon = "🛒", Description = "Carry 15 more items, forever. Stacks with +5!", Price = 129, GamePassId = 0, Best = true },
+	{ Id = "MaxSpeed", Name = "Max Speed", Icon = "⚡", Description = "Walk at top speed right away, plus an extra boost.", Price = 79, GamePassId = 0 },
+	{ Id = "InfiniteMagnet", Name = "Infinite Magnet", Icon = "🧲", Description = "Magnet unlocked with a huge 60-stud range.", Price = 99, GamePassId = 0 },
+	{ Id = "DoublePoints", Name = "x2 Points", Icon = "💰", Description = "Earn double points for everything, forever.", Price = 149, GamePassId = 0, Best = true },
+	{ Id = "VIP", Name = "VIP", Icon = "👑", Description = "Gold VIP tag, +25% points and x2 daily bonus.", Price = 199, GamePassId = 0 },
+}
+
+TidyConfig.Products = {
+	{ Id = "Deal", Name = "Starter Deal", Icon = "🎁", Description = "3,000 points + permanent +3 carry. One time only!", Price = 19, ProductId = 0, Points = 3000, OneTime = true },
+	{ Id = "Points1", Name = "1,000 Points", Icon = "🪙", Description = "A small pile of points.", Price = 25, ProductId = 0, Points = 1000 },
+	{ Id = "Points2", Name = "6,000 Points", Icon = "💵", Description = "A bag of points. Best for upgrades!", Price = 99, ProductId = 0, Points = 6000 },
+	{ Id = "Points3", Name = "30,000 Points", Icon = "💎", Description = "A vault of points. Best value!", Price = 399, ProductId = 0, Points = 30000 },
+	{ Id = "Helper", Name = "Tidy Helper", Icon = "🤖", Description = "Instantly puts away 50 items in open rooms (you get the points).", Price = 49, ProductId = 0, HelperItems = 50 },
+}
+
+-- Offre limitée (badge "DEAL" en haut à droite) : durée de l'offre à chaque session, en secondes.
+TidyConfig.DealDuration = 5 * 60
+TidyConfig.DealCarryBonus = 3
+
+-- Effets des pass.
+TidyConfig.PassEffects = {
+	Carry5 = 5,
+	Carry15 = 15,
+	MaxSpeedBonus = 4,
+	InfiniteMagnetRadius = 60,
+	DoublePoints = 2,
+	VIPPoints = 1.25,
+	VIPDaily = 2,
+}
+
+---------------------------------------------------------------------------
+-- Rangs, bonus quotidien, quêtes du jour
+---------------------------------------------------------------------------
+-- Rangs du joueur, selon le nombre total d'objets rangés (sauvegardé).
 TidyConfig.Ranks = {
 	{ Name = "Intern", Items = 0 },
 	{ Name = "Office Assistant", Items = 100 },
 	{ Name = "Filing Clerk", Items = 300 },
-	{ Name = "Records Officer", Items = 700 },
-	{ Name = "Job Advisor", Items = 1500 },
-	{ Name = "Senior Advisor", Items = 3000 },
+	{ Name = "Stock Keeper", Items = 700 },
+	{ Name = "Records Officer", Items = 1500 },
+	{ Name = "Team Leader", Items = 3000 },
 	{ Name = "Office Manager", Items = 6000 },
-	{ Name = "Agency Director", Items = 10000 },
+	{ Name = "Operations Director", Items = 10000 },
+	{ Name = "CEO", Items = 20000 },
 }
 
 -- Bonus quotidien : points par jour de suite (plafonné à 7 jours).
-TidyConfig.DailyBonusPerDay = 50
+TidyConfig.DailyBonusPerDay = 100
 TidyConfig.DailyBonusMaxDays = 7
+
+-- Quêtes du jour : 3 quêtes tirées chaque jour parmi ces modèles.
+-- Kind : Place (ranger N objets), PlaceType (ranger N objets d'un type), Room (finir N pièces), Earn (gagner N points).
+TidyConfig.QuestTemplates = {
+	{ Kind = "Place", Target = 100, Reward = 300, Text = "Put away %d items" },
+	{ Kind = "Place", Target = 300, Reward = 900, Text = "Put away %d items" },
+	{ Kind = "PlaceType", ItemType = "Chair", Target = 30, Reward = 300, Text = "Put away %d chairs" },
+	{ Kind = "PlaceType", ItemType = "Paper", Target = 40, Reward = 300, Text = "Put away %d paper stacks" },
+	{ Kind = "PlaceType", ItemType = "Box", Target = 30, Reward = 350, Text = "Put away %d boxes" },
+	{ Kind = "PlaceType", ItemType = "Parcel", Target = 50, Reward = 450, Text = "Put away %d parcels" },
+	{ Kind = "Room", Target = 2, Reward = 500, Text = "Fully tidy %d rooms" },
+	{ Kind = "Room", Target = 4, Reward = 1000, Text = "Fully tidy %d rooms" },
+	{ Kind = "Earn", Target = 2000, Reward = 500, Text = "Earn %d points" },
+	{ Kind = "Earn", Target = 6000, Reward = 1200, Text = "Earn %d points" },
+}
+TidyConfig.QuestsPerDay = 3
+
+---------------------------------------------------------------------------
+-- Hall d'accueil : files d'attente pour partir à plusieurs
+---------------------------------------------------------------------------
+TidyConfig.MaxPartySize = 4
+TidyConfig.QueueCountdown = 5
 
 -- Musique d'ambiance. Mettez ici l'identifiant de la musique après l'avoir importée sur Roblox,
 -- au format "rbxassetid://123456789". Laissez vide pour jouer sans musique.
@@ -194,7 +346,7 @@ TidyConfig.MusicVolume = 0.3
 -- Son joué quand un objet est rangé (son intégré à Roblox).
 TidyConfig.PlaceSoundId = "rbxasset://sounds/electronicpingshort.wav"
 
--- Salons privés (zone d'accueil) : durée de vie d'un code de salon, en secondes.
+-- Codes pour rejoindre la partie d'un ami : durée de vie d'un code, en secondes.
 TidyConfig.RoomCodeLifetime = 6 * 3600
 
 -- Noms partagés entre les scripts. Ne les changez pas, sauf partout à la fois.
@@ -203,32 +355,56 @@ TidyConfig.SlotTag = "TidySlot"
 TidyConfig.ZoneTag = "TidyZone"
 TidyConfig.DoorTag = "TidyDoor"
 
+---------------------------------------------------------------------------
+-- Fonctions utiles
+---------------------------------------------------------------------------
+
 -- Prix d'une amélioration pour passer au niveau suivant.
 function TidyConfig.GetUpgradeCost(upgrade, currentLevel)
 	return upgrade.BaseCost * (currentLevel + 1)
 end
 
--- Cherche une amélioration par son identifiant.
+local function findById(list, id)
+	for _, entry in list do
+		if entry.Id == id then
+			return entry
+		end
+	end
+	return nil
+end
+
 function TidyConfig.GetUpgrade(id)
-	for _, upgrade in TidyConfig.Upgrades do
-		if upgrade.Id == id then
-			return upgrade
-		end
-	end
-	return nil
+	return findById(TidyConfig.Upgrades, id)
 end
 
--- Cherche une pièce par son identifiant.
 function TidyConfig.GetRoom(id)
-	for _, room in TidyConfig.Rooms do
-		if room.Id == id then
-			return room
-		end
-	end
-	return nil
+	return findById(TidyConfig.Rooms, id)
 end
 
--- Étage d'une position (1 = rez-de-chaussée, 2 = étage).
+function TidyConfig.GetMap(id)
+	return findById(TidyConfig.Maps, id)
+end
+
+function TidyConfig.GetPass(id)
+	return findById(TidyConfig.GamePasses, id)
+end
+
+function TidyConfig.GetProduct(id)
+	return findById(TidyConfig.Products, id)
+end
+
+-- Pièces d'un niveau, dans l'ordre de la liste.
+function TidyConfig.GetMapRooms(mapId)
+	local rooms = {}
+	for _, room in TidyConfig.Rooms do
+		if room.Map == mapId then
+			table.insert(rooms, room)
+		end
+	end
+	return rooms
+end
+
+-- Étage d'une position dans l'agence (1 = rez-de-chaussée, 2 = étage).
 function TidyConfig.GetFloorAt(position)
 	if position.Y >= TidyConfig.FloorHeights[2] - 1 then
 		return 2
@@ -236,18 +412,21 @@ function TidyConfig.GetFloorAt(position)
 	return 1
 end
 
--- Renvoie la pièce qui contient une position (ou nil).
+-- Renvoie la pièce qui contient une position (ou nil). Les niveaux sont à des endroits
+-- différents du monde, donc une position ne peut être que dans un seul niveau.
 function TidyConfig.GetRoomAt(position)
 	local floor = TidyConfig.GetFloorAt(position)
 	for _, room in TidyConfig.Rooms do
-		if (room.Floor or 1) == floor and position.X >= room.MinX and position.X <= room.MaxX and position.Z >= room.MinZ and position.Z <= room.MaxZ then
-			return room
+		if position.X >= room.MinX and position.X <= room.MaxX and position.Z >= room.MinZ and position.Z <= room.MaxZ then
+			if room.Map ~= "Agency" or (room.Floor or 1) == floor then
+				return room
+			end
 		end
 	end
 	return nil
 end
 
--- Cherche une sous-catégorie (livres, colis) par son identifiant.
+-- Cherche une sous-catégorie (livres, colis, classeurs) par son identifiant.
 function TidyConfig.GetCategory(itemType, categoryId)
 	for _, category in TidyConfig.Categories[itemType] or {} do
 		if category.Id == categoryId then
@@ -266,6 +445,51 @@ function TidyConfig.GetRank(lifetimeItems)
 		end
 	end
 	return current
+end
+
+-- Nom précis d'un objet selon son numéro (ex. "Tomato Soup").
+function TidyConfig.GetVariantName(itemType, index)
+	local info = TidyConfig.ItemTypes[itemType]
+	if not info then
+		return itemType
+	end
+	local variants = info.Variants
+	if not variants or #variants == 0 then
+		return info.DisplayName
+	end
+	return variants[(index - 1) % #variants + 1]
+end
+
+-- Les 3 quêtes du jour (les mêmes pour un joueur toute la journée).
+function TidyConfig.GetDailyQuests(userId, day)
+	local rng = Random.new(day * 7919 + (userId % 100000))
+	local pool = {}
+	for index in TidyConfig.QuestTemplates do
+		table.insert(pool, index)
+	end
+	local chosen = {}
+	local usedKinds = {}
+	while #chosen < TidyConfig.QuestsPerDay and #pool > 0 do
+		local pick = rng:NextInteger(1, #pool)
+		local index = table.remove(pool, pick)
+		local template = TidyConfig.QuestTemplates[index]
+		local kindKey = template.Kind .. (template.ItemType or "")
+		if not usedKinds[kindKey] then
+			usedKinds[kindKey] = true
+			table.insert(chosen, index)
+		end
+	end
+	table.sort(chosen)
+	return chosen
+end
+
+function TidyConfig.FormatNumber(n)
+	local s = tostring(math.floor(n))
+	local formatted = s:reverse():gsub("(%d%d%d)", "%1,"):reverse()
+	if formatted:sub(1, 1) == "," then
+		formatted = formatted:sub(2)
+	end
+	return formatted
 end
 
 return TidyConfig
