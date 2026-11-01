@@ -349,12 +349,15 @@ local controlsLabel = makeLabel(screenGui, {
 	Name = "Controls",
 	AnchorPoint = Vector2.new(1, 1),
 	Position = UDim2.new(1, -12, 1, -12),
-	Size = UDim2.new(0, 260, 0, 110),
+	Size = UDim2.new(0, 260, 0, 130),
 	Text = "Click: pick up / put away\n"
+		.. "Mouse wheel or "
 		.. keyName(Enum.KeyCode.E)
-		.. ": next item\n"
+		.. ": switch item\n"
 		.. keyName(Enum.KeyCode.Q)
-		.. ": drop item\n1, 2, 3: tools\n"
+		.. ": drop item\n"
+		.. keyName(Enum.KeyCode.Y)
+		.. ": free mouse\n1, 2, 3: tools\n"
 		.. keyName(Enum.KeyCode.G)
 		.. ": upgrades",
 	Font = Enum.Font.GothamBold,
@@ -378,6 +381,33 @@ local toastLabel = makeLabel(screenGui, {
 	TextStrokeTransparency = 0.2,
 	TextTransparency = 1,
 	MaxTextSize = 26,
+})
+
+-- Viseur au centre de l'écran et consigne de visée juste en dessous.
+local isTouchOnly = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+local crosshair = make("Frame", {
+	Name = "Crosshair",
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	Position = UDim2.fromScale(0.5, 0.5),
+	Size = UDim2.fromOffset(6, 6),
+	BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+	BackgroundTransparency = 0.1,
+	BorderSizePixel = 0,
+	Visible = not isTouchOnly,
+	Parent = screenGui,
+})
+addCorner(crosshair, 3)
+make("UIStroke", { Color = Color3.fromRGB(0, 0, 0), Transparency = 0.5, Thickness = 1, Parent = crosshair })
+local aimLabel = makeLabel(screenGui, {
+	Name = "AimPrompt",
+	AnchorPoint = Vector2.new(0.5, 0),
+	Position = UDim2.new(0.5, 0, 0.5, 14),
+	Size = UDim2.new(0, 420, 0, 24),
+	Font = Enum.Font.GothamBold,
+	Text = "",
+	TextColor3 = OVERLAY_COLOR,
+	TextStrokeTransparency = 0.3,
+	MaxTextSize = 18,
 })
 
 -- Fenêtre des améliorations.
@@ -940,6 +970,65 @@ end
 -- Clic / appui dans le décor
 ---------------------------------------------------------------------------
 
+-- Vue à la première personne : on vise avec le viseur au centre de l'écran.
+-- La touche Y libère la souris (elle est aussi libérée quand une fenêtre est ouverte).
+local freeMouse = false
+local FREE_MOUSE_PRIORITY = 201 -- juste après la caméra (Enum.RenderPriority.Camera = 200)
+
+local function mouseShouldBeFree()
+	return freeMouse or introPanel.Visible or upgradesPanel.Visible or completePanel.Visible
+end
+
+local function enableFirstPerson()
+	player.CameraMaxZoomDistance = 0.5
+	player.CameraMinZoomDistance = 0.5
+end
+
+RunService:BindToRenderStep("TidyFreeMouse", FREE_MOUSE_PRIORITY, function()
+	if mouseShouldBeFree() then
+		UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+		UserInputService.MouseIconEnabled = true
+		crosshair.Visible = false
+	else
+		crosshair.Visible = not isTouchOnly
+	end
+end)
+
+-- Rayon de visée : depuis le viseur quand la souris est bloquée, sinon depuis la souris.
+local function aimRay()
+	local camera = Workspace.CurrentCamera
+	if not camera then
+		return nil
+	end
+	if mouseShouldBeFree() then
+		local mouse = UserInputService:GetMouseLocation()
+		return camera:ViewportPointToRay(mouse.X, mouse.Y)
+	end
+	local size = camera.ViewportSize
+	return camera:ViewportPointToRay(size.X / 2, size.Y / 2)
+end
+
+-- Texte affiché sous le viseur selon ce qui est visé.
+local function aimText(kind, target)
+	local verb = if isTouchOnly then "Tap" else "Click"
+	if kind == "item" then
+		local info = TidyConfig.ItemTypes[target:GetAttribute("ItemType")]
+		return verb .. " to pick up: " .. (info and info.DisplayName or "item")
+	elseif kind == "door" then
+		local room = TidyConfig.GetRoom(target:GetAttribute("Room"))
+		return verb .. " to open the " .. (room and room.Name or "room") .. " (" .. (room and room.Cost or 0) .. " points)"
+	elseif kind == "zone" then
+		local zoneType = target:GetAttribute("ItemType")
+		local info = TidyConfig.ItemTypes[zoneType]
+		local heldList = player:GetAttribute("Held") or ""
+		if string.find("," .. heldList .. ",", "," .. zoneType .. ",", 1, true) then
+			return verb .. " to put away: " .. (info and info.DisplayName or "item")
+		end
+		return (info and info.PlaceName or "Shelf") .. " (for " .. string.lower(info and info.Plural or "items") .. ")"
+	end
+	return ""
+end
+
 -- Trouve ce qui a été visé : un objet qui traîne ("item"), une zone de rangement ("zone")
 -- ou une porte verrouillée ("door").
 local function resolveTarget(instance)
@@ -1002,10 +1091,9 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		return
 	end
 	if input.UserInputType == Enum.UserInputType.MouseButton1 then
-		local camera = Workspace.CurrentCamera
-		if camera then
-			local mouse = UserInputService:GetMouseLocation()
-			handleClick(camera:ViewportPointToRay(mouse.X, mouse.Y))
+		local ray = aimRay()
+		if ray then
+			handleClick(ray)
 		end
 	elseif input.KeyCode == Enum.KeyCode.Q then
 		actionEvent:FireServer("drop")
@@ -1013,6 +1101,8 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		actionEvent:FireServer("cycle", 1)
 	elseif input.KeyCode == Enum.KeyCode.G then
 		upgradesPanel.Visible = not upgradesPanel.Visible
+	elseif input.KeyCode == Enum.KeyCode.Y then
+		freeMouse = not freeMouse
 	else
 		for _, tool in TOOLS do
 			if input.KeyCode == tool.Key then
@@ -1020,6 +1110,14 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 			end
 		end
 	end
+end)
+
+-- Molette de la souris : objet suivant / précédent.
+UserInputService.InputChanged:Connect(function(input, gameProcessed)
+	if gameProcessed or input.UserInputType ~= Enum.UserInputType.MouseWheel then
+		return
+	end
+	actionEvent:FireServer("cycle", if input.Position.Z > 0 then -1 else 1)
 end)
 
 UserInputService.TouchTap:Connect(function(touchPositions, gameProcessed)
@@ -1051,8 +1149,8 @@ RunService.RenderStepped:Connect(function()
 	if not camera then
 		return
 	end
-	local mouse = UserInputService:GetMouseLocation()
-	local result = raycastRay(camera:ViewportPointToRay(mouse.X, mouse.Y))
+	local ray = aimRay()
+	local result = ray and raycastRay(ray)
 	local kind, target = nil, nil
 	if result then
 		kind, target = resolveTarget(result.Instance)
@@ -1061,8 +1159,10 @@ RunService.RenderStepped:Connect(function()
 	if kind and root and (result.Position - root.Position).Magnitude <= TidyConfig.ReachDistance + 2 then
 		hoverHighlight.Adornee = target
 		hoverHighlight.Enabled = true
+		aimLabel.Text = aimText(kind, target)
 	else
 		hoverHighlight.Enabled = false
+		aimLabel.Text = ""
 	end
 end)
 
@@ -1072,6 +1172,7 @@ end)
 startButton.Activated:Connect(function()
 	introPanel.Visible = false
 	startTimer()
+	enableFirstPerson()
 end)
 upgradesButton.Activated:Connect(function()
 	upgradesPanel.Visible = not upgradesPanel.Visible

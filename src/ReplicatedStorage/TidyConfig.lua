@@ -13,7 +13,7 @@ TidyConfig.AgencyName = "Northfield Employment Agency"
 -- PlaceName   : nom de l'endroit où il se range.
 -- Hint        : consigne affichée quand l'objet est en main.
 -- Points      : points gagnés en le rangeant.
--- CarryOffset : position de l'objet tenu, par rapport au corps du joueur.
+-- CarryOffset : position de l'objet tenu (vue à la première personne), par rapport au corps du joueur.
 TidyConfig.ItemTypes = {
 	Folder = {
 		DisplayName = "Case Folder",
@@ -21,7 +21,7 @@ TidyConfig.ItemTypes = {
 		PlaceName = "Archive Shelf",
 		Hint = "Put it on an archive shelf in the Archives.",
 		Points = 10,
-		CarryOffset = CFrame.new(0, 0, -1.6),
+		CarryOffset = CFrame.new(0.8, -0.3, -1.8),
 	},
 	Paper = {
 		DisplayName = "Stack of Papers",
@@ -29,7 +29,7 @@ TidyConfig.ItemTypes = {
 		PlaceName = "Document Tray",
 		Hint = "Put it in a document tray (offices, reception or training room).",
 		Points = 10,
-		CarryOffset = CFrame.new(0, 0, -1.6),
+		CarryOffset = CFrame.new(0.8, -0.3, -1.8),
 	},
 	Chair = {
 		DisplayName = "Chair",
@@ -37,7 +37,7 @@ TidyConfig.ItemTypes = {
 		PlaceName = "Chair Spot",
 		Hint = "Put it back in a free spot: waiting area, break room tables or training room.",
 		Points = 20,
-		CarryOffset = CFrame.new(0, 0.3, -2.4),
+		CarryOffset = CFrame.new(0, -1, -2.6),
 	},
 	Box = {
 		DisplayName = "Cardboard Box",
@@ -45,7 +45,7 @@ TidyConfig.ItemTypes = {
 		PlaceName = "Storage Shelf",
 		Hint = "Put it on a shelf in the Storage room.",
 		Points = 15,
-		CarryOffset = CFrame.new(0, 0.2, -2),
+		CarryOffset = CFrame.new(0, -0.6, -2.4),
 	},
 	Mug = {
 		DisplayName = "Mug",
@@ -53,7 +53,7 @@ TidyConfig.ItemTypes = {
 		PlaceName = "Cupboard",
 		Hint = "Put it in a cupboard in the Break Room.",
 		Points = 10,
-		CarryOffset = CFrame.new(0, 0.2, -1.5),
+		CarryOffset = CFrame.new(0.8, -0.2, -1.6),
 	},
 	Plant = {
 		DisplayName = "Potted Plant",
@@ -61,7 +61,7 @@ TidyConfig.ItemTypes = {
 		PlaceName = "Planter",
 		Hint = "Put it on a planter (offices, hallway or training room).",
 		Points = 15,
-		CarryOffset = CFrame.new(0, 0, -1.8),
+		CarryOffset = CFrame.new(0.9, -0.4, -2),
 	},
 }
 

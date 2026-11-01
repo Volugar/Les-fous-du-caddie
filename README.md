@@ -38,11 +38,13 @@ effacez le texte par défaut et collez le contenu du fichier.
 Un jeu de rangement **calme et satisfaisant** : chaque objet a sa place, on range à son rythme
 dans une grande agence de 7 pièces et on la voit devenir propre et organisée.
 
-- **Ramasser :** cliquez sur un objet qui traîne (ou appuyez dessus sur mobile). Il va dans votre **sac**.
-- **Ranger :** cliquez sur le meuble où il se range. Les places libres brillent en vert,
-  les meubles concernés sont entourés, et chaque objet rangé fait un petit nuage de poussière avec un son doux.
-- **Sac :** 3 objets au départ. La touche **E** ou les boutons < > changent l'objet en main,
-  la touche **Q** (A sur un clavier AZERTY) ou le bouton « Lâcher » le pose par terre.
+- **Vue à la première personne** avec un **viseur** au centre de l'écran.
+- **Ramasser :** visez un objet (« Click to pick up ») et cliquez. Sur mobile, appuyez sur l'objet.
+- **Ranger :** visez le meuble où il se range (« Click to put away ») et cliquez. Les places libres
+  brillent en vert, les meubles concernés sont entourés.
+- **Plusieurs objets en main :** 3 au départ. **Molette** (ou **E**, ou boutons < >) pour changer d'objet,
+  **Q** (A sur AZERTY) ou bouton « Drop » pour lâcher.
+- **Y :** libérer la souris (pour cliquer sur les boutons). Elle se libère aussi quand une fenêtre est ouverte.
 - **Points :** chaque objet rangé rapporte des points, et chaque pièce entièrement rangée donne **100 points bonus**.
 - **Pièces à débloquer :** cliquez sur une porte vitrée verrouillée pour l'ouvrir avec vos points.
 - **Améliorations (touche G) :** sac plus grand, chaussures de course, aimant, loupe.
