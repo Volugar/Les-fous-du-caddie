@@ -45,30 +45,14 @@ function hud(opts) {
   el(`<div class="hud" style="font-size:46px;display:flex;align-items:center;gap:14px">${opts.counter}<span style="font-family:'Noto Color Emoji';-webkit-text-stroke:0">🗄️</span></div>`, { right: '34px', top: '40px' });
   el(`<div class="hud" style="font-size:46px;display:flex;align-items:center;gap:14px">${opts.bag}<span style="font-family:'Noto Color Emoji';-webkit-text-stroke:0">🧺</span></div>`, { right: '34px', top: '112px' });
   const icons = ['🖐️','🧲','🔍','🗄️'];
-  icons.forEach((ic, i) => el(`<div class="slot ${i===0?'sel':''}" style="left:${W/2 - 230 + i*116}px">${ic}<div class="n">${i+1}</div></div>`, {}));
+  icons.forEach((ic, i) => el(`<div class="slot" style="left:${W/2 - 230 + i*116}px;opacity:.9">${ic}<div class="n">${i+1}</div>${i>0?'<div style="position:absolute;right:4px;bottom:2px;font-size:30px">🔒</div>':''}</div>`, {}));
   if (opts.item) el(`<div class="card" style="width:400px;height:112px;left:${W/2-200}px;top:${H-300}px"><div style="font-size:26px;margin-top:10px">${opts.item[0]}</div><div style="width:80%;height:2px;background:#dea842;margin:8px auto"></div><div style="font-size:38px">${opts.item[1]}</div></div>`, {});
 }
 const S = p.get('scene');
-if (S === 'office') {
-  el(`<div class="title" style="--fs:132px;--st:14px;transform:rotate(-3deg)">TIDY UP!<br><span class="w" style="font-size:92px">WORKPLACE CHAOS</span></div>`, { left: '330px', top: '150px' });
-  el(`<div class="badge" style="font-size:48px;transform:rotate(4deg)">3 WORKPLACES!</div>`, { left: '420px', top: '470px' });
-  hud({ sideTop: 560, timer: '02:45', counter: '312/1,122', bag: '4/5' });
-} else if (S === 'warehouse') {
-  el(`<div class="title" style="--fs:120px;--st:13px;transform:rotate(-3deg);text-align:center">SORT THE<br><span class="w">WAREHOUSE!</span></div>`, { left: '60px', top: '170px' });
-  el(`<div class="badge gold" style="font-size:52px;transform:rotate(-5deg)">2,300+ ITEMS!</div>`, { left: '150px', top: '470px' });
-  el(`<div class="badge blue" style="font-size:44px;transform:rotate(4deg)">STACK &amp; CARRY!</div>`, { right: '120px', top: '230px' });
-} else if (S === 'hq') {
-  el(`<div class="title" style="--fs:120px;--st:13px;transform:rotate(-2deg);text-align:center">CLEAN THE<br><span class="w">BOSS'S HQ!</span></div>`, { left: '50%', top: '120px', transform: 'translateX(-50%)' });
-  el(`<div class="badge gold" style="font-size:46px;transform:rotate(-4deg)">LUXURY OFFICES</div>`, { left: '170px', top: '560px' });
-  el(`<div class="badge" style="font-size:46px;transform:rotate(5deg)">NEW LEVEL!</div>`, { right: '170px', top: '560px' });
-} else if (S === 'lobby') {
-  el(`<div class="title" style="--fs:126px;--st:14px;transform:rotate(-2deg);text-align:center">PLAY WITH<br><span class="w">FRIENDS!</span></div>`, { left: '50%', top: '70px', transform: 'translateX(-50%)' });
-  el(`<div class="badge green" style="font-size:52px;transform:rotate(-4deg)">UP TO 4 PLAYERS</div>`, { left: '170px', top: '880px' });
-  el(`<div class="badge blue" style="font-size:52px;transform:rotate(4deg)">DAILY QUESTS</div>`, { right: '190px', top: '880px' });
-  el(`<div class="badge gold" style="font-size:44px;transform:rotate(-2deg)">3 WORKPLACES TO TIDY</div>`, { left: '50%', top: '900px', transform: 'translateX(-50%)' });
-} else if (S === 'icon') {
-  el(`<div class="title" style="--fs:108px;--st:12px;transform:rotate(-4deg);text-align:center">TIDY<br>UP!</div>`, { left: '24px', top: '18px' });
-}
+ov.style.opacity = '0.88';
+if (S === 'office') hud({ sideTop: 70, timer: '01:37', counter: '0/1,122', bag: '0/5' });
+else if (S === 'warehouse') hud({ sideTop: 70, timer: '02:45', counter: '0/2,320', bag: '4/5' });
+else if (S === 'hq') hud({ sideTop: 70, timer: '03:52', counter: '0/1,714', bag: '0/5' });
 </script>
 <script type="module" src="scene.js"></script>
 </body></html>

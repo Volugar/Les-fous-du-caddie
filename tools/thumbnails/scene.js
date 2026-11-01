@@ -91,21 +91,27 @@ const WOOD = 0xdc9c60, CREAM = 0xf6eedd, TEAL = 0x2a8aa8;
 
 // ---------------------------------------------------------------- personnage (style blocs, original)
 // Visage classique (fond transparent) : deux yeux ovales noirs et un sourire.
-function faceTex(mood = 'happy') {
+function faceTex(mood = 'classic') {
 	const c = document.createElement('canvas'); c.width = 512; c.height = 256;
 	const g = c.getContext('2d');
 	g.clearRect(0, 0, 512, 256);
-	g.fillStyle = '#141414';
-	for (const x of [205, 307]) { g.beginPath(); g.ellipse(x, 100, 17, 30, 0, 0, Math.PI * 2); g.fill(); }
-	g.strokeStyle = '#141414'; g.lineCap = 'round'; g.lineWidth = 14;
-	g.beginPath();
-	if (mood === 'wow') { g.ellipse(256, 178, 22, 28, 0, 0, Math.PI * 2); g.fill(); }
-	else { g.arc(256, 120, 70, 0.2 * Math.PI, 0.8 * Math.PI); g.stroke(); }
+	g.fillStyle = '#111';
+	for (const x of [216, 300]) { g.beginPath(); g.ellipse(x, 98, 8, 19, 0, 0, Math.PI * 2); g.fill(); }
+	g.strokeStyle = '#111'; g.lineCap = 'round'; g.lineWidth = 7;
+	// sourire fin, légèrement en coin
+	g.beginPath(); g.moveTo(206, 150); g.quadraticCurveTo(262, 196, 316, 142); g.stroke();
 	const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t;
 }
 
 // Avatar style Roblox (R15) : tête cylindrique arrondie, corps en blocs arrondis, plastique brillant.
+const AVATARS = {
+	bacon: { skin: '#d6d6d6', jacket: 0x16161a, vest: 0x1f78b4, pants: 0x1c2622, hair: 0x5a3016, hairStyle: 'bacon', shoes: 'white' },
+	bacon2: { skin: '#d9b08c', jacket: 0x16161a, vest: 0xc8352e, pants: 0x262a36, hair: 0x1e1612, hairStyle: 'bacon', shoes: 'white' },
+	bacon3: { skin: '#8d5a3c', jacket: 0x16161a, vest: 0x2e9a50, pants: 0x1c2622, hair: 0x1a1210, hairStyle: 'bacon', shoes: 'white' },
+	noob: { skin: '#f5cd30', vest: 0x0d69ac, pants: 0x4b974b, hairStyle: 'none', shoes: 'none', noob: true },
+};
 function character(o = {}) {
+	if (o.avatar) o = { ...AVATARS[o.avatar], ...o, pose: o.pose, scale: o.scale };
 	const root = group(o.parent);
 	const plastic = (c, r = 0.32) => M(c, { r });
 	const skinM = plastic(new THREE.Color(o.skin || '#f2c9a4'), 0.4);
@@ -113,18 +119,22 @@ function character(o = {}) {
 	const collarM = plastic(o.shirt ?? 0xf6f6f2);
 	const pantsM = plastic(o.pants ?? 0x2d2f38, 0.45);
 	const shoeM = plastic(0x1a1a1e, 0.3);
-	const hairM = plastic(o.hair ?? 0x6b3a1c, 0.5);
+	const hairM = plastic(o.hair ?? 0x6b3a1c, 0.55);
+	const sleeveM = o.jacket !== undefined ? plastic(o.jacket, 0.5) : (o.noob ? skinM : shirtM);
 
 	const hip = group(root); hip.position.y = 2.15;
 	const torso = group(hip);
-	// torse supérieur et inférieur
+	// torse : t-shirt, et veste noire ouverte par-dessus
 	rbox(2.05, 1.5, 1.05, 0.22, shirtM, 0, 1.3, 0, torso);
 	rbox(1.95, 0.75, 1.0, 0.2, shirtM, 0, 0.35, 0, torso);
-	// col blanc en V, badge, poche
-	const collar = box(0.75, 0.55, 0.06, collarM, 0, 1.78, 0.52, torso); collar.rotation.z = Math.PI / 4;
-	box(0.62, 0.34, 0.05, M(0xffffff, { map: textTex('TIDY CREW', { w: 256, h: 128, bg: '#ffffff', fg: '#1f4fa8', size: 46, weight: '700' }), r: 0.3 }), 0.52, 1.25, 0.54, torso);
-	box(0.5, 0.06, 0.05, M(0xf0c040, { m: 0.6, r: 0.25 }), -0.5, 1.45, 0.54, torso);
-	rbox(2.08, 0.18, 1.08, 0.08, plastic(0x1d1f26), 0, 0.02, 0, torso);
+	if (o.jacket !== undefined) {
+		const jacketM = plastic(o.jacket, 0.5);
+		for (const sx of [-1, 1]) {
+			rbox(0.72, 2.2, 1.1, 0.16, jacketM, sx * 0.68, 0.95, 0.0, torso);
+		}
+		rbox(2.08, 2.2, 0.5, 0.16, jacketM, 0, 0.95, -0.3, torso);
+		box(0.5, 0.5, 0.04, plastic(new THREE.Color(o.vest).offsetHSL(0, 0, -0.12)), 0.05, 1.05, 0.53, torso);
+	}
 	// tête
 	const headG = group(torso); headG.position.y = 2.95;
 	const prof = [];
@@ -138,20 +148,31 @@ function character(o = {}) {
 	const face = new THREE.Mesh(new THREE.CylinderGeometry(R + 0.005, R + 0.005, HH * 1.4, 32, 1, true, -1.1, 2.2),
 		new THREE.MeshStandardMaterial({ map: faceTex(o.mood), transparent: true, roughness: 0.4 }));
 	face.position.y = -0.05; headG.add(face);
-	// coiffure "bacon" : calotte + mèches qui tombent sur le front
-	const cap = new THREE.Mesh(new THREE.SphereGeometry(R + 0.09, 32, 16, 0, Math.PI * 2, 0, Math.PI * 0.5), hairM);
-	cap.scale.set(1.04, 0.85, 1.06); cap.position.y = HH - 0.32; add(cap, headG);
-	const backHair = new THREE.Mesh(new THREE.CylinderGeometry(R + 0.08, R + 0.06, 0.9, 32, 1, true, Math.PI * 0.55, Math.PI * 0.9), hairM);
-	backHair.material.side = THREE.DoubleSide; backHair.position.y = 0.15; add(backHair, headG);
-	for (let i = 0; i < 6; i++) {
-		const lock = new THREE.Mesh(new THREE.SphereGeometry(0.26, 16, 12), hairM);
-		lock.scale.set(1.2, 0.75, 0.7);
-		const a = -0.8 + i * 0.32;
-		lock.position.set(Math.sin(a) * (R + 0.02), HH - 0.2 - Math.abs(i - 2.5) * 0.04, Math.cos(a) * (R + 0.02));
-		lock.rotation.set(0.3, a, -0.5 + i * 0.12); add(lock, headG);
+	// coiffure « bacon » : calotte et longues mèches qui tombent sur le front et les côtés
+	if (o.hairStyle !== 'none') {
+		const hairLight = plastic(new THREE.Color(o.hair ?? 0x7a3f1a).offsetHSL(0, 0, 0.08), 0.55);
+		const cap = new THREE.Mesh(new THREE.SphereGeometry(R + 0.1, 32, 16, 0, Math.PI * 2, 0, Math.PI * 0.5), hairM);
+		cap.scale.set(1.05, 0.8, 1.08); cap.position.y = HH - 0.28; add(cap, headG);
+		for (let i = 0; i < 26; i++) {
+			const a = (i / 26) * Math.PI * 2;
+			const front = Math.cos(a);
+			// devant : mèches plus courtes qui tombent sur le front ; derrière et côtés : plus longues
+			// frange balayée : courte d'un côté (un œil visible), longue de l'autre
+			const side = Math.sin(a);
+			const len = front > 0.3 ? (side > 0.05 ? rr(0.15, 0.3) : rr(0.5, 0.7)) : rr(0.75, 1.05);
+			const strand = new THREE.Mesh(new THREE.CapsuleGeometry(0.12, len, 4, 8), i % 3 ? hairM : hairLight);
+			const r = R + 0.08;
+			strand.position.set(Math.sin(a) * r, HH - 0.12 - len / 2 + (front > 0.3 ? 0.05 : 0), Math.cos(a) * r);
+			strand.rotation.set(front * 0.35, a, -Math.sin(a) * 0.2 + (front > 0.3 ? -0.35 : 0) + rr(-0.2, 0.2));
+			add(strand, headG);
+		}
+		for (let i = 0; i < 7; i++) {
+			const t = new THREE.Mesh(new THREE.CapsuleGeometry(0.13, rr(0.3, 0.5), 4, 8), i % 2 ? hairM : hairLight);
+			t.position.set(rr(-0.5, 0.5), HH + 0.08, rr(-0.4, 0.4));
+			t.rotation.set(rr(-1.2, 1.2), rr(0, 6), rr(-1.2, 1.2));
+			add(t, headG);
+		}
 	}
-	const fringe = new THREE.Mesh(new THREE.SphereGeometry(0.35, 16, 12), hairM);
-	fringe.scale.set(1.5, 0.55, 0.6); fringe.position.set(-0.22, HH - 0.12, R - 0.02); fringe.rotation.z = 0.35; add(fringe, headG);
 	if (o.cap) {
 		const c2 = new THREE.Mesh(new THREE.SphereGeometry(R + 0.12, 32, 16, 0, Math.PI * 2, 0, Math.PI * 0.5), plastic(o.cap));
 		c2.position.y = HH - 0.25; add(c2, headG);
@@ -162,7 +183,7 @@ function character(o = {}) {
 	const arms = [];
 	for (const side of [-1, 1]) {
 		const shoulder = group(torso); shoulder.position.set(side * 1.5, 1.85, 0);
-		rbox(0.95, 1.05, 0.95, 0.24, shirtM, 0, -0.4, 0, shoulder);
+		rbox(0.95, 1.05, 0.95, 0.24, sleeveM, 0, -0.4, 0, shoulder);
 		rbox(0.88, 0.95, 0.88, 0.22, skinM, 0, -1.35, 0, shoulder);
 		rbox(0.9, 0.5, 0.9, 0.22, skinM, 0, -1.95, 0, shoulder);
 		arms.push(shoulder);
@@ -173,8 +194,12 @@ function character(o = {}) {
 		const leg = group(hip); leg.position.set(side * 0.5, 0, 0);
 		rbox(0.97, 1.05, 0.97, 0.22, pantsM, 0, -0.5, 0, leg);
 		rbox(0.92, 0.85, 0.92, 0.22, pantsM, 0, -1.35, 0, leg);
-		rbox(0.98, 0.42, 1.2, 0.18, shoeM, 0, -1.93, 0.12, leg);
-		box(0.7, 0.08, 0.5, plastic(0xffffff), 0, -2.1, 0.12, leg);
+		if (o.shoes === 'white') {
+			rbox(1.0, 0.45, 1.25, 0.2, plastic(0xf2f2f2), 0, -1.92, 0.14, leg);
+			box(1.02, 0.1, 1.27, plastic(0x1a1a1a), 0, -2.1, 0.14, leg);
+		} else if (o.shoes !== 'none') {
+			rbox(0.98, 0.42, 1.2, 0.18, shoeM, 0, -1.93, 0.12, leg);
+		}
 		legs.push(leg);
 	}
 
@@ -190,15 +215,24 @@ function character(o = {}) {
 		rbox(2.4, 0.45, 0.6, 0.12, plastic(0x2f6fd0), 0, -7.2, 0, stick);
 		rbox(2.3, 0.7, 0.55, 0.08, M(0xf2c442, { r: 0.8 }), 0, -7.7, 0, stick);
 		for (let i = 0; i < 9; i++) box(0.12, 0.75, 0.5, M(0xe0ae2c, { r: 0.9 }), -1.05 + i * 0.26, -7.75, 0.05, stick);
-		const top = new THREE.Vector3(0.7, 4.9, 1.2), bottom = new THREE.Vector3(-1.6, 0.25, 4.2);
+		const top = new THREE.Vector3(-0.8, 3.7, 1.9), bottom = new THREE.Vector3(2.3, 0.25, 4.2);
 		broom.position.copy(top);
 		broom.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), bottom.clone().sub(top).normalize());
 		stick.scale.y = top.distanceTo(bottom) / 7.95;
-		stick.rotateY(0.6);
-		const pan = group(root); pan.position.set(-2.9, 0, 4.9); pan.rotation.y = 0.5;
+		stick.rotateY(-0.6);
+		// les mains attrapent le manche
+		const aim = (shoulder, t) => {
+			const target = top.clone().lerp(bottom, t);
+			const from = new THREE.Vector3(shoulder.position.x, 2.15 + shoulder.position.y, 0);
+			const dir = target.sub(from).normalize();
+			shoulder.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), dir);
+		};
+		aim(arms[0], 0.08);
+		aim(arms[1], 0.36);
+		const pan = group(root); pan.position.set(3.4, 0, 4.9); pan.rotation.y = -0.5;
 		rbox(2.2, 0.1, 1.6, 0.04, plastic(0xdc3a32), 0, 0.05, 0, pan); rbox(2.2, 0.7, 0.12, 0.05, plastic(0xdc3a32), 0, 0.35, -0.8, pan);
 		const ph = cyl(0.1, 0.1, 2.4, plastic(0xdc3a32), 0, 1.3, -1.0, pan); ph.rotation.x = -0.35;
-		for (let i = 0; i < 4; i++) looseSheet(-1.5 + rr(-1, 1), 4 + rr(-0.8, 0.8), root);
+		for (let i = 0; i < 4; i++) looseSheet(2.0 + rr(-1, 1), 4 + rr(-0.8, 0.8), root);
 	} else if (pose === 'carry') {
 		torso.rotation.set(-0.05, 0, 0);
 		arms[0].rotation.set(-0.75, 0, 0.18);
@@ -268,6 +302,67 @@ function paperStack(x, z, parent) {
 	box(0.3, 0.1, 0.12, M(0x1e1e22), 0, 0.3, -0.66, g);
 	return g;
 }
+// Emballage imprimé (marque fictive) : texte et dessin sur les faces avant et arrière.
+function productBox(x, y, z, brand, sub, color, size = [1.6, 2.2, 0.6], rot = [0, 0, 0], parent, art = 'circle') {
+	const [w, h, d] = size;
+	const c = document.createElement('canvas'); c.width = 256; c.height = Math.round(256 * h / w);
+	const g = c.getContext('2d');
+	const grad = g.createLinearGradient(0, 0, 0, c.height); grad.addColorStop(0, color); grad.addColorStop(1, shade(color, -0.25));
+	g.fillStyle = grad; g.fillRect(0, 0, c.width, c.height);
+	g.fillStyle = 'rgba(255,255,255,0.18)'; g.fillRect(0, c.height * 0.62, c.width, c.height * 0.1);
+	// dessin
+	const cx = c.width / 2, cy = c.height * 0.62;
+	if (art === 'circle') { g.fillStyle = '#ffd84a'; g.beginPath(); g.arc(cx, cy, c.width * 0.26, 0, 7); g.fill(); g.fillStyle = '#ff9a2a'; g.beginPath(); g.arc(cx, cy, c.width * 0.16, 0, 7); g.fill(); }
+	if (art === 'rings') { for (let i = 0; i < 7; i++) { g.strokeStyle = ['#ffd84a', '#ff7a3a', '#7ad25a'][i % 3]; g.lineWidth = 12; g.beginPath(); g.arc(cx - 70 + (i % 4) * 46, cy - 20 + Math.floor(i / 4) * 46, 18, 0, 7); g.stroke(); } }
+	if (art === 'bubbles') { for (let i = 0; i < 8; i++) { g.fillStyle = 'rgba(255,255,255,0.8)'; g.beginPath(); g.arc(cx - 80 + rand() * 160, cy - 40 + rand() * 90, 10 + rand() * 18, 0, 7); g.fill(); } }
+	if (art === 'paper') { g.fillStyle = '#ffffff'; g.fillRect(cx - 70, cy - 50, 140, 100); g.fillStyle = '#9ab8e6'; for (let i = 0; i < 5; i++) g.fillRect(cx - 55, cy - 35 + i * 18, 110, 6); }
+	if (art === 'cup') { g.fillStyle = '#fff'; g.fillRect(cx - 45, cy - 40, 90, 85); g.fillStyle = '#6a3a1e'; g.fillRect(cx - 38, cy - 34, 76, 22); g.strokeStyle = '#fff'; g.lineWidth = 12; g.beginPath(); g.arc(cx + 52, cy, 20, -1.4, 1.4); g.stroke(); }
+	if (art === 'star') { g.fillStyle = '#ffd84a'; g.beginPath(); for (let i = 0; i < 10; i++) { const a = i / 10 * Math.PI * 2 - Math.PI / 2, r = i % 2 ? 30 : 70; g.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r); } g.fill(); }
+	g.textAlign = 'center'; g.textBaseline = 'middle';
+	const words = brand.split(' ');
+	const fs = Math.min(64, c.width / Math.max(...words.map(t => t.length)) * 1.45);
+	g.font = `${fs}px Luckiest Guy`; g.lineJoin = 'round'; g.lineWidth = fs * 0.22; g.strokeStyle = shade(color, -0.55); g.fillStyle = '#ffffff';
+	words.forEach((t, i) => { const yy = c.height * 0.14 + fs * 0.6 + i * fs * 0.95; g.strokeText(t, cx, yy); g.fillText(t, cx, yy); });
+	if (sub) { g.font = `700 24px Fredoka`; g.fillStyle = '#ffffff'; g.fillText(sub, cx, c.height * 0.92); }
+	const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
+	const face = M(0xffffff, { map: tex, r: 0.35 });
+	const side = M(new THREE.Color(color).offsetHSL(0, 0, -0.08), { r: 0.4 });
+	const m = new THREE.Mesh(new RoundedBoxGeometry(w, h, d, 2, 0.04), [side, side, side, side, face, face]);
+	m.position.set(x, y, z); m.rotation.set(...rot);
+	return add(m, parent);
+}
+function shade(hex, amt) { const c = new THREE.Color(hex); c.offsetHSL(0, 0, amt); return '#' + c.getHexString(); }
+// Produit couché par terre au hasard.
+function floorProduct(x, z, list, parent) {
+	const [brand, sub, color, size, art] = pick(list);
+	const lying = rand() < 0.65;
+	const rot = lying ? [-Math.PI / 2 + rr(-0.1, 0.1), 0, rr(0, 6.28)] : [0, rr(0, 6.28), 0];
+	const y = lying ? size[2] / 2 : size[1] / 2;
+	const b = productBox(x, y, z, brand, sub, color, size, [0, 0, 0], parent, art);
+	b.rotation.order = 'YXZ'; b.rotation.set(rot[0], rot[1] || rot[2], 0);
+	return b;
+}
+const OFFICE_PRODUCTS = [
+	['COPY PAPER', 'A4 • 500 SHEETS', '#2e78e2', [1.8, 1.2, 0.5], 'paper'],
+	['COFFEE BEANS', 'DARK ROAST', '#7a4a2a', [1.2, 1.8, 0.6], 'cup'],
+	['STICKY NOTES', '12 PACK', '#f2c21e', [1.4, 1.0, 0.5], 'star'],
+	['INK JET XL', 'BLACK', '#d23c3c', [1.0, 1.3, 0.5], 'circle'],
+	['FILE BOX', 'OFFICE', '#3cae5c', [1.8, 1.3, 1.0], 'paper'],
+];
+const STORE_PRODUCTS = [
+	['CRUNCHY RINGS', 'CEREAL', '#e23c32', [1.5, 2.1, 0.55], 'rings'],
+	['SUPER SUDS', 'LAUNDRY', '#2e8ae2', [1.6, 1.8, 0.8], 'bubbles'],
+	['CHOCO CRISP', 'CEREAL', '#7a3e1e', [1.5, 2.1, 0.55], 'circle'],
+	['SNACK BITES', 'SNACKS', '#3cb45a', [1.3, 1.5, 0.5], 'star'],
+	['TOY BLOCKS', 'AGE 3+', '#f08228', [1.8, 1.3, 0.8], 'star'],
+	['MILK DROPS', 'FRESH', '#4ab4e6', [1.0, 1.7, 0.7], 'bubbles'],
+];
+const LUXE_PRODUCTS = [
+	['GOLD AWARD', 'TROPHY', '#c89a2a', [1.3, 1.6, 0.8], 'star'],
+	['LUXE COFFEE', 'PREMIUM', '#3a2418', [1.2, 1.8, 0.6], 'cup'],
+	['ANNUAL REPORT', '2026', '#2c4696', [1.6, 2.0, 0.4], 'paper'],
+];
+
 function looseSheet(x, z, parent) {
 	const s = box(1.05, 0.02, 1.45, M(pick([0xfcfaf2, 0xecf4fc, 0xfcf6de])), x, 0.02 + rand() * 0.02, z, parent, false);
 	s.rotation.set(rr(-0.08, 0.08), rr(0, 6.28), rr(-0.08, 0.08));
@@ -543,6 +638,28 @@ function lightsBase(sunPos = [40, 80, 30], sunIntensity = 2.2) {
 	return sun;
 }
 
+// Plan serré comme une miniature Roblox : caméra basse, personnage en gros plan,
+// produits au premier plan, arrière-plan flou.
+function closeShot(hero, products, square) {
+	const p = hero.position;
+	const right = new THREE.Vector3(Math.cos(hero.rotation.y), 0, -Math.sin(hero.rotation.y));
+	const fwd = new THREE.Vector3(Math.sin(hero.rotation.y), 0, Math.cos(hero.rotation.y));
+	// produits et petits objets entre la caméra et le personnage
+	for (let i = 0; i < 16; i++) {
+		const q = p.clone().addScaledVector(fwd, rr(3.2, 8.5)).addScaledVector(right, rr(-3, 7));
+		floorProduct(q.x, q.z, products);
+	}
+	for (let i = 0; i < 6; i++) { const q = p.clone().addScaledVector(fwd, rr(4, 7)).addScaledVector(right, rr(-3, 3)); looseSheet(q.x, q.z); }
+	const cam = p.clone().addScaledVector(fwd, square ? 9.5 : 10.5).addScaledVector(right, square ? -0.6 : -1.8);
+	cam.y = square ? 4.6 : 3.9;
+	camera.position.copy(cam);
+	const look = p.clone().addScaledVector(right, square ? 0.5 : 2.4); look.y = square ? 4.0 : 3.4;
+	camera.lookAt(look);
+	camera.fov = square ? 52 : 56;
+	focusTarget = p.clone().add(new THREE.Vector3(0, 4, 0));
+	aperture = 0.0009;
+}
+
 function buildOffice(closeUp) {
 	scene.background = new THREE.Color(0xf6eedd);
 	scene.fog = new THREE.Fog(0xf3e8d4, 90, 170);
@@ -586,17 +703,13 @@ function buildOffice(closeUp) {
 		(x, z) => mug(x, z, null, true), (x, z) => mug(x, z), (x, z) => cardboardBox(x, 0, z, 2.1, 1.6, 1.6, null).rotation.y = rr(0, 6),
 		(x, z) => laptop(x, z), (x, z) => cushion(x, z), (x, z) => photoFrame(x, z), (x, z) => binder(x, z), (x, z) => plant(x, z, null, 0.8),
 	];
-	scatter(closeUp ? 160 : 520, -34, 34, -80, 25, makers, [[7.5, 12, 3.2], [5, 16.5, 2.4]]);
+	scatter(closeUp ? 160 : 520, -34, 34, -80, 25, makers, [[0, 8, 3], [1.8, 16.9, 3]]);
 	for (let i = 0; i < 6; i++) officeChair(rr(-30, 30), rr(-60, 10), null, true);
 	// personnage
-	const hero = character({ pose: 'sweep', vest: 0x2f6fd0, hair: 0x8a4a22, scale: 1.3 });
+	const hero = character({ pose: 'sweep', avatar: 'bacon', scale: 1.3 });
 	hero.position.set(closeUp ? 1.2 : 7.5, 0, closeUp ? 15 : 11.5); hero.rotation.y = closeUp ? -0.35 : -0.5;
-	focusTarget = hero.position.clone().add(new THREE.Vector3(0, 4.5, 0));
-	if (closeUp) {
-		camera.position.set(-2.8, 5.6, 23.5); camera.lookAt(0.4, 5.3, 14); camera.fov = 48;
-	} else {
-		camera.position.set(-0.5, 4.6, 23.5); camera.lookAt(4.2, 4.0, 8); camera.fov = 50;
-	}
+	hero.position.set(0, 0, 8); hero.rotation.y = 0.55;
+	closeShot(hero, OFFICE_PRODUCTS, closeUp);
 }
 
 function buildWarehouse() {
@@ -631,12 +744,11 @@ function buildWarehouse() {
 		(x, z) => parcel(x, z, pick([0xe23e34, 0x2e74de, 0x34aa56, 0xf6c428])), (x, z) => shoeBox(x, z), (x, z) => beachBall(x, z), (x, z) => tapeRoll(x, z),
 		(x, z) => cardboardBox(x, 0, z, 2.1, 1.6, 1.6).rotation.y = rr(0, 6),
 	];
-	scatter(380, -9.5, 9.5, -120, 28, makers, [[2, 20, 4.5], [-3.5, -46, 6]]);
+	scatter(380, -9.5, 9.5, -120, 28, makers, [[0, 14, 3], [1.8, 22.9, 3], [-3.5, -46, 6]]);
 	scatter(140, -15.5, -14.5, -120, 10, makers); scatter(140, 14.5, 15.5, -120, 10, makers);
-	const hero = character({ pose: 'carry', vest: 0xf07828, cap: 0xf07828, hair: 0x3a2618, skin: '#c98d62', scale: 1.3 });
-	hero.position.set(3, 0, 19); hero.rotation.y = -0.3;
-	focusTarget = hero.position.clone().add(new THREE.Vector3(0, 4.5, 0));
-	camera.position.set(-1.5, 6.2, 31); camera.lookAt(2.2, 5.0, -10); camera.fov = 52;
+	const hero = character({ pose: 'sweep', avatar: 'bacon2', scale: 1.3 });
+	hero.position.set(0, 0, 14); hero.rotation.y = 0.55;
+	closeShot(hero, STORE_PRODUCTS, false);
 }
 
 function buildHQ() {
@@ -679,13 +791,12 @@ function buildHQ() {
 		(x, z) => photoFrame(x, z), (x, z) => binder(x, z), (x, z) => folder(x, z), (x, z) => paperStack(x, z), (x, z) => looseSheet(x, z),
 		(x, z) => cushion(x, z), (x, z) => mug(x, z, null, true), (x, z) => laptop(x, z),
 	];
-	scatter(330, -29, 29, -80, 26, makers, [[-5, 17, 4.5], [7, 13, 4]]);
-	const hero = character({ pose: 'duster', vest: 0x7a3cb4, hair: 0xe0b040, skin: '#f4c9a0', scale: 1.3, mood: 'happy' });
-	hero.position.set(-5, 0, 17); hero.rotation.y = 0.35;
-	focusTarget = hero.position.clone().add(new THREE.Vector3(0, 4.5, 0));
-	const hero2 = character({ pose: 'sweep', vest: 0x2e9660, hair: 0x2a1a10, skin: '#8d5a3c', scale: 1.15 });
-	hero2.position.set(8, 0, 9); hero2.rotation.y = -0.8;
-	camera.position.set(0, 5.6, 30); camera.lookAt(-0.5, 4.6, -10); camera.fov = 52;
+	scatter(330, -29, 29, -80, 26, makers, [[-1, 14, 3], [-0.2, 23.1, 3], [9, 2, 3]]);
+	const hero = character({ pose: 'duster', avatar: 'noob', scale: 1.3 });
+	hero.position.set(-1, 0, 14); hero.rotation.y = 0.45;
+	const hero2 = character({ pose: 'sweep', avatar: 'bacon3', scale: 1.15 });
+	hero2.position.set(9, 0, 2); hero2.rotation.y = -0.8;
+	closeShot(hero, LUXE_PRODUCTS, false);
 	bloomStrength = 0.15;
 }
 
@@ -712,7 +823,7 @@ function buildLobby() {
 	box(100, 24, 1, M(0xecf0fa), 0, 12, -70);
 	box(26, 6, 0.5, M(0xffffff, { map: textTex('SHOP', { w: 512, h: 120, bg: '#ff5ac8', fg: '#ffffff', font: 'Luckiest Guy', size: 96 }) }), 0, 12, -69.4);
 	box(30, 4, 3, M(0xffffff), 0, 2, -60); box(30.6, 0.3, 3.6, M(0xf0be4a, { m: 0.9, r: 0.25 }), 0, 4.15, -60);
-	character({ pose: 'wave', vest: 0x28aac0, cap: 0xf08228, hair: 0x5a3a1e, scale: 1 }).position.set(4, 0, -64);
+	character({ pose: 'wave', avatar: 'bacon', scale: 1 }).position.set(4, 0, -64);
 	// plateformes de départ
 	const padColors = [0x50c8ff, 0xff78c8, 0x78e678];
 	padColors.forEach((c, i) => {
@@ -724,15 +835,15 @@ function buildLobby() {
 		const sign = hangingSign(['QUEUE ' + (i + 1)], x, 10, z - 6, 8, c, null);
 	});
 	const crew = [
-		{ vest: 0x2f6fd0, hair: 0x8a4a22, pose: 'jump', x: -2, z: -16 },
-		{ vest: 0xf07828, hair: 0x2a1a10, skin: '#c98d62', pose: 'wave', x: 2.5, z: -19, cap: 0xf07828 },
-		{ vest: 0x7a3cb4, hair: 0xe0b040, pose: 'wave', x: -22, z: -17 },
-		{ vest: 0x2e9660, hair: 0x1e1e22, skin: '#8d5a3c', pose: 'jump', x: 22, z: -18 },
+		{ avatar: 'bacon', pose: 'jump', x: -2, z: -16 },
+		{ avatar: 'noob', pose: 'wave', x: 2.5, z: -19 },
+		{ avatar: 'bacon2', pose: 'wave', x: -22, z: -17 },
+		{ avatar: 'bacon3', pose: 'jump', x: 22, z: -18 },
 	];
 	for (const c of crew) { const h = character({ ...c, scale: 1.25 }); h.position.x = c.x; h.position.z = c.z; h.rotation.y = rr(-0.3, 0.3); }
-	focusTarget = new THREE.Vector3(0, 4, -17); aperture = 0.0006;
+	focusTarget = new THREE.Vector3(0.3, 4.5, -17.5); aperture = 0.00035;
 	for (const p of [[-42, 25], [42, 25], [-14, 8], [14, 8], [-42, -55], [42, -55]]) palm(p[0], p[1], 1);
-	camera.position.set(0, 5.2, 5); camera.lookAt(0, 4.6, -20); camera.fov = 62;
+	camera.position.set(4, 3.4, -5); camera.lookAt(0.2, 4.6, -17.5); camera.fov = 50;
 	bloomStrength = 0.15;
 }
 
@@ -765,7 +876,7 @@ async function main() {
 	composer.addPass(new RenderPass(scene, camera));
 	if (focusTarget) {
 		scene.updateMatrixWorld(true);
-		const focus = camera.position.distanceTo(focusTarget);
+		const dir = new THREE.Vector3(); camera.getWorldDirection(dir); const focus = focusTarget.clone().sub(camera.position).dot(dir);
 		composer.addPass(new BokehPass(scene, camera, { focus, aperture, maxblur: 0.008 }));
 	}
 	composer.addPass(new UnrealBloomPass(new THREE.Vector2(W, H), bloomStrength, 0.25, 0.97));
