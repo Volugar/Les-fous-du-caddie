@@ -52,7 +52,7 @@ local ITEM_RADIUS = {
 local TIPPED_CHAIR_RADIUS = 2.4
 
 local COLORS = {
-	Wall = Color3.fromRGB(248, 240, 224),
+	Wall = Color3.fromRGB(236, 226, 208),
 	WallBand = Color3.fromRGB(40, 150, 155),
 	Trim = Color3.fromRGB(252, 252, 250),
 	Partition = Color3.fromRGB(236, 226, 206),
@@ -60,7 +60,7 @@ local COLORS = {
 	Slat = Color3.fromRGB(214, 160, 104),
 	Skylight = Color3.fromRGB(225, 240, 255),
 	Carpet = Color3.fromRGB(96, 124, 146),
-	Tiles = Color3.fromRGB(236, 228, 212),
+	Tiles = Color3.fromRGB(222, 214, 198),
 	Concrete = Color3.fromRGB(182, 182, 176),
 	Wood = Color3.fromRGB(214, 176, 128),
 	DarkWood = Color3.fromRGB(150, 98, 60),
@@ -262,9 +262,9 @@ local function makeZone(model, itemType, anchorPart, billboardHeight)
 	local billboard = Instance.new("BillboardGui")
 	billboard.Name = "CategoryBillboard"
 	billboard.Adornee = anchorPart
-	billboard.Size = UDim2.fromOffset(220, 52)
+	billboard.Size = UDim2.fromOffset(180, 44)
 	billboard.StudsOffsetWorldSpace = Vector3.new(0, billboardHeight, 0)
-	billboard.MaxDistance = 70
+	billboard.MaxDistance = 40
 	billboard.LightInfluence = 0
 	billboard.Parent = model
 
@@ -328,7 +328,7 @@ local function buildStructure(parent)
 	block(parent, "OfficeCarpet", Vector3.new(64, 1, 38), Vector3.new(-8, floorY, -11), COLORS.Carpet, "Carpet")
 	block(parent, "CorridorCarpet", Vector3.new(16, 1, 20), Vector3.new(32, floorY, -2), COLORS.Carpet, "Carpet")
 	block(parent, "StorageFloor", Vector3.new(16, 1, 18), Vector3.new(32, floorY, -21), COLORS.Concrete, "Concrete")
-	block(parent, "LobbyTiles", Vector3.new(80, 1, 22), Vector3.new(0, floorY, 19), COLORS.Tiles, "CeramicTiles")
+	block(parent, "LobbyTiles", Vector3.new(80, 1, 22), Vector3.new(0, floorY, 19), COLORS.Tiles, "CeramicTiles", { Reflectance = 0.12 })
 
 	-- Murs extérieurs (hors de la zone intérieure, ils ne chevauchent jamais le sol).
 	local wallHeight = CEILING_BOTTOM
@@ -404,7 +404,7 @@ local function buildStructure(parent)
 		daylight.Face = Enum.NormalId.Bottom
 		daylight.Angle = 120
 		daylight.Range = 20
-		daylight.Brightness = 1.6
+		daylight.Brightness = 1
 		daylight.Color = Color3.fromRGB(235, 245, 255)
 		daylight.Shadows = false
 		daylight.Parent = skylight
@@ -422,18 +422,19 @@ local function buildStructure(parent)
 	}
 	for _, position in lampPositions do
 		local lampX, lampZ = position[1], position[2]
-		local shadeY = FLOOR_TOP + 9.15
+		local globeY = FLOOR_TOP + 9.2
+		local capY = globeY + 0.95
 		local wireTop = CEILING_BOTTOM - 0.35
-		local wireLength = wireTop - (shadeY + 0.45)
-		block(parent, "LampWire", Vector3.new(0.06, wireLength, 0.06), Vector3.new(lampX, shadeY + 0.45 + wireLength / 2, lampZ), COLORS.Black, "Metal", { CanCollide = false, CastShadow = false })
-		local shade = cylinder(parent, "LampShade", 0.9, 1.8, Vector3.new(lampX, shadeY, lampZ), COLORS.Lamp, "Metal")
-		shade.CanCollide = false
-		shade.CastShadow = false
-		local bulb = block(parent, "LampBulb", Vector3.new(0.7, 0.7, 0.7), Vector3.new(lampX, shadeY - 0.45, lampZ), COLORS.Bulb, "Neon", { CanCollide = false, CastShadow = false })
+		local wireLength = wireTop - (capY + 0.15)
+		block(parent, "LampWire", Vector3.new(0.06, wireLength, 0.06), Vector3.new(lampX, capY + 0.15 + wireLength / 2, lampZ), COLORS.Black, "Metal", { CanCollide = false, CastShadow = false })
+		local cap = cylinder(parent, "LampCap", 0.3, 0.6, Vector3.new(lampX, capY, lampZ), COLORS.Lamp, "Metal")
+		cap.CanCollide = false
+		cap.CastShadow = false
+		local bulb = block(parent, "LampGlobe", Vector3.new(1.6, 1.6, 1.6), Vector3.new(lampX, globeY, lampZ), COLORS.Bulb, "Neon", { CanCollide = false, CastShadow = false, Transparency = 0.15 })
 		bulb.Shape = Enum.PartType.Ball
 		local light = Instance.new("PointLight")
-		light.Range = 18
-		light.Brightness = 1.3
+		light.Range = 16
+		light.Brightness = 0.8
 		light.Color = Color3.fromRGB(255, 214, 160)
 		light.Shadows = false
 		light.Parent = bulb
@@ -505,6 +506,12 @@ local function createAdvisorDesk(parent, index, cx, cz)
 	block(model, "MonitorStand", Vector3.new(0.4, 0.5, 0.3), Vector3.new(cx, top + 0.25, cz + 0.7), COLORS.Black, "SmoothPlastic")
 	block(model, "Monitor", Vector3.new(2.2, 1.3, 0.1), Vector3.new(cx, top + 1.15, cz + 0.7), COLORS.Black, "SmoothPlastic")
 	block(model, "Keyboard", Vector3.new(1.6, 0.08, 0.5), Vector3.new(cx, top + 0.04, cz - 0.6), COLORS.Black, "SmoothPlastic")
+	block(model, "Mouse", Vector3.new(0.25, 0.08, 0.4), Vector3.new(cx + 1.05, top + 0.04, cz - 0.6), COLORS.Black, "SmoothPlastic")
+	cylinder(model, "Mug", 0.45, 0.35, Vector3.new(cx - 2.2, top + 0.225, cz - 0.7), CHAIR_COLORS[(index - 1) % #CHAIR_COLORS + 1], "SmoothPlastic")
+	cylinder(model, "PenPot", 0.5, 0.4, Vector3.new(cx - 2.2, top + 0.25, cz + 0.7), COLORS.DarkMetal, "Metal")
+	for penIndex, penColor in { Color3.fromRGB(230, 80, 70), Color3.fromRGB(60, 130, 220), Color3.fromRGB(40, 40, 40) } do
+		newPart(model, "Pen", Vector3.new(0.05, 0.6, 0.05), CFrame.new(cx - 2.2 + (penIndex - 2) * 0.08, top + 0.55, cz + 0.7) * CFrame.Angles(0, 0, math.rad((penIndex - 2) * 10)), penColor, "SmoothPlastic", { CanCollide = false })
+	end
 
 	-- Le conseiller est assis côté nord, le demandeur d'emploi côté sud.
 	createOfficeChair(model, Vector3.new(cx, FLOOR_TOP, cz - 2.4), math.pi)
@@ -558,7 +565,11 @@ local function createArchiveShelf(parent, index, cx)
 		block(model, "Shelf", Vector3.new(width - 0.4, 0.15, depth - 0.2), Vector3.new(cx, FLOOR_TOP + shelfTop - 0.075, cz + 0.1), COLORS.Wood, "Wood")
 	end
 
-	local spots = makeZone(model, "Folder", backPanel, 4.5)
+	for _, offset in { -1.4, 1.4 } do
+		block(model, "ArchiveBox", Vector3.new(2.4, 0.7, 1.6), Vector3.new(cx + offset, FLOOR_TOP + height + 0.35, cz + 0.1), COLORS.Cardboard, "Cardboard")
+	end
+
+	local spots = makeZone(model, "Folder", backPanel, 5)
 	for level = 1, 3 do
 		for slotIndex = 0, 5 do
 			local x = cx - 2 + slotIndex * 0.8
@@ -664,6 +675,29 @@ local function createPosters(parent)
 	end
 end
 
+-- Horloge murale. "facing" est la direction vers laquelle regarde le cadran.
+local function createClock(parent, position, facing)
+	local model = newModel(parent, "WallClock")
+	local base = CFrame.lookAt(position, position + facing)
+	local rim = newPart(model, "Rim", Vector3.new(0.15, 1.8, 1.8), base * CFrame.Angles(0, math.rad(90), 0), COLORS.DarkMetal, "Metal", { CanCollide = false })
+	rim.Shape = Enum.PartType.Cylinder
+	local face = newPart(model, "Face", Vector3.new(0.05, 1.55, 1.55), base * CFrame.new(0, 0, -0.08) * CFrame.Angles(0, math.rad(90), 0), COLORS.Trim, "SmoothPlastic", { CanCollide = false })
+	face.Shape = Enum.PartType.Cylinder
+	newPart(model, "HourHand", Vector3.new(0.08, 0.45, 0.03), base * CFrame.new(0, 0, -0.12) * CFrame.Angles(0, 0, math.rad(-60)) * CFrame.new(0, 0.2, 0), COLORS.Black, "SmoothPlastic", { CanCollide = false })
+	newPart(model, "MinuteHand", Vector3.new(0.06, 0.65, 0.03), base * CFrame.new(0, 0, -0.13) * CFrame.Angles(0, 0, math.rad(30)) * CFrame.new(0, 0.3, 0), COLORS.Black, "SmoothPlastic", { CanCollide = false })
+	return model
+end
+
+-- Distributeur de tickets près de l'entrée.
+local function createTicketMachine(parent, x, z)
+	local model = newModel(parent, "TicketMachine")
+	block(model, "Base", Vector3.new(1.2, 0.15, 1.2), Vector3.new(x, FLOOR_TOP + 0.075, z), COLORS.DarkMetal, "Metal")
+	block(model, "Pole", Vector3.new(0.25, 3, 0.25), Vector3.new(x, FLOOR_TOP + 1.65, z), COLORS.Metal, "Metal")
+	block(model, "Box", Vector3.new(1, 1.2, 0.7), Vector3.new(x, FLOOR_TOP + 3.75, z), Color3.fromRGB(230, 80, 70), "SmoothPlastic")
+	newSign(model, "Label", "TICKET", Vector3.new(0.8, 0.35, 0.02), Vector3.new(x, FLOOR_TOP + 3.95, z + 0.36), Vector3.new(0, 0, 1), COLORS.Trim, COLORS.Black)
+	return model
+end
+
 ---------------------------------------------------------------------------
 -- Objets à ranger
 ---------------------------------------------------------------------------
@@ -758,8 +792,9 @@ end
 ---------------------------------------------------------------------------
 local function setupLighting()
 	Lighting.ClockTime = 13
-	Lighting.Brightness = 2.5
-	Lighting.Ambient = Color3.fromRGB(128, 118, 108)
+	Lighting.Brightness = 2
+	Lighting.ExposureCompensation = -0.3
+	Lighting.Ambient = Color3.fromRGB(104, 97, 90)
 	Lighting.OutdoorAmbient = Color3.fromRGB(150, 145, 140)
 	Lighting.EnvironmentDiffuseScale = 1
 	Lighting.EnvironmentSpecularScale = 0.6
@@ -771,9 +806,9 @@ local function setupLighting()
 		colorCorrection.Name = "AgencyColorCorrection"
 		colorCorrection.Parent = Lighting
 	end
-	colorCorrection.Brightness = 0.03
-	colorCorrection.Saturation = 0.15
-	colorCorrection.Contrast = 0.08
+	colorCorrection.Brightness = 0
+	colorCorrection.Saturation = 0.06
+	colorCorrection.Contrast = 0.1
 	colorCorrection.TintColor = Color3.fromRGB(255, 249, 238)
 
 	local bloom = Lighting:FindFirstChild("AgencyBloom")
@@ -782,9 +817,9 @@ local function setupLighting()
 		bloom.Name = "AgencyBloom"
 		bloom.Parent = Lighting
 	end
-	bloom.Intensity = 0.35
-	bloom.Size = 28
-	bloom.Threshold = 1.6
+	bloom.Intensity = 0.15
+	bloom.Size = 24
+	bloom.Threshold = 2.4
 end
 
 local function createSpawn(parent)
@@ -841,6 +876,9 @@ function AgencyBuilder.Build()
 	buildStructure(structure)
 	createLobbyDecor(furniture)
 	createPosters(furniture)
+	createClock(furniture, Vector3.new(-24, FLOOR_TOP + 8, -HALF_Z + 0.1), Vector3.new(0, 0, 1))
+	createClock(furniture, Vector3.new(10, FLOOR_TOP + 8, HALF_Z - 0.1), Vector3.new(0, 0, -1))
+	createTicketMachine(furniture, 7, 22)
 	createReception(furniture)
 	for index, position in { { -30, -4 }, { -16, -4 }, { -30, -18 }, { -16, -18 } } do
 		createAdvisorDesk(furniture, index, position[1], position[2])

@@ -767,7 +767,18 @@ local function refreshWorld()
 			})
 			zoneHighlights[zone] = highlight
 		end
-		highlight.Enabled = carrying ~= "" and zone:GetAttribute("ItemType") == carrying
+		local matches = carrying ~= "" and zone:GetAttribute("ItemType") == carrying
+		highlight.Enabled = matches
+
+		-- Panneau flottant : visible pour la catégorie en main, ou quand on est tout près.
+		local billboard = zone:FindFirstChild("CategoryBillboard")
+		if billboard and billboard:IsA("BillboardGui") then
+			local character = player.Character
+			local root = character and character:FindFirstChild("HumanoidRootPart")
+			local anchor = billboard.Adornee
+			local near = root ~= nil and anchor ~= nil and anchor:IsA("BasePart") and (anchor.Position - root.Position).Magnitude < 16
+			billboard.Enabled = matches or near
+		end
 	end
 end
 
