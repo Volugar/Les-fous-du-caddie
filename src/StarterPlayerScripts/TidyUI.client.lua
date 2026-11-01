@@ -24,13 +24,17 @@ local playerGui = player:WaitForChild("PlayerGui")
 ---------------------------------------------------------------------------
 -- Couleurs et fonctions pour construire l'interface
 ---------------------------------------------------------------------------
-local TEXT_COLOR = Color3.fromRGB(240, 240, 240)
-local MUTED_COLOR = Color3.fromRGB(165, 172, 184)
-local PANEL_COLOR = Color3.fromRGB(24, 27, 32)
-local ACCENT_COLOR = Color3.fromRGB(90, 190, 120)
+local TEXT_COLOR = Color3.fromRGB(58, 46, 36) -- texte foncé sur les panneaux crème
+local OVERLAY_COLOR = Color3.fromRGB(255, 255, 255) -- texte blanc contouré sur le décor
+local MUTED_COLOR = Color3.fromRGB(130, 116, 100)
+local PANEL_COLOR = Color3.fromRGB(253, 248, 236)
+local SOFT_COLOR = Color3.fromRGB(242, 233, 212)
+local ACCENT_COLOR = Color3.fromRGB(32, 168, 160)
 local ERROR_COLOR = Color3.fromRGB(235, 90, 80)
-local GOLD_COLOR = Color3.fromRGB(245, 200, 80)
-local LOCKED_COLOR = Color3.fromRGB(70, 74, 82)
+local GOLD_COLOR = Color3.fromRGB(255, 205, 70)
+local POINTS_COLOR = Color3.fromRGB(214, 140, 18)
+local LOCKED_COLOR = Color3.fromRGB(214, 206, 192)
+local BUTTON_TEXT = Color3.fromRGB(255, 255, 255)
 
 local function make(className, properties)
 	local instance = Instance.new(className)
@@ -48,15 +52,15 @@ local function addCorner(parent, radius)
 end
 
 local function addStroke(parent)
-	make("UIStroke", { Color = Color3.fromRGB(255, 255, 255), Transparency = 0.85, Thickness = 1, Parent = parent })
+	make("UIStroke", { Color = Color3.fromRGB(120, 92, 60), Transparency = 0.55, Thickness = 2, Parent = parent })
 end
 
 local function makePanel(properties)
 	properties.BackgroundColor3 = properties.BackgroundColor3 or PANEL_COLOR
-	properties.BackgroundTransparency = properties.BackgroundTransparency or 0.1
+	properties.BackgroundTransparency = properties.BackgroundTransparency or 0.04
 	properties.BorderSizePixel = 0
 	local frame = make("Frame", properties)
-	addCorner(frame, 8)
+	addCorner(frame, 14)
 	addStroke(frame)
 	return frame
 end
@@ -67,7 +71,7 @@ local function makeLabel(parent, properties)
 	properties.TextScaled = true
 	properties.TextWrapped = true
 	properties.TextColor3 = properties.TextColor3 or TEXT_COLOR
-	properties.Font = properties.Font or Enum.Font.Gotham
+	properties.Font = properties.Font or Enum.Font.GothamMedium
 	local maxSize = properties.MaxTextSize
 	properties.MaxTextSize = nil
 	local label = make("TextLabel", properties)
@@ -82,11 +86,11 @@ local function makeButton(parent, properties)
 	properties.BackgroundColor3 = properties.BackgroundColor3 or ACCENT_COLOR
 	properties.AutoButtonColor = true
 	properties.BorderSizePixel = 0
-	properties.Font = properties.Font or Enum.Font.GothamBold
-	properties.TextColor3 = properties.TextColor3 or Color3.fromRGB(20, 30, 24)
+	properties.Font = properties.Font or Enum.Font.FredokaOne
+	properties.TextColor3 = properties.TextColor3 or BUTTON_TEXT
 	properties.TextScaled = true
 	local button = make("TextButton", properties)
-	addCorner(button, 6)
+	addCorner(button, 10)
 	make("UIPadding", {
 		PaddingLeft = UDim.new(0, 6),
 		PaddingRight = UDim.new(0, 6),
@@ -135,9 +139,10 @@ local timerLabel = makeLabel(screenGui, {
 	AnchorPoint = Vector2.new(0.5, 0),
 	Position = UDim2.new(0.5, 0, 0, 4),
 	Size = UDim2.new(0, 170, 0, 46),
-	Font = Enum.Font.GothamBold,
+	Font = Enum.Font.FredokaOne,
 	Text = "00:00",
-	TextStrokeTransparency = 0.4,
+	TextColor3 = OVERLAY_COLOR,
+	TextStrokeTransparency = 0.2,
 	MaxTextSize = 42,
 })
 
@@ -146,8 +151,10 @@ local hintLabel = makeLabel(screenGui, {
 	AnchorPoint = Vector2.new(0.5, 0),
 	Position = UDim2.new(0.5, 0, 0, 52),
 	Size = UDim2.new(0.5, 0, 0, 26),
+	Font = Enum.Font.FredokaOne,
 	Text = "",
-	TextStrokeTransparency = 0.5,
+	TextColor3 = OVERLAY_COLOR,
+	TextStrokeTransparency = 0.3,
 	MaxTextSize = 18,
 })
 
@@ -173,7 +180,7 @@ local totalLabel = makeLabel(progressPanel, {
 	Name = "Total",
 	Position = UDim2.new(0, 12, 0, 26),
 	Size = UDim2.new(1, -24, 0, 30),
-	Font = Enum.Font.GothamBold,
+	Font = Enum.Font.FredokaOne,
 	Text = "0 / 0",
 	TextXAlignment = Enum.TextXAlignment.Left,
 	MaxTextSize = 26,
@@ -182,7 +189,7 @@ local progressBack = make("Frame", {
 	Name = "Bar",
 	Position = UDim2.new(0, 12, 0, 60),
 	Size = UDim2.new(1, -24, 0, 6),
-	BackgroundColor3 = Color3.fromRGB(60, 64, 72),
+	BackgroundColor3 = SOFT_COLOR,
 	BorderSizePixel = 0,
 	Parent = progressPanel,
 })
@@ -220,9 +227,9 @@ local pointsLabel = makeLabel(leftPanel, {
 	Name = "Points",
 	Position = UDim2.new(0, 10, 0, 8),
 	Size = UDim2.new(1, -20, 0, 28),
-	Font = Enum.Font.GothamBold,
+	Font = Enum.Font.FredokaOne,
 	Text = "Points : 0",
-	TextColor3 = GOLD_COLOR,
+	TextColor3 = POINTS_COLOR,
 	TextXAlignment = Enum.TextXAlignment.Left,
 	MaxTextSize = 22,
 })
@@ -231,7 +238,8 @@ local upgradesButton = makeButton(leftPanel, {
 	Position = UDim2.new(0, 10, 0, 44),
 	Size = UDim2.new(1, -20, 0, 38),
 	Text = "Améliorations [" .. keyName(Enum.KeyCode.G) .. "]",
-	BackgroundColor3 = Color3.fromRGB(235, 225, 200),
+	BackgroundColor3 = GOLD_COLOR,
+	TextColor3 = TEXT_COLOR,
 })
 
 -- Zone actuelle, sac et barre d'outils (en bas au centre).
@@ -240,8 +248,10 @@ local areaLabel = makeLabel(screenGui, {
 	AnchorPoint = Vector2.new(0.5, 1),
 	Position = UDim2.new(0.5, 0, 1, -128),
 	Size = UDim2.new(0, 320, 0, 22),
+	Font = Enum.Font.FredokaOne,
 	Text = "",
-	TextStrokeTransparency = 0.4,
+	TextColor3 = OVERLAY_COLOR,
+	TextStrokeTransparency = 0.3,
 	MaxTextSize = 18,
 })
 
@@ -266,7 +276,8 @@ local previousButton = makeButton(bagBar, {
 	LayoutOrder = 1,
 	Size = UDim2.new(0, 36, 0, 36),
 	Text = "<",
-	BackgroundColor3 = Color3.fromRGB(235, 235, 235),
+	BackgroundColor3 = SOFT_COLOR,
+	TextColor3 = TEXT_COLOR,
 })
 local chipsFrame = make("Frame", {
 	Name = "Chips",
@@ -288,14 +299,15 @@ local nextButton = makeButton(bagBar, {
 	LayoutOrder = 3,
 	Size = UDim2.new(0, 36, 0, 36),
 	Text = ">",
-	BackgroundColor3 = Color3.fromRGB(235, 235, 235),
+	BackgroundColor3 = SOFT_COLOR,
+	TextColor3 = TEXT_COLOR,
 })
 local dropButton = makeButton(bagBar, {
 	Name = "Drop",
 	LayoutOrder = 4,
 	Size = UDim2.new(0, 86, 0, 36),
 	Text = "Lâcher",
-	BackgroundColor3 = Color3.fromRGB(235, 160, 120),
+	BackgroundColor3 = Color3.fromRGB(240, 130, 70),
 })
 
 local hotbar = make("Frame", {
@@ -326,7 +338,8 @@ for index, tool in TOOLS do
 		LayoutOrder = index,
 		Size = UDim2.new(0, 92, 0, 60),
 		Text = index .. "\n" .. tool.Name,
-		BackgroundColor3 = Color3.fromRGB(235, 225, 200),
+		BackgroundColor3 = PANEL_COLOR,
+		TextColor3 = TEXT_COLOR,
 	})
 end
 
@@ -343,9 +356,11 @@ local controlsLabel = makeLabel(screenGui, {
 		.. " : lâcher l'objet\n1, 2, 3 : outils\n"
 		.. keyName(Enum.KeyCode.G)
 		.. " : améliorations",
+	Font = Enum.Font.FredokaOne,
+	TextColor3 = OVERLAY_COLOR,
 	TextXAlignment = Enum.TextXAlignment.Right,
 	TextYAlignment = Enum.TextYAlignment.Bottom,
-	TextStrokeTransparency = 0.5,
+	TextStrokeTransparency = 0.3,
 	MaxTextSize = 16,
 })
 controlsLabel.Visible = not (UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled)
@@ -356,9 +371,10 @@ local toastLabel = makeLabel(screenGui, {
 	AnchorPoint = Vector2.new(0.5, 0.5),
 	Position = UDim2.new(0.5, 0, 0.3, 0),
 	Size = UDim2.new(0.6, 0, 0, 34),
-	Font = Enum.Font.GothamBold,
+	Font = Enum.Font.FredokaOne,
 	Text = "",
-	TextStrokeTransparency = 0.3,
+	TextColor3 = OVERLAY_COLOR,
+	TextStrokeTransparency = 0.2,
 	TextTransparency = 1,
 	MaxTextSize = 26,
 })
@@ -377,7 +393,7 @@ makeLabel(upgradesPanel, {
 	Name = "Title",
 	Position = UDim2.new(0, 16, 0, 12),
 	Size = UDim2.new(1, -120, 0, 30),
-	Font = Enum.Font.GothamBold,
+	Font = Enum.Font.FredokaOne,
 	Text = "Améliorations",
 	TextXAlignment = Enum.TextXAlignment.Left,
 	MaxTextSize = 24,
@@ -388,7 +404,8 @@ local closeUpgradesButton = makeButton(upgradesPanel, {
 	Position = UDim2.new(1, -12, 0, 12),
 	Size = UDim2.new(0, 90, 0, 30),
 	Text = "Fermer",
-	BackgroundColor3 = Color3.fromRGB(235, 235, 235),
+	BackgroundColor3 = SOFT_COLOR,
+	TextColor3 = TEXT_COLOR,
 })
 
 local upgradeRows = {}
@@ -397,7 +414,7 @@ for index, upgrade in TidyConfig.Upgrades do
 		Name = "Row_" .. upgrade.Id,
 		Position = UDim2.new(0, 12, 0, 54 + (index - 1) * 66),
 		Size = UDim2.new(1, -24, 0, 58),
-		BackgroundColor3 = Color3.fromRGB(40, 44, 52),
+		BackgroundColor3 = SOFT_COLOR,
 		BorderSizePixel = 0,
 		Parent = upgradesPanel,
 	})
@@ -406,7 +423,7 @@ for index, upgrade in TidyConfig.Upgrades do
 		Name = "Name",
 		Position = UDim2.new(0, 10, 0, 6),
 		Size = UDim2.new(1, -150, 0, 22),
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.FredokaOne,
 		Text = upgrade.Name,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		MaxTextSize = 18,
@@ -446,7 +463,7 @@ local function makeMessagePanel(name, titleText)
 		Name = "Title",
 		Position = UDim2.new(0, 20, 0, 18),
 		Size = UDim2.new(1, -40, 0, 32),
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.FredokaOne,
 		Text = titleText,
 		MaxTextSize = 26,
 	})
@@ -491,7 +508,8 @@ local closeCompleteButton = makeButton(completePanel, {
 	Position = UDim2.new(0.5, 6, 1, -16),
 	Size = UDim2.new(0, 160, 0, 42),
 	Text = "Fermer",
-	BackgroundColor3 = Color3.fromRGB(235, 235, 235),
+	BackgroundColor3 = SOFT_COLOR,
+	TextColor3 = TEXT_COLOR,
 })
 
 ---------------------------------------------------------------------------
@@ -510,7 +528,7 @@ local function showToast(text, kind)
 	elseif kind == "points" then
 		toastLabel.TextColor3 = GOLD_COLOR
 	else
-		toastLabel.TextColor3 = TEXT_COLOR
+		toastLabel.TextColor3 = OVERLAY_COLOR
 	end
 	toastLabel.TextTransparency = 0
 	task.delay(1.6, function()
@@ -635,9 +653,9 @@ local function updateBag()
 			LayoutOrder = index,
 			Size = UDim2.new(0, 84, 0, 34),
 			BackgroundTransparency = 0.1,
-			Font = Enum.Font.GothamBold,
+			Font = Enum.Font.FredokaOne,
 			Text = info and info.DisplayName or itemType,
-			TextColor3 = if index == selected then Color3.fromRGB(20, 30, 24) else TEXT_COLOR,
+			TextColor3 = if index == selected then BUTTON_TEXT else TEXT_COLOR,
 			MaxTextSize = 14,
 		})
 		chip.BackgroundTransparency = 0.1
@@ -648,10 +666,10 @@ local function updateBag()
 		Name = "ChipCount",
 		LayoutOrder = 100,
 		Size = UDim2.new(0, 54, 0, 34),
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.FredokaOne,
 		Text = #list .. "/" .. capacity,
-		TextColor3 = if #list >= capacity then ERROR_COLOR else TEXT_COLOR,
-		TextStrokeTransparency = 0.4,
+		TextColor3 = if #list >= capacity then ERROR_COLOR else OVERLAY_COLOR,
+		TextStrokeTransparency = 0.3,
 		MaxTextSize = 18,
 	})
 	counter.BackgroundTransparency = 1
@@ -678,10 +696,10 @@ local function updateTools()
 			button.TextColor3 = MUTED_COLOR
 		elseif equippedTool == tool.Id then
 			button.BackgroundColor3 = ACCENT_COLOR
-			button.TextColor3 = Color3.fromRGB(20, 30, 24)
+			button.TextColor3 = BUTTON_TEXT
 		else
-			button.BackgroundColor3 = Color3.fromRGB(235, 225, 200)
-			button.TextColor3 = Color3.fromRGB(20, 30, 24)
+			button.BackgroundColor3 = PANEL_COLOR
+			button.TextColor3 = TEXT_COLOR
 		end
 	end
 end
@@ -701,7 +719,7 @@ local function updateUpgrades()
 			local cost = TidyConfig.GetUpgradeCost(upgrade, level)
 			row.Button.Text = "Acheter\n" .. cost .. " pts"
 			row.Button.BackgroundColor3 = if points >= cost then ACCENT_COLOR else LOCKED_COLOR
-			row.Button.TextColor3 = if points >= cost then Color3.fromRGB(20, 30, 24) else MUTED_COLOR
+			row.Button.TextColor3 = if points >= cost then BUTTON_TEXT else MUTED_COLOR
 		end
 	end
 end

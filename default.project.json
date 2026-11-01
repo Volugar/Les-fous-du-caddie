@@ -73,6 +73,14 @@
           "$path": "src/StarterPlayerScripts/TidyUI.client.lua"
         }
       }
+    },
+    "Lighting": {
+      "$className": "Lighting",
+      "$properties": {
+        "Technology": {
+          "Enum": 4
+        }
+      }
     }
   }
 }
