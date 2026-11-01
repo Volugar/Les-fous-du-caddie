@@ -15,6 +15,12 @@ local TidyConfig = require(ReplicatedStorage:WaitForChild("TidyConfig"))
 
 local AgencyBuilder = {}
 
+-- Intensité des lampes (réglable avec TidyConfig.LightLevel).
+local LIGHT_LEVEL = TidyConfig.LightLevel or 1
+local function lampPower(brightness)
+	return brightness * LIGHT_LEVEL
+end
+
 ---------------------------------------------------------------------------
 -- Dimensions (en studs). L'intérieur de l'agence va de
 -- X = -80 à 80 et de Z = -100 à 60. La surface du sol est à Y = 1.
@@ -137,7 +143,7 @@ local COLORS = {
 	Ceiling = Color3.fromRGB(250, 244, 232),
 	Slat = Color3.fromRGB(222, 156, 96),
 	CeilingGrid = Color3.fromRGB(222, 214, 200),
-	Light = Color3.fromRGB(255, 246, 226),
+	Light = Color3.fromRGB(246, 232, 206),
 	Tiles = Color3.fromRGB(240, 228, 206),
 	MintTiles = Color3.fromRGB(206, 236, 222),
 	Carpet = Color3.fromRGB(78, 126, 186),
@@ -708,13 +714,13 @@ local function slatCeiling(parent, minX, maxX, minZ, maxZ, holes, rooms)
 				continue
 			end
 			local length = room.MaxX - room.MinX - 8
-			local strip = block(parent, "LightStrip", Vector3.new(length, 0.15, 0.6), Vector3.new((room.MinX + room.MaxX) / 2, y - 0.25, stripZ), COLORS.Light, "Neon", { CanCollide = false, CastShadow = false })
+			local strip = block(parent, "LightStrip", Vector3.new(length, 0.15, 0.6), Vector3.new((room.MinX + room.MaxX) / 2, y - 0.25, stripZ), COLORS.Light, "Neon", { CanCollide = false, CastShadow = false, Transparency = 0.45 })
 			local lightX = room.MinX + 10
 			while lightX <= room.MaxX - 6 do
 				local holder = block(parent, "LightPoint", Vector3.new(0.2, 0.1, 0.2), Vector3.new(lightX, y - 0.4, stripZ), COLORS.Light, "SmoothPlastic", { CanCollide = false, CastShadow = false, Transparency = 1 })
 				local light = Instance.new("PointLight")
-				light.Range = 16
-				light.Brightness = 0.9
+				light.Range = 14
+				light.Brightness = lampPower(0.5)
 				light.Color = Color3.fromRGB(255, 236, 206)
 				light.Shadows = false
 				light.Parent = holder
@@ -1323,7 +1329,7 @@ local function createElevator(parent, cx, backZ, targetPosition, label, lockedRo
 	CollectionService:AddTag(pad, "TidyLift")
 	local light = Instance.new("PointLight")
 	light.Range = 10
-	light.Brightness = 1
+	light.Brightness = lampPower(0.6)
 	light.Parent = pad
 	newSign(model, "ElevatorSign", label, Vector3.new(6, 0.9, 0.1), Vector3.new(cx, FLOOR_TOP + 9.9, frontZ + 0.36), Vector3.new(0, 0, 1))
 	addObstacle(cx - 4.5, cx + 4.5, frontZ, frontZ + 4.5)
@@ -2332,13 +2338,14 @@ end
 -- Éclairage (lumineux, couleurs vives) et point d'apparition
 ---------------------------------------------------------------------------
 local function setupLighting()
+	-- Lumière douce : soleil et ambiance modérés, pas d'effet "brûlé".
 	Lighting.ClockTime = 13.5
-	Lighting.Brightness = 3
-	Lighting.ExposureCompensation = 0.15
-	Lighting.Ambient = Color3.fromRGB(150, 142, 132)
-	Lighting.OutdoorAmbient = Color3.fromRGB(170, 162, 150)
-	Lighting.EnvironmentDiffuseScale = 1
-	Lighting.EnvironmentSpecularScale = 0.8
+	Lighting.Brightness = 1.6 * LIGHT_LEVEL
+	Lighting.ExposureCompensation = -0.35 + (LIGHT_LEVEL - 1) * 0.5
+	Lighting.Ambient = Color3.fromRGB(96, 92, 88)
+	Lighting.OutdoorAmbient = Color3.fromRGB(118, 114, 108)
+	Lighting.EnvironmentDiffuseScale = 0.5
+	Lighting.EnvironmentSpecularScale = 0.45
 	Lighting.GlobalShadows = true
 
 	local colorCorrection = Lighting:FindFirstChild("AgencyColorCorrection")
@@ -2347,10 +2354,10 @@ local function setupLighting()
 		colorCorrection.Name = "AgencyColorCorrection"
 		colorCorrection.Parent = Lighting
 	end
-	colorCorrection.Brightness = 0.02
-	colorCorrection.Saturation = 0.22
-	colorCorrection.Contrast = 0.08
-	colorCorrection.TintColor = Color3.fromRGB(255, 250, 242)
+	colorCorrection.Brightness = -0.04
+	colorCorrection.Saturation = 0.15
+	colorCorrection.Contrast = 0.1
+	colorCorrection.TintColor = Color3.fromRGB(255, 248, 238)
 
 	local atmosphere = Lighting:FindFirstChild("AgencyAtmosphere")
 	if not atmosphere then
@@ -2358,10 +2365,11 @@ local function setupLighting()
 		atmosphere.Name = "AgencyAtmosphere"
 		atmosphere.Parent = Lighting
 	end
-	atmosphere.Density = 0.2
-	atmosphere.Haze = 0.6
-	atmosphere.Color = Color3.fromRGB(220, 232, 246)
-	atmosphere.Decay = Color3.fromRGB(160, 190, 230)
+	atmosphere.Density = 0.25
+	atmosphere.Haze = 0.2
+	atmosphere.Glare = 0
+	atmosphere.Color = Color3.fromRGB(205, 218, 232)
+	atmosphere.Decay = Color3.fromRGB(150, 175, 210)
 
 	local bloom = Lighting:FindFirstChild("AgencyBloom")
 	if not bloom then
@@ -2369,9 +2377,9 @@ local function setupLighting()
 		bloom.Name = "AgencyBloom"
 		bloom.Parent = Lighting
 	end
-	bloom.Intensity = 0.35
-	bloom.Size = 24
-	bloom.Threshold = 1.6
+	bloom.Intensity = 0.12
+	bloom.Size = 18
+	bloom.Threshold = 2.4
 end
 
 local function createSpawn(parent, name, position)
@@ -2417,8 +2425,8 @@ function Deco.Chandelier(parent, x, ceilingY, z, scale)
 		crystal.Reflectance = 0.4
 	end
 	local light = Instance.new("PointLight")
-	light.Range = 26 * scale
-	light.Brightness = 1.6
+	light.Range = 22 * scale
+	light.Brightness = lampPower(0.8)
 	light.Color = Color3.fromRGB(255, 220, 170)
 	light.Shadows = false
 	light.Parent = core
@@ -2438,8 +2446,8 @@ function Deco.Pendant(parent, x, ceilingY, z, drop, shadeColor, withLight)
 	bulb.Shape = Enum.PartType.Ball
 	if withLight ~= false then
 		local light = Instance.new("PointLight")
-		light.Range = 20
-		light.Brightness = 1.2
+		light.Range = 18
+		light.Brightness = lampPower(0.6)
 		light.Color = Color3.fromRGB(255, 226, 180)
 		light.Shadows = false
 		light.Parent = bulb
@@ -2895,7 +2903,7 @@ function WH.Build(root)
 			end
 		end
 		if free then
-			block(structure, "LightStrip", Vector3.new(width - 8, 0.15, 0.6), Vector3.new(cx, top - 0.4, z), COLORS.Light, "Neon", { CanCollide = false, CastShadow = false })
+			block(structure, "LightStrip", Vector3.new(width - 8, 0.15, 0.6), Vector3.new(cx, top - 0.4, z), COLORS.Light, "Neon", { CanCollide = false, CastShadow = false, Transparency = 0.45 })
 		end
 	end
 	-- Grandes poutres porteuses.
@@ -2911,8 +2919,8 @@ function WH.Build(root)
 			local lamp = Deco.Pendant(structure, x, top - 1.9, z, 7, COLORS.DarkMetal, n % 2 == 0)
 			local light = lamp:FindFirstChild("Bulb") and lamp.Bulb:FindFirstChildOfClass("PointLight")
 			if light then
-				light.Range = 45
-				light.Brightness = 1.4
+				light.Range = 38
+				light.Brightness = lampPower(0.7)
 			end
 		end
 	end
@@ -3070,8 +3078,8 @@ function HQ.TrophyCabinet(parent, index, x, z, facing)
 	newPart(model, "FrontGlass", Vector3.new(6, height - 0.8, 0.08), at(0, height / 2 + 0.2, -0.76), COLORS.Glass, "Glass", { Transparency = 0.75, CastShadow = false })
 	local light = Instance.new("SurfaceLight")
 	light.Face = Enum.NormalId.Bottom
-	light.Range = 9
-	light.Brightness = 1
+	light.Range = 8
+	light.Brightness = lampPower(0.5)
 	light.Color = Color3.fromRGB(255, 236, 200)
 	light.Parent = newPart(model, "CabinetLight", Vector3.new(5.6, 0.1, 0.3), at(0, height - 0.2, 0), COLORS.Light, "Neon", { CanCollide = false })
 	local spots = makeZone(model, "Trophy", back, 5.5)
@@ -3160,8 +3168,8 @@ function HQ.Fountain(parent, x, z)
 	spray.Parent = spout
 	local glow = Instance.new("PointLight")
 	glow.Color = Color3.fromRGB(120, 200, 255)
-	glow.Range = 14
-	glow.Brightness = 1
+	glow.Range = 12
+	glow.Brightness = lampPower(0.6)
 	glow.Parent = water
 	return model
 end
@@ -3179,7 +3187,7 @@ function HQ.Coffers(parent, room)
 	end
 	for x = room.MinX + 5, room.MaxX - 5, 10 do
 		for z = room.MinZ + 5, room.MaxZ - 5, 10 do
-			block(parent, "CofferLight", Vector3.new(4, 0.1, 4), Vector3.new(x, CEILING_BOTTOM - 0.05, z), COLORS.Light, "Neon", { CanCollide = false, CastShadow = false, Transparency = 0.2 })
+			block(parent, "CofferLight", Vector3.new(4, 0.1, 4), Vector3.new(x, CEILING_BOTTOM - 0.05, z), COLORS.Light, "Neon", { CanCollide = false, CastShadow = false, Transparency = 0.55 })
 		end
 	end
 end
@@ -3665,8 +3673,8 @@ function Hub.DisplayStand(parent, pass, x, z)
 	block(model, "CaseTop", Vector3.new(2.8, 0.2, 2.8), Vector3.new(x, FLOOR_TOP + 6.5, z), COLORS.Gold, "Foil", { CanCollide = false })
 	Hub.PassIcon(model, pass.Id, Vector3.new(x, FLOOR_TOP + 5, z))
 	local light = Instance.new("PointLight")
-	light.Range = 8
-	light.Brightness = 1.2
+	light.Range = 7
+	light.Brightness = lampPower(0.6)
 	light.Color = Color3.fromRGB(255, 230, 180)
 	light.Parent = pedestal
 	local sign = newSign(model, "PriceSign", pass.Icon .. " " .. pass.Name .. "\nR$ " .. pass.Price, Vector3.new(2.8, 1.8, 0.1), Vector3.new(x, FLOOR_TOP + 2, z + 1.56), Vector3.new(0, 0, 1), Color3.fromRGB(30, 34, 50), Color3.fromRGB(255, 214, 90))
@@ -3696,8 +3704,8 @@ function Hub.QueuePad(parent, index, x, z, wallSide)
 	pad:SetAttribute("QueueIndex", index)
 	local glow = Instance.new("PointLight")
 	glow.Color = color
-	glow.Range = 14
-	glow.Brightness = 1.4
+	glow.Range = 12
+	glow.Brightness = lampPower(0.7)
 	glow.Parent = pad
 	local sparkles = Instance.new("ParticleEmitter")
 	sparkles.Name = "Sparkles"

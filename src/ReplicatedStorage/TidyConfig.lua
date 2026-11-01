@@ -338,6 +338,10 @@ TidyConfig.QuestsPerDay = 3
 TidyConfig.MaxPartySize = 4
 TidyConfig.QueueCountdown = 5
 
+-- Éclairage du jeu : 1 = normal (doux). Mettez par exemple 0.8 si c'est encore trop lumineux,
+-- ou 1.2 si c'est trop sombre. Agit sur le soleil, l'ambiance et toutes les lampes.
+TidyConfig.LightLevel = 1
+
 -- Musique d'ambiance. Mettez ici l'identifiant de la musique après l'avoir importée sur Roblox,
 -- au format "rbxassetid://123456789". Laissez vide pour jouer sans musique.
 TidyConfig.MusicSoundId = ""
