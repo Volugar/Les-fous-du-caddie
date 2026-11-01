@@ -1,7 +1,7 @@
 -- AgencyBuilder (ModuleScript)
 -- Emplacement : ServerScriptService
 -- Construit toute l'agence pour l'emploi au lancement du jeu : bâtiment, mobilier,
--- panneaux, lumières, emplacements des objets et objets mal rangés.
+-- panneaux, lumières, zones de rangement avec leurs places, et objets éparpillés.
 -- Il est utilisé par le script TidyManager. Il ne fait rien tout seul.
 
 local CollectionService = game:GetService("CollectionService")
@@ -25,12 +25,12 @@ local CEILING_BOTTOM = FLOOR_TOP + WALL_HEIGHT
 local DESK_HEIGHT = 2.5
 local COUNTER_HEIGHT = 3.75
 
--- Taille de la pièce principale de chaque objet. Sert aux objets et à leurs emplacements.
+-- Taille de la pièce principale de chaque objet. Sert aux objets et à leurs places.
 local ITEM_SIZES = {
 	Folder = Vector3.new(1.3, 0.15, 1.6),
 	Paper = Vector3.new(1.1, 0.25, 1.5),
 	Chair = Vector3.new(2, 0.35, 2),
-	Box = Vector3.new(2.4, 1.8, 1.8),
+	Box = Vector3.new(2.1, 1.6, 1.6),
 }
 
 -- Distance entre le sol et le centre de la pièce principale de chaque objet.
@@ -38,9 +38,18 @@ local REST_HEIGHTS = {
 	Folder = 0.075,
 	Paper = 0.125,
 	Chair = 1.8,
-	Box = 0.9,
+	Box = 0.8,
 }
 local TIPPED_CHAIR_HEIGHT = 1
+
+-- Rayon occupé au sol par chaque objet (pour ne pas les poser les uns sur les autres).
+local ITEM_RADIUS = {
+	Folder = 1.1,
+	Paper = 1,
+	Chair = 1.6,
+	Box = 1.5,
+}
+local TIPPED_CHAIR_RADIUS = 2.4
 
 local COLORS = {
 	Wall = Color3.fromRGB(226, 222, 212),
@@ -56,6 +65,7 @@ local COLORS = {
 	Black = Color3.fromRGB(28, 28, 30),
 	OfficeChair = Color3.fromRGB(40, 42, 48),
 	WaitingChair = Color3.fromRGB(64, 92, 128),
+	Rug = Color3.fromRGB(46, 70, 112),
 	Paper = Color3.fromRGB(240, 240, 234),
 	Cardboard = Color3.fromRGB(178, 140, 94),
 	Tape = Color3.fromRGB(206, 176, 128),
@@ -75,46 +85,35 @@ local FOLDER_COLORS = {
 	Color3.fromRGB(80, 130, 90),
 }
 
-local BINDER_COLORS = {
-	Color3.fromRGB(40, 60, 110),
-	Color3.fromRGB(120, 40, 40),
-	Color3.fromRGB(50, 50, 55),
-	Color3.fromRGB(200, 180, 120),
-}
-
 ---------------------------------------------------------------------------
--- Position de départ des objets mal rangés.
--- X / Z : position sur la carte. Surface : hauteur de ce sur quoi il est posé
--- (0 = sol, DESK_HEIGHT = sur un bureau). Yaw : rotation en degrés.
--- Tipped : la chaise est renversée sur le côté.
+-- Obstacles au sol : liste de rectangles {minX, maxX, minZ, maxZ} où l'on
+-- ne pose pas d'objet au début d'une partie.
 ---------------------------------------------------------------------------
-local MISPLACED_ITEMS = {
-	{ Type = "Folder", X = -22, Z = 4, Surface = 0, Yaw = 25 },
-	{ Type = "Folder", X = -18, Z = -4, Surface = DESK_HEIGHT, Yaw = 25 },
-	{ Type = "Folder", X = -12, Z = 20, Surface = 0, Yaw = 70 },
-	{ Type = "Folder", X = 2, Z = -24, Surface = 0, Yaw = -40 },
-	{ Type = "Folder", X = 8, Z = 6, Surface = 0, Yaw = 10 },
-	{ Type = "Folder", X = 34, Z = 15, Surface = 0, Yaw = 55 },
+local obstacles = {}
+local collectObstacles = false
 
-	{ Type = "Paper", X = -24, Z = -11, Surface = 0, Yaw = 15 },
-	{ Type = "Paper", X = -6, Z = 24, Surface = 0, Yaw = 40 },
-	{ Type = "Paper", X = 30, Z = -18, Surface = 0, Yaw = -20 },
-	{ Type = "Paper", X = 12, Z = -20, Surface = 0, Yaw = 80 },
-	{ Type = "Paper", X = 18, Z = 26, Surface = 0, Yaw = -60 },
-	{ Type = "Paper", X = -32.2, Z = -18, Surface = DESK_HEIGHT, Yaw = 20 },
+local function addObstacle(minX, maxX, minZ, maxZ)
+	table.insert(obstacles, { minX, maxX, minZ, maxZ })
+end
 
-	{ Type = "Chair", X = -6, Z = -10, Surface = 0, Yaw = 30, Tipped = true },
-	{ Type = "Chair", X = -36, Z = 14, Surface = 0, Yaw = 120 },
-	{ Type = "Chair", X = 12, Z = 10, Surface = 0, Yaw = -15, Tipped = true },
-	{ Type = "Chair", X = -22, Z = -26, Surface = 0, Yaw = 200 },
-	{ Type = "Chair", X = 36, Z = -16, Surface = 0, Yaw = 90, Tipped = true },
-	{ Type = "Chair", X = 18, Z = -6, Surface = 0, Yaw = 45 },
-
-	{ Type = "Box", X = -10, Z = 16, Surface = 0, Yaw = 20 },
-	{ Type = "Box", X = 2, Z = -14, Surface = 0, Yaw = -30 },
-	{ Type = "Box", X = -36, Z = -10, Surface = 0, Yaw = 10 },
-	{ Type = "Box", X = 36, Z = 27, Surface = 0, Yaw = 70 },
-}
+-- Enregistre l'emprise au sol d'une pièce si elle gêne le passage.
+local function registerFootprint(part)
+	local half = part.Size / 2
+	local minX, maxX, minY, maxY, minZ, maxZ = math.huge, -math.huge, math.huge, -math.huge, math.huge, -math.huge
+	for _, sx in { -1, 1 } do
+		for _, sy in { -1, 1 } do
+			for _, sz in { -1, 1 } do
+				local corner = part.CFrame * Vector3.new(half.X * sx, half.Y * sy, half.Z * sz)
+				minX, maxX = math.min(minX, corner.X), math.max(maxX, corner.X)
+				minY, maxY = math.min(minY, corner.Y), math.max(maxY, corner.Y)
+				minZ, maxZ = math.min(minZ, corner.Z), math.max(maxZ, corner.Z)
+			end
+		end
+	end
+	if maxY > FLOOR_TOP + 0.06 and minY < FLOOR_TOP + 6 then
+		addObstacle(minX, maxX, minZ, maxZ)
+	end
+end
 
 ---------------------------------------------------------------------------
 -- Petites fonctions utilitaires
@@ -145,6 +144,9 @@ local function newPart(parent, name, size, cframe, color, materialName, options)
 		for key, value in options do
 			part[key] = value
 		end
+	end
+	if collectObstacles and part.CanCollide then
+		registerFootprint(part)
 	end
 	part.Parent = parent
 	return part
@@ -216,6 +218,78 @@ local function newFolder(parent, name)
 	folder.Name = name
 	folder.Parent = parent
 	return folder
+end
+
+---------------------------------------------------------------------------
+-- Zones de rangement et places
+---------------------------------------------------------------------------
+local allSlots = {}
+local allZones = {}
+
+-- Transforme un meuble en zone de rangement : on clique dessus pour y ranger.
+-- Un panneau flottant affiche le compteur de la catégorie.
+local function makeZone(model, itemType, anchorPart, billboardHeight)
+	model:SetAttribute("ItemType", itemType)
+	model:SetAttribute("ZoneLabel", TidyConfig.ItemTypes[itemType].PlaceName)
+	CollectionService:AddTag(model, TidyConfig.ZoneTag)
+
+	local billboard = Instance.new("BillboardGui")
+	billboard.Name = "CategoryBillboard"
+	billboard.Adornee = anchorPart
+	billboard.Size = UDim2.fromOffset(220, 52)
+	billboard.StudsOffsetWorldSpace = Vector3.new(0, billboardHeight, 0)
+	billboard.MaxDistance = 70
+	billboard.LightInfluence = 0
+	billboard.Parent = model
+
+	local label = Instance.new("TextLabel")
+	label.Name = "Text"
+	label.Size = UDim2.fromScale(1, 1)
+	label.BackgroundColor3 = COLORS.SignBlue
+	label.BackgroundTransparency = 0.15
+	label.Font = Enum.Font.GothamBold
+	label.Text = TidyConfig.ItemTypes[itemType].PlaceName
+	label.TextColor3 = Color3.fromRGB(245, 245, 245)
+	label.TextScaled = true
+	label.Parent = billboard
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 8)
+	corner.Parent = label
+	local padding = Instance.new("UIPadding")
+	padding.PaddingLeft = UDim.new(0, 8)
+	padding.PaddingRight = UDim.new(0, 8)
+	padding.PaddingTop = UDim.new(0, 4)
+	padding.PaddingBottom = UDim.new(0, 4)
+	padding.Parent = label
+
+	table.insert(allZones, model)
+	return newFolder(model, "Spots")
+end
+
+-- Place invisible où un objet doit être rangé. Elle brille quand le joueur
+-- tient un objet du bon type (géré par TidyUI).
+local function createSlot(spotsFolder, itemType, targetCFrame)
+	local index = #spotsFolder:GetChildren() + 1
+	local slot = newPart(spotsFolder, itemType .. "Spot" .. index, ITEM_SIZES[itemType], targetCFrame, COLORS.Ghost, "Neon", {
+		Transparency = 1,
+		CastShadow = false,
+	})
+	slot.CanCollide = false
+	slot.CanTouch = false
+	slot.CanQuery = false
+	slot:SetAttribute("ItemType", itemType)
+	slot:SetAttribute("Occupied", false)
+	slot:SetAttribute("Order", #allSlots + 1)
+	CollectionService:AddTag(slot, TidyConfig.SlotTag)
+
+	-- Aucune chaise ne doit apparaître là où une chaise se range.
+	if itemType == "Chair" then
+		local p = targetCFrame.Position
+		addObstacle(p.X - 1.4, p.X + 1.4, p.Z - 1.4, p.Z + 1.4)
+	end
+
+	table.insert(allSlots, slot)
+	return slot
 end
 
 ---------------------------------------------------------------------------
@@ -301,14 +375,14 @@ local function buildStructure(parent)
 	end
 
 	-- Tapis d'entrée.
-	block(parent, "EntranceMat", Vector3.new(6, 0.05, 3), Vector3.new(0, FLOOR_TOP + 0.025, HALF_Z - 2.5), COLORS.DarkMetal, "Fabric")
+	block(parent, "EntranceMat", Vector3.new(6, 0.05, 3), Vector3.new(0, FLOOR_TOP + 0.025, HALF_Z - 2.5), COLORS.DarkMetal, "Fabric", { CanCollide = false })
 end
 
 ---------------------------------------------------------------------------
--- Mobilier décoratif (ne peut pas être ramassé)
+-- Mobilier
 ---------------------------------------------------------------------------
 
--- Chaise de bureau. "floorPosition" est au sol ; la chaise regarde vers -Z avant rotation.
+-- Chaise de bureau (décor). "floorPosition" est au sol ; la chaise regarde vers -Z avant rotation.
 local function createOfficeChair(parent, floorPosition, yawRadians)
 	local model = newModel(parent, "OfficeChair")
 	local base = CFrame.new(floorPosition) * CFrame.Angles(0, yawRadians, 0)
@@ -327,18 +401,21 @@ local function createPlant(parent, x, z)
 	return model
 end
 
--- Bac à documents vide. Renvoie la position où va une pile de papiers.
-local function createTray(parent, position)
-	block(parent, "DocumentTray", Vector3.new(1.4, 0.1, 1.8), position + Vector3.new(0, 0.05, 0), COLORS.DarkMetal, "Metal")
-	return CFrame.new(position + Vector3.new(0, 0.1 + REST_HEIGHTS.Paper, 0))
+-- Bac à documents : 3 piles de papiers peuvent s'y empiler.
+local function createTray(model, spots, position)
+	block(model, "DocumentTray", Vector3.new(1.4, 0.1, 1.8), position + Vector3.new(0, 0.05, 0), COLORS.DarkMetal, "Metal")
+	for level = 0, 2 do
+		local y = 0.1 + REST_HEIGHTS.Paper + level * ITEM_SIZES.Paper.Y
+		createSlot(spots, "Paper", CFrame.new(position + Vector3.new(0, y, 0)))
+	end
 end
 
--- Bureau de conseiller avec ordinateur et deux chaises. Renvoie l'emplacement du bac à papiers.
+-- Bureau de conseiller avec ordinateur, deux chaises et un bac à documents.
 local function createAdvisorDesk(parent, index, cx, cz)
 	local model = newModel(parent, "AdvisorDesk" .. index)
 	local top = FLOOR_TOP + DESK_HEIGHT
 
-	block(model, "Desktop", Vector3.new(6, 0.2, 3), Vector3.new(cx, top - 0.1, cz), COLORS.Wood, "Wood")
+	local desktop = block(model, "Desktop", Vector3.new(6, 0.2, 3), Vector3.new(cx, top - 0.1, cz), COLORS.Wood, "Wood")
 	for _, side in { -1, 1 } do
 		block(model, "SidePanel", Vector3.new(0.2, DESK_HEIGHT - 0.2, 2.8), Vector3.new(cx + side * 2.85, FLOOR_TOP + (DESK_HEIGHT - 0.2) / 2, cz), COLORS.Metal, "SmoothPlastic")
 	end
@@ -351,17 +428,18 @@ local function createAdvisorDesk(parent, index, cx, cz)
 	createOfficeChair(model, Vector3.new(cx, FLOOR_TOP, cz - 2.4), math.pi)
 	createOfficeChair(model, Vector3.new(cx, FLOOR_TOP, cz + 2.4), 0)
 
-	return createTray(model, Vector3.new(cx + 2, top, cz))
+	local spots = makeZone(model, "Paper", desktop, 3.5)
+	createTray(model, spots, Vector3.new(cx + 2, top, cz))
 end
 
--- Comptoir d'accueil du hall. Renvoie les deux emplacements de bacs à papiers.
+-- Comptoir d'accueil du hall, avec 4 bacs à documents.
 local function createReception(parent)
 	local model = newModel(parent, "Reception")
 	local cz = 13
 	local top = FLOOR_TOP + COUNTER_HEIGHT
 
 	block(model, "CounterBody", Vector3.new(12, COUNTER_HEIGHT - 0.25, 2.5), Vector3.new(0, FLOOR_TOP + (COUNTER_HEIGHT - 0.25) / 2, cz), COLORS.DarkWood, "Wood")
-	block(model, "CounterTop", Vector3.new(12.4, 0.25, 2.9), Vector3.new(0, top - 0.125, cz), COLORS.Tiles, "Marble")
+	local counterTop = block(model, "CounterTop", Vector3.new(12.4, 0.25, 2.9), Vector3.new(0, top - 0.125, cz), COLORS.Tiles, "Marble")
 	newSign(model, "ReceptionSign", "ACCUEIL", Vector3.new(5, 1, 0.05), Vector3.new(0, FLOOR_TOP + 2.2, cz + 1.275), Vector3.new(0, 0, 1))
 
 	block(model, "MonitorStand", Vector3.new(0.4, 0.5, 0.3), Vector3.new(0, top + 0.25, cz - 0.6), COLORS.Black, "SmoothPlastic")
@@ -376,20 +454,19 @@ local function createReception(parent)
 		block(model, "SignWire", Vector3.new(0.05, wireLength, 0.05), Vector3.new(x, signY + 0.9 + wireLength / 2, 12), COLORS.DarkMetal, "Metal", { CanCollide = false })
 	end
 
-	return {
-		createTray(model, Vector3.new(-4, top, cz)),
-		createTray(model, Vector3.new(4, top, cz)),
-	}
+	local spots = makeZone(model, "Paper", counterTop, 3)
+	for _, x in { -4.5, -2.6, 2.6, 4.5 } do
+		createTray(model, spots, Vector3.new(x, top, cz))
+	end
 end
 
--- Étagère des dossiers. Renvoie les 6 emplacements de dossiers.
-local function createArchiveShelf(parent)
-	local model = newModel(parent, "ArchiveShelf")
-	local cx, cz = 8, -29
-	local width, depth, height = 6, 2, 6
-	local spots = {}
+-- Étagère des dossiers : 3 tablettes de 6 dossiers debout.
+local function createArchiveShelf(parent, index, cx)
+	local model = newModel(parent, "ArchiveShelf" .. index)
+	local cz = -29
+	local width, depth, height = 6, 2, 6.2
 
-	block(model, "BackPanel", Vector3.new(width, height, 0.2), Vector3.new(cx, FLOOR_TOP + height / 2, -HALF_Z + 0.1), COLORS.Wood, "Wood")
+	local backPanel = block(model, "BackPanel", Vector3.new(width, height, 0.2), Vector3.new(cx, FLOOR_TOP + height / 2, -HALF_Z + 0.1), COLORS.Wood, "Wood")
 	for _, side in { -1, 1 } do
 		block(model, "SidePanel", Vector3.new(0.2, height, depth - 0.2), Vector3.new(cx + side * (width / 2 - 0.1), FLOOR_TOP + height / 2, cz + 0.1), COLORS.Wood, "Wood")
 	end
@@ -399,21 +476,14 @@ local function createArchiveShelf(parent)
 		block(model, "Shelf", Vector3.new(width - 0.4, 0.15, depth - 0.2), Vector3.new(cx, FLOOR_TOP + shelfTop - 0.075, cz + 0.1), COLORS.Wood, "Wood")
 	end
 
-	-- Étagère du bas : classeurs décoratifs (déjà rangés).
-	for i = 0, 11 do
-		local x = cx - 2.55 + 0.25 + i * 0.42
-		block(model, "Binder", Vector3.new(0.36, 1.5, 1.5), Vector3.new(x, FLOOR_TOP + 0.2 + 0.75, cz + 0.1), BINDER_COLORS[i % #BINDER_COLORS + 1], "SmoothPlastic")
-	end
-
-	-- Étagères du milieu et du haut : trois places libres chacune, les dossiers sont debout.
-	for _, shelfTop in { shelfTops[2], shelfTops[3] } do
-		for _, x in { cx - 1.5, cx, cx + 1.5 } do
-			table.insert(spots, CFrame.new(x, FLOOR_TOP + shelfTop + ITEM_SIZES.Folder.X / 2, cz + 0.05) * CFrame.Angles(0, 0, math.rad(90)))
+	local spots = makeZone(model, "Folder", backPanel, 4.5)
+	for level = 1, 3 do
+		for slotIndex = 0, 5 do
+			local x = cx - 2 + slotIndex * 0.8
+			local y = FLOOR_TOP + shelfTops[level] + ITEM_SIZES.Folder.X / 2
+			createSlot(spots, "Folder", CFrame.new(x, y, cz + 0.05) * CFrame.Angles(0, 0, math.rad(90)))
 		end
 	end
-
-	newSign(parent, "ArchiveSign", "DOSSIERS", Vector3.new(5, 0.9, 0.1), Vector3.new(cx, FLOOR_TOP + 7.2, -HALF_Z + 0.05), Vector3.new(0, 0, 1))
-	return spots
 end
 
 -- Meuble à tiroirs décoratif contre le mur nord.
@@ -430,12 +500,11 @@ local function createFilingCabinet(parent, cx)
 	return model
 end
 
--- Étagère métallique de la réserve. Renvoie les 2 emplacements de cartons.
+-- Étagère métallique de la réserve : 3 niveaux de 2 cartons.
 local function createStorageShelf(parent, index, cx)
 	local model = newModel(parent, "StorageShelf" .. index)
-	local width, depth, height = 5, 3, 7
+	local width, depth, height = 4.8, 3, 7
 	local cz = -HALF_Z + depth / 2
-	local spots = {}
 
 	for _, sx in { -1, 1 } do
 		for _, sz in { -1, 1 } do
@@ -443,36 +512,36 @@ local function createStorageShelf(parent, index, cx)
 		end
 	end
 
-	local levels = { 0.3, 3.3, 6.3 }
+	local levels = { 0.3, 2.5, 4.7, 6.9 }
+	local boards = {}
 	for _, level in levels do
-		block(model, "ShelfBoard", Vector3.new(width - 0.1, 0.15, depth - 0.1), Vector3.new(cx, FLOOR_TOP + level - 0.075, cz), COLORS.Metal, "Metal")
+		table.insert(boards, block(model, "ShelfBoard", Vector3.new(width - 0.1, 0.15, depth - 0.1), Vector3.new(cx, FLOOR_TOP + level - 0.075, cz), COLORS.Metal, "Metal"))
 	end
 
-	-- Les deux niveaux du bas sont libres pour les cartons.
-	table.insert(spots, CFrame.new(cx, FLOOR_TOP + levels[1] + REST_HEIGHTS.Box, cz))
-	table.insert(spots, CFrame.new(cx, FLOOR_TOP + levels[2] + REST_HEIGHTS.Box, cz))
-
-	-- Niveau du haut : boîtes d'archives décoratives (déjà rangées).
-	for _, offset in { -1.2, 1.2 } do
-		block(model, "ArchiveBox", Vector3.new(2.2, 0.6, 2.4), Vector3.new(cx + offset, FLOOR_TOP + levels[3] + 0.3, cz), COLORS.Cardboard, "Cardboard")
+	local spots = makeZone(model, "Box", boards[4], 1.8)
+	for level = 1, 3 do
+		for _, offset in { -1.15, 1.15 } do
+			createSlot(spots, "Box", CFrame.new(cx + offset, FLOOR_TOP + levels[level] + REST_HEIGHTS.Box, cz))
+		end
 	end
-
-	return spots
 end
 
--- Les chaises de la salle d'attente font face à l'écran "Numéro appelé" sur le mur est.
--- Renvoie les 6 emplacements de chaises.
+-- Salle d'attente : un tapis bleu avec 18 places de chaises face à l'écran.
 local function createWaitingArea(parent)
-	local spots = {}
-	for _, x in { 27, 31 } do
-		for _, z in { 18.5, 21, 23.5 } do
-			table.insert(spots, CFrame.new(x, FLOOR_TOP + REST_HEIGHTS.Chair, z) * CFrame.Angles(0, math.rad(-90), 0))
+	local model = newModel(parent, "WaitingArea")
+	local rug = block(model, "WaitingRug", Vector3.new(16, 0.05, 16), Vector3.new(29, FLOOR_TOP + 0.025, 21.5), COLORS.Rug, "Fabric", { CanCollide = false })
+	rug.CanCollide = true -- on peut cliquer dessus et marcher dessus
+	addObstacle(21, 37, 13.5, 29.5) -- aucun objet n'apparaît sur le tapis
+
+	local spots = makeZone(model, "Chair", rug, 6)
+	for _, x in { 24, 28, 32 } do
+		for _, z in { 15, 17.5, 20, 22.5, 25, 27.5 } do
+			createSlot(spots, "Chair", CFrame.new(x, FLOOR_TOP + REST_HEIGHTS.Chair, z) * CFrame.Angles(0, math.rad(-90), 0))
 		end
 	end
 
-	newSign(parent, "NowServingScreen", "NUMÉRO APPELÉ   A-047", Vector3.new(6, 2, 0.2), Vector3.new(HALF_X - 0.1, FLOOR_TOP + 6.5, 21), Vector3.new(-1, 0, 0), COLORS.Black, Color3.fromRGB(255, 90, 70))
-	newSign(parent, "WaitingSign", "SALLE D'ATTENTE", Vector3.new(6, 0.9, 0.2), Vector3.new(HALF_X - 0.1, FLOOR_TOP + 8.6, 21), Vector3.new(-1, 0, 0))
-	return spots
+	newSign(model, "NowServingScreen", "NUMÉRO APPELÉ   A-047", Vector3.new(6, 2, 0.2), Vector3.new(HALF_X - 0.1, FLOOR_TOP + 6.5, 21), Vector3.new(-1, 0, 0), COLORS.Black, Color3.fromRGB(255, 90, 70))
+	newSign(model, "WaitingSign", "SALLE D'ATTENTE", Vector3.new(6, 0.9, 0.2), Vector3.new(HALF_X - 0.1, FLOOR_TOP + 8.6, 21), Vector3.new(-1, 0, 0))
 end
 
 -- Décoration du hall : fontaine à eau, tableau des offres d'emploi, plantes.
@@ -495,13 +564,13 @@ local function createLobbyDecor(parent)
 		end
 	end
 
-	for _, position in { { -38, 28 }, { -38, 10 }, { -38, -28 }, { 20, -28 }, { 38, 10 } } do
+	for _, position in { { -38, 28 }, { -38, 10 }, { -38, -28 }, { 20, -28 }, { 38, 9 } } do
 		createPlant(parent, position[1], position[2])
 	end
 end
 
 ---------------------------------------------------------------------------
--- Objets à ranger et emplacements où ils vont
+-- Objets à ranger
 ---------------------------------------------------------------------------
 
 local function weldToMain(main, part)
@@ -509,18 +578,6 @@ local function weldToMain(main, part)
 	weld.Part0 = main
 	weld.Part1 = part
 	weld.Parent = main
-end
-
-local function createPrompt(parent, name, actionText, objectText)
-	local prompt = Instance.new("ProximityPrompt")
-	prompt.Name = name
-	prompt.ActionText = actionText
-	prompt.ObjectText = objectText
-	prompt.MaxActivationDistance = TidyConfig.MaxDistance
-	prompt.RequiresLineOfSight = false
-	prompt.HoldDuration = 0
-	prompt.Parent = parent
-	return prompt
 end
 
 -- Fabrique les pièces d'un objet autour de l'origine. Renvoie le modèle et sa pièce principale.
@@ -555,7 +612,7 @@ local function buildItemParts(itemType, index)
 		end
 	elseif itemType == "Box" then
 		main = newPart(model, "Main", size, CFrame.new(), COLORS.Cardboard, "Cardboard")
-		local tape = newPart(model, "Tape", Vector3.new(2.44, 0.02, 0.45), CFrame.new(0, 0.905, 0), COLORS.Tape, "SmoothPlastic")
+		local tape = newPart(model, "Tape", Vector3.new(size.X + 0.04, 0.02, 0.45), CFrame.new(0, size.Y / 2 + 0.005, 0), COLORS.Tape, "SmoothPlastic")
 		tape.CanCollide = false
 		weldToMain(main, tape)
 	else
@@ -567,46 +624,34 @@ local function buildItemParts(itemType, index)
 end
 
 local function createItem(parent, itemType, index, homeCFrame)
-	local model, main = buildItemParts(itemType, index)
+	local model = buildItemParts(itemType, index)
 	model:PivotTo(homeCFrame)
-
 	model:SetAttribute("ItemType", itemType)
 	model:SetAttribute("State", "Loose")
 	model:SetAttribute("HomeCFrame", homeCFrame)
-
-	createPrompt(main, "PickupPrompt", TidyConfig.PickupText, TidyConfig.ItemTypes[itemType].DisplayName)
-
+	model:SetAttribute("RestHeight", REST_HEIGHTS[itemType])
 	model.Parent = parent
 	CollectionService:AddTag(model, TidyConfig.ItemTag)
 	return model
 end
 
--- Emplacement invisible où un objet doit être rangé. Il brille quand le joueur
--- porte un objet du bon type (géré par TidyUI).
-local function createSlot(parent, itemType, index, targetCFrame)
-	local slot = newPart(parent, itemType .. "Spot" .. index, ITEM_SIZES[itemType], targetCFrame, COLORS.Ghost, "Neon", {
-		Transparency = 1,
-		CastShadow = false,
-	})
-	slot.CanCollide = false
-	slot.CanTouch = false
-	slot.CanQuery = false
-
-	slot:SetAttribute("ItemType", itemType)
-	slot:SetAttribute("Occupied", false)
-
-	createPrompt(slot, "PlacePrompt", TidyConfig.PutAwayText, TidyConfig.ItemTypes[itemType].PlaceName)
-
-	CollectionService:AddTag(slot, TidyConfig.SlotTag)
-	return slot
+local function overlapsObstacle(x, z, radius)
+	for _, o in obstacles do
+		if x + radius > o[1] and x - radius < o[2] and z + radius > o[3] and z - radius < o[4] then
+			return true
+		end
+	end
+	return false
 end
 
-local function startCFrame(entry)
-	local base = CFrame.new(entry.X, FLOOR_TOP + entry.Surface, entry.Z) * CFrame.Angles(0, math.rad(entry.Yaw), 0)
-	if entry.Type == "Chair" and entry.Tipped then
-		return base * CFrame.new(0, TIPPED_CHAIR_HEIGHT, 0) * CFrame.Angles(0, 0, math.rad(90))
+local function overlapsItems(placed, x, z, radius)
+	for _, p in placed do
+		local dx, dz = p[1] - x, p[2] - z
+		if dx * dx + dz * dz < (p[3] + radius) ^ 2 then
+			return true
+		end
 	end
-	return base * CFrame.new(0, REST_HEIGHTS[entry.Type], 0)
+	return false
 end
 
 ---------------------------------------------------------------------------
@@ -658,13 +703,20 @@ local function createSpawn(parent)
 end
 
 ---------------------------------------------------------------------------
--- Fonction principale
+-- Fonctions principales
 ---------------------------------------------------------------------------
+local itemsFolder = nil
+local currentItems = {}
+
+-- Construit le bâtiment, le mobilier et les zones (une seule fois).
 function AgencyBuilder.Build()
 	local old = Workspace:FindFirstChild("EmploymentAgency")
 	if old then
 		old:Destroy()
 	end
+	table.clear(obstacles)
+	table.clear(allSlots)
+	table.clear(allZones)
 
 	setupLighting()
 
@@ -673,66 +725,104 @@ function AgencyBuilder.Build()
 
 	local structure = newFolder(root, "Building")
 	local furniture = newFolder(root, "Furniture")
-	local spotsFolder = newFolder(root, "TidySpots")
-	local itemsFolder = newFolder(root, "MisplacedItems")
+	itemsFolder = newFolder(root, "MisplacedItems")
 
+	collectObstacles = true
 	buildStructure(structure)
 	createLobbyDecor(furniture)
-
-	-- Emplacements où vont les objets, regroupés par type.
-	local spotCFrames = { Folder = {}, Paper = {}, Chair = {}, Box = {} }
-
-	for _, cframe in createReception(furniture) do
-		table.insert(spotCFrames.Paper, cframe)
+	createReception(furniture)
+	for index, position in { { -30, -4 }, { -16, -4 }, { -30, -18 }, { -16, -18 } } do
+		createAdvisorDesk(furniture, index, position[1], position[2])
 	end
-
-	local deskPositions = { { -30, -4 }, { -16, -4 }, { -30, -18 }, { -16, -18 } }
-	for index, position in deskPositions do
-		table.insert(spotCFrames.Paper, createAdvisorDesk(furniture, index, position[1], position[2]))
-	end
-
-	spotCFrames.Folder = createArchiveShelf(furniture)
+	createArchiveShelf(furniture, 1, 0)
+	createArchiveShelf(furniture, 2, 8)
 	createFilingCabinet(furniture, 12.6)
 	createFilingCabinet(furniture, 14.6)
-
-	for index, cx in { 28, 34 } do
-		for _, cframe in createStorageShelf(furniture, index, cx) do
-			table.insert(spotCFrames.Box, cframe)
-		end
+	for index, cx in { 27, 32.2, 37.4 } do
+		createStorageShelf(furniture, index, cx)
 	end
 	newSign(furniture, "StorageSign", "RÉSERVE", Vector3.new(4, 1, 0.1), Vector3.new(23.7, FLOOR_TOP + 9.5, -19), Vector3.new(-1, 0, 0))
+	newSign(furniture, "ArchiveSign", "DOSSIERS", Vector3.new(5, 0.9, 0.1), Vector3.new(4, FLOOR_TOP + 7.4, -HALF_Z + 0.05), Vector3.new(0, 0, 1))
+	createWaitingArea(furniture)
+	collectObstacles = false
 
-	spotCFrames.Chair = createWaitingArea(furniture)
-
-	local slots = {}
-	for itemType, cframes in spotCFrames do
-		for index, cframe in cframes do
-			table.insert(slots, createSlot(spotsFolder, itemType, index, cframe))
-		end
-	end
-
-	local items = {}
-	local counts = {}
-	for _, entry in MISPLACED_ITEMS do
-		counts[entry.Type] = (counts[entry.Type] or 0) + 1
-		table.insert(items, createItem(itemsFolder, entry.Type, counts[entry.Type], startCFrame(entry)))
-	end
-
-	-- Vérification : chaque objet doit avoir une place libre.
-	for itemType, count in counts do
-		if #spotCFrames[itemType] < count then
-			warn(string.format("[AgencyBuilder] Not enough places for %s: %d objects, %d places", itemType, count, #spotCFrames[itemType]))
-		end
-	end
+	-- Endroits laissés libres : arrivée du joueur et passage de la porte de la réserve.
+	addObstacle(-5, 5, 19, HALF_Z)
+	addObstacle(20, 28, -24, -14)
 
 	createSpawn(root)
 	root.Parent = Workspace
 
 	return {
 		Root = root,
-		Items = items,
-		Slots = slots,
+		Zones = allZones,
+		Slots = allSlots,
 	}
 end
+
+-- Éparpille de nouveaux objets dans l'agence. Supprime ceux de la partie précédente.
+-- Renvoie la liste des objets créés.
+function AgencyBuilder.ScatterItems(seed)
+	for _, item in currentItems do
+		item:Destroy()
+	end
+	table.clear(currentItems)
+	for _, slot in allSlots do
+		slot:SetAttribute("Occupied", false)
+	end
+
+	local slotCounts = {}
+	for _, slot in allSlots do
+		local itemType = slot:GetAttribute("ItemType")
+		slotCounts[itemType] = (slotCounts[itemType] or 0) + 1
+	end
+
+	local rng = Random.new(seed)
+	local placed = {}
+	for _, itemType in TidyConfig.TypeOrder do
+		local wanted = TidyConfig.ItemCounts[itemType] or 0
+		local count = math.min(wanted, slotCounts[itemType] or 0)
+		if count < wanted then
+			warn(string.format("[AgencyBuilder] Only %d places for %s, %d objects requested", count, itemType, wanted))
+		end
+		for index = 1, count do
+			local tipped = itemType == "Chair" and rng:NextNumber() < 0.5
+			local radius = if tipped then TIPPED_CHAIR_RADIUS else ITEM_RADIUS[itemType]
+			local found = false
+			local x, z = 0, 0
+			for _ = 1, 400 do
+				x = rng:NextNumber(-HALF_X + radius + 0.3, HALF_X - radius - 0.3)
+				z = rng:NextNumber(-HALF_Z + radius + 0.3, HALF_Z - radius - 0.3)
+				if not overlapsObstacle(x, z, radius) and not overlapsItems(placed, x, z, radius) then
+					found = true
+					break
+				end
+			end
+			if found then
+				table.insert(placed, { x, z, radius })
+				local base = CFrame.new(x, FLOOR_TOP, z) * CFrame.Angles(0, rng:NextNumber(0, math.pi * 2), 0)
+				local home
+				if tipped then
+					home = base * CFrame.new(0, TIPPED_CHAIR_HEIGHT, 0) * CFrame.Angles(0, 0, math.rad(90))
+				else
+					home = base * CFrame.new(0, REST_HEIGHTS[itemType], 0)
+				end
+				table.insert(currentItems, createItem(itemsFolder, itemType, index, home))
+			else
+				warn("[AgencyBuilder] No free floor space for " .. itemType .. index)
+			end
+		end
+	end
+
+	return table.clone(currentItems)
+end
+
+-- Dossier où vivent les objets qui traînent.
+function AgencyBuilder.GetItemsFolder()
+	return itemsFolder
+end
+
+-- Hauteur du sol (utile pour lâcher un objet).
+AgencyBuilder.FloorTop = FLOOR_TOP
 
 return AgencyBuilder

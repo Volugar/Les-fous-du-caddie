@@ -35,33 +35,44 @@ effacez le texte par défaut et collez le contenu du fichier.
 
 ## Comment on joue
 
-- Approchez-vous d'un objet mal rangé : **E** au clavier, ou appuyez sur le bouton « Ramasser » sur mobile.
-- Pendant que vous portez un objet, ses emplacements libres **brillent en vert**.
-- Approchez-vous d'un emplacement vert et faites **E** / appuyez sur « Ranger ».
-- On ne porte qu'un objet à la fois. Si le personnage meurt, l'objet retourne à sa place de départ.
+- **Ramasser :** cliquez sur un objet qui traîne (ou appuyez dessus sur mobile). Il va dans votre **sac**.
+- **Ranger :** cliquez sur l'endroit où il se range : étagère, bureau, comptoir ou tapis bleu.
+  Les places libres brillent en vert, et les meubles concernés sont entourés.
+- **Sac :** 3 objets au départ. La touche **E** ou les boutons < > changent l'objet en main,
+  la touche **Q** (A sur un clavier AZERTY) ou le bouton « Lâcher » le pose par terre.
+- **Points :** chaque objet rangé rapporte des points (dossier et papiers 10, carton 15, chaise 20).
+- **Améliorations (touche G) :** sac plus grand, chaussures de course, aimant, loupe.
+- **Outils (touches 1, 2, 3) :**
+  - **Main** : ramasser et ranger ;
+  - **Aimant** : un clic attire dans le sac les objets proches ;
+  - **Loupe** : un rayon doré montre l'objet le plus proche, ou la place où ranger.
+- **Chronomètre** en haut, **compteurs par catégorie** en haut à droite, **zone actuelle** en bas.
+- **Fin :** message « L'agence est en ordre. » avec votre temps et votre record, puis **Rejouer**.
+  Une nouvelle partie éparpille de nouveaux objets ; les points et les améliorations sont conservés.
 
 | Objet           | Nombre | Où le ranger                                        |
 |-----------------|--------|-----------------------------------------------------|
-| Dossier         | 6      | Étagère « DOSSIERS » contre le mur du fond          |
-| Pile de papiers | 6      | Bacs à documents (4 bureaux + 2 sur l'accueil)      |
-| Chaise          | 6      | Salle d'attente, face à l'écran « NUMÉRO APPELÉ »   |
-| Carton          | 4      | Étagères de la salle « RÉSERVE »                    |
+| Dossier         | 36     | 2 étagères « DOSSIERS » contre le mur du fond       |
+| Pile de papiers | 24     | Bacs à documents (4 bureaux + 4 sur l'accueil)      |
+| Chaise          | 18     | Tapis bleu de la salle d'attente                    |
+| Carton          | 18     | 3 étagères de la réserve                            |
 
 ## Plan (vue de dessus)
 
 ![Plan](docs/plan_vue_dessus.png)
 
-En rouge : les objets mal rangés au départ. En vert : les emplacements où ils vont.
+Exemple de partie. En rouge : les objets qui traînent (placés au hasard). En vert : les places de rangement.
 
 ## Réglages simples (script `TidyConfig`)
 
 - `AgencyName` : nom de l'agence affiché sur les panneaux et l'interface.
 - `ItemTypes` : noms affichés et consignes pour chaque type d'objet.
-- `PickupText` / `PutAwayText` : textes des boutons « Ramasser » / « Ranger ».
-- `MaxDistance` : distance à laquelle on peut ramasser / ranger.
+- `ItemCounts` : nombre d'objets de chaque type par partie.
+- `ReachDistance` : distance à laquelle on peut ramasser / ranger.
+- `BaseCapacity`, `BaseWalkSpeed` : sac et vitesse de départ.
+- `Upgrades` : prix et niveaux des améliorations.
 
-Les positions de départ des objets se trouvent dans `AgencyBuilder`, dans la liste
-`MISPLACED_ITEMS`.
+Les objets sont placés au hasard à chaque partie, en évitant les meubles.
 
 ## Refabriquer le fichier `.rbxl` (pour le développeur)
 
