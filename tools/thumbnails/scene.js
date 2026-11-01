@@ -150,7 +150,7 @@ function character(o = {}) {
 	face.position.y = -0.05; headG.add(face);
 	// coiffure « bacon » : calotte et longues mèches qui tombent sur le front et les côtés
 	if (o.hairStyle !== 'none') {
-		const hairLight = plastic(new THREE.Color(o.hair ?? 0x7a3f1a).offsetHSL(0, 0, 0.08), 0.55);
+		const hairLight = SCENE === 'clean' ? hairM : plastic(new THREE.Color(o.hair ?? 0x7a3f1a).offsetHSL(0, 0, 0.08), 0.55);
 		const cap = new THREE.Mesh(new THREE.SphereGeometry(R + 0.1, 32, 16, 0, Math.PI * 2, 0, Math.PI * 0.5), hairM);
 		cap.scale.set(1.05, 0.8, 1.08); cap.position.y = HH - 0.28; add(cap, headG);
 		for (let i = 0; i < 26; i++) {
@@ -640,16 +640,16 @@ function lightsBase(sunPos = [40, 80, 30], sunIntensity = 2.2) {
 
 // Plan serré comme une miniature Roblox : caméra basse, personnage en gros plan,
 // produits au premier plan, arrière-plan flou.
-function closeShot(hero, products, square) {
+function closeShot(hero, products, square, clean = false) {
 	const p = hero.position;
 	const right = new THREE.Vector3(Math.cos(hero.rotation.y), 0, -Math.sin(hero.rotation.y));
 	const fwd = new THREE.Vector3(Math.sin(hero.rotation.y), 0, Math.cos(hero.rotation.y));
 	// produits et petits objets entre la caméra et le personnage
-	for (let i = 0; i < 16; i++) {
-		const q = p.clone().addScaledVector(fwd, rr(3.2, 8.5)).addScaledVector(right, rr(-3, 7));
+	for (let i = 0; i < (clean ? 3 : 16); i++) {
+		const q = clean ? p.clone().addScaledVector(fwd, 1.2 + i * 1.1).addScaledVector(right, 6.2 + (i % 2) * 1.2) : p.clone().addScaledVector(fwd, rr(3.2, 8.5)).addScaledVector(right, rr(-3, 7));
 		floorProduct(q.x, q.z, products);
 	}
-	for (let i = 0; i < 6; i++) { const q = p.clone().addScaledVector(fwd, rr(4, 7)).addScaledVector(right, rr(-3, 3)); looseSheet(q.x, q.z); }
+	for (let i = 0; i < (clean ? 0 : 6); i++) { const q = p.clone().addScaledVector(fwd, rr(4, 7)).addScaledVector(right, rr(-3, 3)); looseSheet(q.x, q.z); }
 	const cam = p.clone().addScaledVector(fwd, square ? 9.5 : 10.5).addScaledVector(right, square ? -0.6 : -1.8);
 	cam.y = square ? 4.6 : 3.9;
 	camera.position.copy(cam);
@@ -660,7 +660,7 @@ function closeShot(hero, products, square) {
 	aperture = 0.0009;
 }
 
-function buildOffice(closeUp) {
+function buildOffice(closeUp, clean = false) {
 	scene.background = new THREE.Color(0xf6eedd);
 	scene.fog = new THREE.Fog(0xf3e8d4, 90, 170);
 	lightsBase([20, 60, 40], 1.8);
@@ -703,13 +703,22 @@ function buildOffice(closeUp) {
 		(x, z) => mug(x, z, null, true), (x, z) => mug(x, z), (x, z) => cardboardBox(x, 0, z, 2.1, 1.6, 1.6, null).rotation.y = rr(0, 6),
 		(x, z) => laptop(x, z), (x, z) => cushion(x, z), (x, z) => photoFrame(x, z), (x, z) => binder(x, z), (x, z) => plant(x, z, null, 0.8),
 	];
-	scatter(closeUp ? 160 : 520, -34, 34, -80, 25, makers, [[0, 8, 3], [1.8, 16.9, 3]]);
-	for (let i = 0; i < 6; i++) officeChair(rr(-30, 30), rr(-60, 10), null, true);
+	scatter(clean ? 150 : (closeUp ? 160 : 520), -34, 34, -80, clean ? 0 : 25, makers, [[0, 8, 3], [1.8, 16.9, 3]]);
+	if (!clean) for (let i = 0; i < 6; i++) officeChair(rr(-30, 30), rr(-60, 10), null, true);
 	// personnage
 	const hero = character({ pose: 'sweep', avatar: 'bacon', scale: 1.3 });
 	hero.position.set(closeUp ? 1.2 : 7.5, 0, closeUp ? 15 : 11.5); hero.rotation.y = closeUp ? -0.35 : -0.5;
 	hero.position.set(0, 0, 8); hero.rotation.y = 0.55;
-	closeShot(hero, OFFICE_PRODUCTS, closeUp);
+	closeShot(hero, OFFICE_PRODUCTS, closeUp, clean);
+	if (clean) {
+		const p = hero.position;
+		const right = new THREE.Vector3(Math.cos(hero.rotation.y), 0, -Math.sin(hero.rotation.y));
+		const fwd = new THREE.Vector3(Math.sin(hero.rotation.y), 0, Math.cos(hero.rotation.y));
+		const cam = p.clone().addScaledVector(fwd, 15).addScaledVector(right, -0.3); cam.y = 4.8;
+		camera.position.copy(cam);
+		const look = p.clone().addScaledVector(right, 3.0).addScaledVector(fwd, 1.5); look.y = 2.7;
+		camera.lookAt(look); camera.fov = 46; aperture = 0.0005;
+	}
 }
 
 function buildWarehouse() {
@@ -865,6 +874,7 @@ async function main() {
 	scene.environmentIntensity = 0.45;
 
 	if (SCENE === 'office') buildOffice(false);
+	else if (SCENE === 'clean') buildOffice(false, true);
 	else if (SCENE === 'icon') buildOffice(true);
 	else if (SCENE === 'warehouse') buildWarehouse();
 	else if (SCENE === 'hq') buildHQ();

@@ -52,6 +52,10 @@ const S = p.get('scene');
 ov.style.opacity = '0.88';
 if (S === 'office') hud({ sideTop: 70, timer: '01:37', counter: '0/1,122', bag: '0/5' });
 else if (S === 'warehouse') hud({ sideTop: 70, timer: '02:45', counter: '0/2,320', bag: '4/5' });
+else if (S === 'clean') {
+  ov.style.opacity = '1';
+  el(`<div class="title" style="--fs:264px;--st:28px;transform:rotate(-3deg);text-align:center;letter-spacing:4px">TIDY UP!<br><span class="w" style="font-size:176px">WORKPLACE CHAOS</span></div>`, { left: '2020px', top: '170px' });
+}
 else if (S === 'hq') hud({ sideTop: 70, timer: '03:52', counter: '0/1,714', bag: '0/5' });
 </script>
 <script type="module" src="scene.js"></script>
