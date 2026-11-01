@@ -1,11 +1,16 @@
 -- TidyManager (Script)
 -- Emplacement : ServerScriptService
--- Logique principale du jeu : construit l'agence, gère le sac du joueur (ramasser
--- au clic, ranger, lâcher, changer d'objet), l'aimant, les points, les améliorations,
--- les compteurs, et relance une partie quand tout est rangé.
+-- Logique principale du jeu : construit l'agence et la zone d'accueil, gère le sac du
+-- joueur (ramasser, ranger, lâcher, changer d'objet), l'aimant, les points, les
+-- améliorations, les compteurs, la sauvegarde, les rangs, le bonus quotidien,
+-- les salons privés multijoueur, et relance une journée quand tout est rangé.
 
 local CollectionService = game:GetService("CollectionService")
+local DataStoreService = game:GetService("DataStoreService")
+local MemoryStoreService = game:GetService("MemoryStoreService")
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local TeleportService = game:GetService("TeleportService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 local ServerStorage = game:GetService("ServerStorage")
@@ -14,8 +19,14 @@ local Workspace = game:GetService("Workspace")
 local TidyConfig = require(ReplicatedStorage:WaitForChild("TidyConfig"))
 local AgencyBuilder = require(ServerScriptService:WaitForChild("AgencyBuilder"))
 
+-- Serveur de salon privé (créé depuis la zone d'accueil) : on joue directement dans l'agence.
+local isRoomServer = game.PrivateServerId ~= "" and game.PrivateServerOwnerId == 0
+
 local agency = AgencyBuilder.Build()
 local itemsFolder = AgencyBuilder.GetItemsFolder()
+local agencySpawn = agency.Spawn
+local lobbySpawn = if isRoomServer then nil else AgencyBuilder.BuildHub()
+ReplicatedStorage:SetAttribute("IsRoomServer", isRoomServer)
 
 local MAX_DISTANCE = TidyConfig.ReachDistance + TidyConfig.ServerDistanceMargin
 local MAGNET_COOLDOWN = 0.5
@@ -41,6 +52,10 @@ notifyEvent.Parent = remotes
 local upgradeFunction = Instance.new("RemoteFunction")
 upgradeFunction.Name = "BuyUpgrade"
 upgradeFunction.Parent = remotes
+
+local lobbyFunction = Instance.new("RemoteFunction")
+lobbyFunction.Name = "Lobby"
+lobbyFunction.Parent = remotes
 
 remotes.Parent = ReplicatedStorage
 
@@ -130,12 +145,22 @@ end
 -- Partage l'état du joueur avec son écran (sac, points, niveaux).
 local function publishPlayer(player, state)
 	local types = {}
+	local categories = {}
 	for index, item in state.Held do
 		types[index] = item:GetAttribute("ItemType")
+		categories[index] = item:GetAttribute("Category") or "-"
 	end
 	player:SetAttribute("Held", table.concat(types, ","))
+	player:SetAttribute("HeldCategories", table.concat(categories, ","))
 	player:SetAttribute("Selected", state.Selected)
 	player:SetAttribute("Carrying", types[state.Selected] or "")
+	local carriedCategory = categories[state.Selected]
+	player:SetAttribute("CarryingCategory", if carriedCategory and carriedCategory ~= "-" then carriedCategory else "")
+	player:SetAttribute("Lifetime", state.Lifetime)
+	player:SetAttribute("Rank", TidyConfig.GetRank(state.Lifetime).Name)
+	if state.RankValue then
+		state.RankValue.Value = TidyConfig.GetRank(state.Lifetime).Name
+	end
 	player:SetAttribute("Capacity", capacityOf(state))
 	player:SetAttribute("Points", state.Points)
 	for id, level in state.Levels do
@@ -280,6 +305,9 @@ local function announceRoom(player, roomId)
 	end
 end
 
+-- Déclarée ici, définie plus bas avec la sauvegarde.
+local saveData
+
 ---------------------------------------------------------------------------
 -- Actions du joueur
 ---------------------------------------------------------------------------
@@ -330,20 +358,30 @@ local function place(player, state, zone)
 	end
 
 	-- L'objet en main s'il convient, sinon le premier objet du sac qui convient.
+	-- Livres et colis doivent aussi avoir la même couleur (catégorie) que le meuble.
+	local zoneCategory = zone:GetAttribute("Category")
+	local function fits(item)
+		return item:GetAttribute("ItemType") == zoneType and (zoneCategory == nil or item:GetAttribute("Category") == zoneCategory)
+	end
 	local index = nil
 	local selectedItem = state.Held[state.Selected]
-	if selectedItem and selectedItem:GetAttribute("ItemType") == zoneType then
+	if selectedItem and fits(selectedItem) then
 		index = state.Selected
 	else
 		for i, item in state.Held do
-			if item:GetAttribute("ItemType") == zoneType then
+			if fits(item) then
 				index = i
 				break
 			end
 		end
 	end
 	if not index then
-		notify(player, "error", "Wrong place. This spot is for: " .. string.lower(zoneInfo.Plural) .. ".")
+		local category = zoneCategory and TidyConfig.GetCategory(zoneType, zoneCategory)
+		if category then
+			notify(player, "error", "Wrong shelf. This one is for: " .. category.Name .. ".")
+		else
+			notify(player, "error", "Wrong place. This spot is for: " .. string.lower(zoneInfo.Plural) .. ".")
+		end
 		return
 	end
 
@@ -373,6 +411,11 @@ local function place(player, state, zone)
 	end
 
 	local item = table.remove(state.Held, index)
+	-- Point de départ de l'animation (la main, ou devant le joueur si l'objet était dans le sac).
+	local startCFrame = if item.PrimaryPart then item.PrimaryPart.CFrame else bestSlot.CFrame
+	if state.Visible ~= item then
+		startCFrame = root.CFrame * CFrame.new(0, 0, -2)
+	end
 	if state.Visible == item then
 		stowVisible(state)
 	end
@@ -391,13 +434,27 @@ local function place(player, state, zone)
 	placedCounts[zoneType] = (placedCounts[zoneType] or 0) + 1
 	remainingItems -= 1
 
+	local oldRank = TidyConfig.GetRank(state.Lifetime)
+	state.Lifetime += 1
+	local newRank = TidyConfig.GetRank(state.Lifetime)
+
 	local roomDone = advanceRoom(state, item:GetAttribute("Room"))
 
 	syncHands(player, state)
 	publishPlayer(player, state)
 	publishProgress()
-	notifyEvent:FireClient(player, "placed", "+" .. zoneInfo.Points .. " points", bestSlot.Position)
+	notifyEvent:FireClient(player, "placed", "+" .. zoneInfo.Points .. " points", bestSlot.Position, item, startCFrame)
 	announceRoom(player, roomDone)
+	if newRank ~= oldRank then
+		notify(player, "room", "Promotion! You are now: " .. newRank.Name)
+	end
+	-- Journée terminée : tout est rangé.
+	if remainingItems <= 0 then
+		for otherPlayer, otherState in states do
+			otherState.DaysCompleted += 1
+			task.spawn(saveData, otherPlayer, otherState)
+		end
+	end
 end
 
 -- Ouvre une pièce verrouillée avec les points du joueur.
@@ -613,6 +670,226 @@ upgradeFunction.OnServerInvoke = function(player, upgradeId)
 end
 
 ---------------------------------------------------------------------------
+-- Sauvegarde de la progression (points, améliorations, pièces ouvertes, rang, bonus quotidien)
+---------------------------------------------------------------------------
+local SAVE_VERSION = 1
+local dataStore = nil
+do
+	local ok, store = pcall(function()
+		return DataStoreService:GetDataStore("NorthfieldAgency_v1")
+	end)
+	if ok then
+		dataStore = store
+	end
+end
+
+local function saveKey(player)
+	return "player_" .. player.UserId
+end
+
+-- Charge la sauvegarde. Renvoie (true, données ou nil) si la lecture a réussi, false sinon.
+local function loadData(player)
+	if not dataStore then
+		return false, nil
+	end
+	for attempt = 1, 3 do
+		local ok, result = pcall(function()
+			return dataStore:GetAsync(saveKey(player))
+		end)
+		if ok then
+			return true, result
+		end
+		task.wait(attempt)
+	end
+	return false, nil
+end
+
+local function buildSaveData(state)
+	local unlocked = {}
+	for _, room in TidyConfig.Rooms do
+		if unlockedRooms[room.Id] or state.SavedUnlocked[room.Id] then
+			table.insert(unlocked, room.Id)
+		end
+	end
+	return {
+		Version = SAVE_VERSION,
+		Points = state.Points,
+		Levels = state.Levels,
+		Unlocked = unlocked,
+		Lifetime = state.Lifetime,
+		Streak = state.Streak,
+		LastDay = state.LastDay,
+		DaysCompleted = state.DaysCompleted,
+	}
+end
+
+function saveData(player, state)
+	-- Jamais d'écriture si la lecture a échoué : on ne doit pas écraser une vraie sauvegarde.
+	if not dataStore or not state or not state.CanSave then
+		return
+	end
+	local data = buildSaveData(state)
+	for attempt = 1, 3 do
+		local ok = pcall(function()
+			dataStore:UpdateAsync(saveKey(player), function()
+				return data
+			end)
+		end)
+		if ok then
+			return
+		end
+		task.wait(attempt)
+	end
+	warn("[TidyManager] Could not save progress for " .. player.Name)
+end
+
+-- Applique une sauvegarde chargée à l'état du joueur.
+local function applySaveData(player, state, data)
+	if type(data) ~= "table" then
+		return
+	end
+	state.Points = math.max(0, tonumber(data.Points) or 0)
+	state.Lifetime = math.max(0, tonumber(data.Lifetime) or 0)
+	state.Streak = math.max(0, tonumber(data.Streak) or 0)
+	state.LastDay = tonumber(data.LastDay) or 0
+	state.DaysCompleted = math.max(0, tonumber(data.DaysCompleted) or 0)
+	if type(data.Levels) == "table" then
+		for _, upgrade in TidyConfig.Upgrades do
+			local level = tonumber(data.Levels[upgrade.Id]) or 0
+			state.Levels[upgrade.Id] = math.clamp(math.floor(level), 0, upgrade.MaxLevel)
+		end
+	end
+	if type(data.Unlocked) == "table" then
+		local changed = false
+		for _, roomId in data.Unlocked do
+			if TidyConfig.GetRoom(roomId) then
+				state.SavedUnlocked[roomId] = true
+				if not unlockedRooms[roomId] then
+					unlockedRooms[roomId] = true
+					changed = true
+					for _, door in agency.Doors do
+						if door.Parent and door:GetAttribute("Room") == roomId then
+							door:Destroy()
+						end
+					end
+				end
+			end
+		end
+		if changed then
+			publishProgress()
+		end
+	end
+end
+
+-- Bonus quotidien : plus on revient de jours de suite, plus il est grand.
+local function giveDailyBonus(player, state)
+	local today = math.floor(os.time() / 86400)
+	if state.LastDay == today then
+		return
+	end
+	if state.LastDay == today - 1 then
+		state.Streak += 1
+	else
+		state.Streak = 1
+	end
+	state.LastDay = today
+	local bonus = TidyConfig.DailyBonusPerDay * math.min(state.Streak, TidyConfig.DailyBonusMaxDays)
+	state.Points += bonus
+	notify(player, "room", "Daily bonus: +" .. bonus .. " points (day " .. state.Streak .. " in a row)")
+end
+
+---------------------------------------------------------------------------
+-- Zone d'accueil : jouer ici, créer un salon privé, rejoindre avec un code
+---------------------------------------------------------------------------
+local CODE_LETTERS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+local roomCodes = nil
+do
+	local ok, map = pcall(function()
+		return MemoryStoreService:GetSortedMap("NorthfieldRoomCodes")
+	end)
+	if ok then
+		roomCodes = map
+	end
+end
+
+local function newRoomCode()
+	local chars = {}
+	for i = 1, 6 do
+		local n = math.random(1, #CODE_LETTERS)
+		chars[i] = string.sub(CODE_LETTERS, n, n)
+	end
+	return table.concat(chars)
+end
+
+-- Envoie le joueur dans l'agence de ce serveur.
+local function enterAgency(player)
+	player:SetAttribute("InAgency", true)
+	player.RespawnLocation = agencySpawn
+	local character = player.Character
+	if character then
+		character:PivotTo(agencySpawn.CFrame + Vector3.new(0, 3, 0))
+	end
+end
+
+local function teleportToRoom(player, accessCode, code)
+	local options = Instance.new("TeleportOptions")
+	options.ReservedServerAccessCode = accessCode
+	options:SetTeleportData({ RoomCode = code })
+	TeleportService:TeleportAsync(game.PlaceId, { player }, options)
+end
+
+lobbyFunction.OnServerInvoke = function(player, action, argument)
+	if action == "PlayHere" then
+		enterAgency(player)
+		return true, "Welcome to the agency."
+	end
+	if RunService:IsStudio() or game.PlaceId == 0 then
+		return false, "Private rooms only work in the published game. Use Play here to test."
+	end
+	if action == "Create" then
+		local ok, accessCode = pcall(function()
+			return TeleportService:ReserveServer(game.PlaceId)
+		end)
+		if not ok or not accessCode or not roomCodes then
+			return false, "Could not create a room right now. Please try again."
+		end
+		local code = newRoomCode()
+		local saved = pcall(function()
+			roomCodes:SetAsync(code, accessCode, TidyConfig.RoomCodeLifetime)
+		end)
+		if not saved then
+			return false, "Could not create a room right now. Please try again."
+		end
+		local sent = pcall(teleportToRoom, player, accessCode, code)
+		if not sent then
+			return false, "Teleport failed. Please try again."
+		end
+		return true, "Room " .. code .. " created. Teleporting..."
+	elseif action == "Join" then
+		local code = string.upper(string.gsub(tostring(argument or ""), "%s", ""))
+		if #code ~= 6 or not roomCodes then
+			return false, "Please enter a 6-character room code."
+		end
+		local ok, accessCode = pcall(function()
+			return roomCodes:GetAsync(code)
+		end)
+		if not ok or type(accessCode) ~= "string" then
+			return false, "No room found with this code."
+		end
+		local sent = pcall(teleportToRoom, player, accessCode, code)
+		if not sent then
+			return false, "Teleport failed. Please try again."
+		end
+		return true, "Joining room " .. code .. "..."
+	end
+	return false, "Unknown action."
+end
+
+TeleportService.TeleportInitFailed:Connect(function(player, _, message)
+	notify(player, "error", "Teleport failed: " .. tostring(message))
+end)
+
+---------------------------------------------------------------------------
 -- Arrivée et départ des joueurs
 ---------------------------------------------------------------------------
 
@@ -631,12 +908,25 @@ local function onPlayerAdded(player)
 	if states[player] then
 		return
 	end
+	-- Point d'apparition : la zone d'accueil (serveurs publics) ou l'agence (salons privés).
+	if isRoomServer or not lobbySpawn then
+		player:SetAttribute("InAgency", true)
+		player.RespawnLocation = agencySpawn
+	else
+		player:SetAttribute("InAgency", false)
+		player.RespawnLocation = lobbySpawn
+	end
+
 	local leaderstats = Instance.new("Folder")
 	leaderstats.Name = "leaderstats"
 	local pointsValue = Instance.new("IntValue")
 	pointsValue.Name = "Points"
 	pointsValue.Value = 0
 	pointsValue.Parent = leaderstats
+	local rankValue = Instance.new("StringValue")
+	rankValue.Name = "Rank"
+	rankValue.Value = TidyConfig.Ranks[1].Name
+	rankValue.Parent = leaderstats
 	leaderstats.Parent = player
 
 	local state = {
@@ -646,11 +936,27 @@ local function onPlayerAdded(player)
 		Weld = nil,
 		Levels = { Capacity = 0, Speed = 0, Magnet = 0, Magnifier = 0 },
 		Points = 0,
+		Lifetime = 0,
+		Streak = 0,
+		LastDay = 0,
+		DaysCompleted = 0,
+		SavedUnlocked = {},
+		CanSave = false,
 		LastMagnet = -math.huge,
 		PointsValue = pointsValue,
+		RankValue = rankValue,
 	}
 	states[player] = state
 	publishPlayer(player, state)
+
+	-- Code du salon privé, pour l'afficher aux joueurs (et qu'ils invitent leurs amis).
+	if isRoomServer then
+		local joinData = player:GetJoinData()
+		local teleportData = joinData and joinData.TeleportData
+		if type(teleportData) == "table" and type(teleportData.RoomCode) == "string" then
+			ReplicatedStorage:SetAttribute("RoomCode", teleportData.RoomCode)
+		end
+	end
 
 	player.CharacterAdded:Connect(function(character)
 		onCharacterAdded(player, character)
@@ -661,6 +967,23 @@ local function onPlayerAdded(player)
 	if player.Character then
 		task.spawn(onCharacterAdded, player, player.Character)
 	end
+
+	-- Chargement de la sauvegarde (sans bloquer l'arrivée du joueur).
+	task.spawn(function()
+		local ok, data = loadData(player)
+		if not player.Parent or states[player] ~= state then
+			return
+		end
+		if ok then
+			applySaveData(player, state, data)
+			state.CanSave = true
+		else
+			notify(player, "error", "Progress could not be loaded. It will not be saved this session.")
+		end
+		giveDailyBonus(player, state)
+		applyWalkSpeed(player, state)
+		publishPlayer(player, state)
+	end)
 end
 
 startRound()
@@ -672,5 +995,32 @@ end
 
 Players.PlayerRemoving:Connect(function(player)
 	returnAllItems(player)
+	local state = states[player]
 	states[player] = nil
+	saveData(player, state)
+end)
+
+-- Sauvegarde automatique toutes les 2 minutes, et à la fermeture du serveur.
+task.spawn(function()
+	while true do
+		task.wait(120)
+		for player, state in states do
+			task.spawn(saveData, player, state)
+		end
+	end
+end)
+
+game:BindToClose(function()
+	local pending = 0
+	for player, state in states do
+		pending += 1
+		task.spawn(function()
+			saveData(player, state)
+			pending -= 1
+		end)
+	end
+	local started = os.clock()
+	while pending > 0 and os.clock() - started < 25 do
+		task.wait(0.5)
+	end
 end)

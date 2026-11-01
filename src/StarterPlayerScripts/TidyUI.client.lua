@@ -12,12 +12,14 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 local Debris = game:GetService("Debris")
+local SoundService = game:GetService("SoundService")
 
 local TidyConfig = require(ReplicatedStorage:WaitForChild("TidyConfig"))
 local remotes = ReplicatedStorage:WaitForChild("TidyRemotes")
 local actionEvent = remotes:WaitForChild("Action")
 local notifyEvent = remotes:WaitForChild("Notify")
 local upgradeFunction = remotes:WaitForChild("BuyUpgrade")
+local lobbyFunction = remotes:WaitForChild("Lobby")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -221,8 +223,17 @@ local leftPanel = makePanel({
 	Name = "PointsPanel",
 	AnchorPoint = Vector2.new(0, 0.5),
 	Position = UDim2.new(0, 10, 0.42, 0),
-	Size = UDim2.new(0, 190, 0, 92),
+	Size = UDim2.new(0, 210, 0, 116),
 	Parent = screenGui,
+})
+local rankLabel = makeLabel(leftPanel, {
+	Name = "Rank",
+	Position = UDim2.new(0, 10, 0, 38),
+	Size = UDim2.new(1, -20, 0, 22),
+	Text = "Rank: Intern",
+	TextColor3 = MUTED_COLOR,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	MaxTextSize = 15,
 })
 local pointsLabel = makeLabel(leftPanel, {
 	Name = "Points",
@@ -236,7 +247,7 @@ local pointsLabel = makeLabel(leftPanel, {
 })
 local upgradesButton = makeButton(leftPanel, {
 	Name = "UpgradesButton",
-	Position = UDim2.new(0, 10, 0, 44),
+	Position = UDim2.new(0, 10, 0, 68),
 	Size = UDim2.new(1, -20, 0, 38),
 	Text = "Upgrades [" .. keyName(Enum.KeyCode.G) .. "]",
 	BackgroundColor3 = ACCENT_COLOR,
@@ -523,7 +534,7 @@ local startButton = makeButton(introPanel, {
 	Size = UDim2.new(0, 170, 0, 42),
 	Text = "Start",
 })
-introPanel.Visible = true
+introPanel.Visible = false
 
 local completePanel, completeBody = makeMessagePanel("Complete", "The agency is in order.")
 local replayButton = makeButton(completePanel, {
@@ -542,6 +553,156 @@ local closeCompleteButton = makeButton(completePanel, {
 	BackgroundColor3 = SOFT_COLOR,
 	TextColor3 = TEXT_COLOR,
 })
+
+---------------------------------------------------------------------------
+-- Zone d'accueil : jouer ici, créer un salon privé, rejoindre avec un code
+---------------------------------------------------------------------------
+local lobbyPanel = makePanel({
+	Name = "Lobby",
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	Position = UDim2.fromScale(0.5, 0.5),
+	Size = UDim2.new(0.9, 0, 0, 340),
+	BackgroundTransparency = 0.05,
+	Visible = false,
+	Parent = screenGui,
+})
+make("UISizeConstraint", { MaxSize = Vector2.new(440, 340), Parent = lobbyPanel })
+makeLabel(lobbyPanel, {
+	Name = "Title",
+	Position = UDim2.new(0, 20, 0, 16),
+	Size = UDim2.new(1, -40, 0, 30),
+	Font = Enum.Font.GothamBold,
+	Text = "Staff Lobby",
+	MaxTextSize = 26,
+})
+makeLabel(lobbyPanel, {
+	Name = "Body",
+	Position = UDim2.new(0, 20, 0, 50),
+	Size = UDim2.new(1, -40, 0, 40),
+	Text = "Tidy up the agency here with everyone on this server, or create a private room for you and your friends.",
+	TextColor3 = MUTED_COLOR,
+	MaxTextSize = 15,
+})
+local playHereButton = makeButton(lobbyPanel, {
+	Name = "PlayHere",
+	Position = UDim2.new(0, 20, 0, 100),
+	Size = UDim2.new(1, -40, 0, 44),
+	Text = "Play here",
+})
+local createRoomButton = makeButton(lobbyPanel, {
+	Name = "CreateRoom",
+	Position = UDim2.new(0, 20, 0, 154),
+	Size = UDim2.new(1, -40, 0, 44),
+	Text = "Create private room",
+	BackgroundColor3 = Color3.fromRGB(70, 110, 160),
+})
+local codeBox = make("TextBox", {
+	Name = "CodeBox",
+	Position = UDim2.new(0, 20, 0, 210),
+	Size = UDim2.new(0.6, -26, 0, 44),
+	BackgroundColor3 = SOFT_COLOR,
+	BorderSizePixel = 0,
+	ClearTextOnFocus = false,
+	Font = Enum.Font.GothamBold,
+	PlaceholderText = "Room code",
+	PlaceholderColor3 = MUTED_COLOR,
+	Text = "",
+	TextColor3 = TEXT_COLOR,
+	TextScaled = true,
+	Parent = lobbyPanel,
+})
+addCorner(codeBox, 6)
+local joinRoomButton = makeButton(lobbyPanel, {
+	Name = "JoinRoom",
+	AnchorPoint = Vector2.new(1, 0),
+	Position = UDim2.new(1, -20, 0, 210),
+	Size = UDim2.new(0.4, -14, 0, 44),
+	Text = "Join",
+	BackgroundColor3 = Color3.fromRGB(70, 110, 160),
+})
+local lobbyStatus = makeLabel(lobbyPanel, {
+	Name = "Status",
+	Position = UDim2.new(0, 20, 0, 266),
+	Size = UDim2.new(1, -40, 0, 50),
+	Text = "",
+	TextColor3 = GOLD_COLOR,
+	MaxTextSize = 15,
+})
+
+-- Code du salon privé (affiché dans le salon pour inviter des amis).
+local roomCodeLabel = makeLabel(screenGui, {
+	Name = "RoomCode",
+	Position = UDim2.new(0, 12, 0, 8),
+	Size = UDim2.new(0, 300, 0, 22),
+	Font = Enum.Font.GothamBold,
+	Text = "",
+	TextColor3 = OVERLAY_COLOR,
+	TextStrokeTransparency = 0.3,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	MaxTextSize = 16,
+})
+local function updateRoomCode()
+	local code = ReplicatedStorage:GetAttribute("RoomCode")
+	roomCodeLabel.Text = if type(code) == "string" and code ~= "" then "Room code: " .. code .. "  (share it with friends)" else ""
+end
+ReplicatedStorage:GetAttributeChangedSignal("RoomCode"):Connect(updateRoomCode)
+updateRoomCode()
+
+local function lobbyRequest(action, argument)
+	lobbyStatus.Text = "Please wait..."
+	local ok, success, message = pcall(function()
+		return lobbyFunction:InvokeServer(action, argument)
+	end)
+	if not ok then
+		lobbyStatus.Text = "Something went wrong. Please try again."
+	else
+		lobbyStatus.Text = tostring(message or "")
+		lobbyStatus.TextColor3 = if success then ACCENT_COLOR else ERROR_COLOR
+	end
+end
+playHereButton.Activated:Connect(function()
+	lobbyRequest("PlayHere")
+end)
+createRoomButton.Activated:Connect(function()
+	lobbyRequest("Create")
+end)
+joinRoomButton.Activated:Connect(function()
+	lobbyRequest("Join", codeBox.Text)
+end)
+
+---------------------------------------------------------------------------
+-- Musique d'ambiance (si un identifiant est réglé dans TidyConfig)
+---------------------------------------------------------------------------
+local musicOn = true
+local musicSound = nil
+if TidyConfig.MusicSoundId ~= "" then
+	musicSound = make("Sound", {
+		Name = "ChillMusic",
+		SoundId = TidyConfig.MusicSoundId,
+		Looped = true,
+		Volume = TidyConfig.MusicVolume,
+		Parent = SoundService,
+	})
+	musicSound:Play()
+end
+local musicButton = makeButton(screenGui, {
+	Name = "MusicButton",
+	AnchorPoint = Vector2.new(0, 0.5),
+	Position = UDim2.new(0, 10, 0.42, 72),
+	Size = UDim2.new(0, 210, 0, 30),
+	Text = if musicSound then "Music: On [" .. keyName(Enum.KeyCode.M) .. "]" else "Music: not set",
+	BackgroundColor3 = SOFT_COLOR,
+	TextColor3 = TEXT_COLOR,
+})
+local function toggleMusic()
+	if not musicSound then
+		return
+	end
+	musicOn = not musicOn
+	musicSound.Volume = if musicOn then TidyConfig.MusicVolume else 0
+	musicButton.Text = "Music: " .. (if musicOn then "On" else "Off") .. " [" .. keyName(Enum.KeyCode.M) .. "]"
+end
+musicButton.Activated:Connect(toggleMusic)
 
 ---------------------------------------------------------------------------
 -- Messages temporaires
@@ -611,9 +772,35 @@ local function celebrate(position, strength)
 	Debris:AddItem(holder, 1.5)
 end
 
-notifyEvent.OnClientEvent:Connect(function(kind, text, position)
+-- Animation : l'objet glisse de la main jusqu'à sa place (effet local, très court).
+local function animatePlacement(item, fromCFrame)
+	if typeof(item) ~= "Instance" or not item:IsA("Model") or typeof(fromCFrame) ~= "CFrame" or not item.PrimaryPart then
+		return
+	end
+	local target = item:GetPivot()
+	local driver = Instance.new("CFrameValue")
+	driver.Value = fromCFrame
+	item:PivotTo(fromCFrame)
+	local connection = driver.Changed:Connect(function(value)
+		if item.Parent then
+			item:PivotTo(value)
+		end
+	end)
+	local tween = TweenService:Create(driver, TweenInfo.new(0.28, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Value = target })
+	tween.Completed:Connect(function()
+		connection:Disconnect()
+		if item.Parent then
+			item:PivotTo(target)
+		end
+		driver:Destroy()
+	end)
+	tween:Play()
+end
+
+notifyEvent.OnClientEvent:Connect(function(kind, text, position, item, fromCFrame)
 	showToast(text, kind)
 	if kind == "placed" then
+		animatePlacement(item, fromCFrame)
 		celebrate(position, 10)
 	end
 end)
@@ -692,6 +879,21 @@ local function updateCounters()
 	end
 end
 
+-- Sous-catégories des objets du sac (livres, colis), dans le même ordre que heldTypes().
+local function heldCategories()
+	local text = player:GetAttribute("HeldCategories") or ""
+	local list = {}
+	for categoryId in string.gmatch(text, "[^,]+") do
+		table.insert(list, if categoryId == "-" then nil else categoryId)
+	end
+	return list
+end
+
+local function categoryName(itemType, categoryId)
+	local category = categoryId and TidyConfig.GetCategory(itemType, categoryId)
+	return category and category.Name or nil
+end
+
 local function heldTypes()
 	local text = player:GetAttribute("Held") or ""
 	local list = {}
@@ -709,7 +911,8 @@ local function updateHint()
 	local carrying = player:GetAttribute("Carrying") or ""
 	local info = TidyConfig.ItemTypes[carrying]
 	if info then
-		hintLabel.Text = info.DisplayName .. ": " .. info.Hint
+		local catName = categoryName(carrying, player:GetAttribute("CarryingCategory"))
+		hintLabel.Text = info.DisplayName .. (if catName then " (" .. catName .. ")" else "") .. ": " .. info.Hint
 	else
 		hintLabel.Text = "Click an item to pick it up."
 	end
@@ -722,6 +925,7 @@ local function updateBag()
 		end
 	end
 	local list = heldTypes()
+	local cats = heldCategories()
 	local selected = player:GetAttribute("Selected") or 0
 	local capacity = player:GetAttribute("Capacity") or TidyConfig.BaseCapacity
 	for index, itemType in list do
@@ -732,7 +936,7 @@ local function updateBag()
 			Size = UDim2.new(0, 84, 0, 34),
 			BackgroundTransparency = 0.1,
 			Font = Enum.Font.GothamBold,
-			Text = info and info.DisplayName or itemType,
+			Text = categoryName(itemType, cats[index]) or (info and info.DisplayName or itemType),
 			TextColor3 = if index == selected then BUTTON_TEXT else TEXT_COLOR,
 			MaxTextSize = 14,
 		})
@@ -785,6 +989,7 @@ end
 local function updateUpgrades()
 	local points = player:GetAttribute("Points") or 0
 	pointsLabel.Text = "Points: " .. points
+	rankLabel.Text = "Rank: " .. (player:GetAttribute("Rank") or "Intern") .. "  (" .. (player:GetAttribute("Lifetime") or 0) .. " items)"
 	for id, row in upgradeRows do
 		local level = player:GetAttribute("Level_" .. id) or 0
 		local upgrade = row.Upgrade
@@ -824,16 +1029,22 @@ local zoneHighlights = {}
 
 local function refreshWorld()
 	local carrying = player:GetAttribute("Carrying") or ""
+	local carryingCategory = player:GetAttribute("CarryingCategory") or ""
 	for _, slot in CollectionService:GetTagged(TidyConfig.SlotTag) do
 		if slot:IsA("BasePart") then
-			local matches = carrying ~= "" and slot:GetAttribute("ItemType") == carrying and slot:GetAttribute("Occupied") ~= true
+			local slotCategory = slot:GetAttribute("Category")
+			local matches = carrying ~= ""
+				and slot:GetAttribute("ItemType") == carrying
+				and slot:GetAttribute("Occupied") ~= true
+				and (slotCategory == nil or slotCategory == carryingCategory)
 			slot.Transparency = if matches then GHOST_TRANSPARENCY else 1
 		end
 	end
 	for _, zone in CollectionService:GetTagged(TidyConfig.ZoneTag) do
 		-- Contour vert sur les meubles du bon type (créé seulement quand il sert,
 		-- car Roblox limite le nombre de contours affichés en même temps).
-		local matches = carrying ~= "" and zone:GetAttribute("ItemType") == carrying
+		local zoneCategory = zone:GetAttribute("Category")
+		local matches = carrying ~= "" and zone:GetAttribute("ItemType") == carrying and (zoneCategory == nil or zoneCategory == carryingCategory)
 		local highlight = zoneHighlights[zone]
 		if matches and (not highlight or highlight.Parent ~= zone) then
 			zoneHighlights[zone] = make("Highlight", {
@@ -941,7 +1152,8 @@ local function updateGuide()
 	local bestPosition, bestDistance = nil, math.huge
 	if carrying ~= "" then
 		for _, slot in CollectionService:GetTagged(TidyConfig.SlotTag) do
-			if slot:GetAttribute("ItemType") == carrying and slot:GetAttribute("Occupied") ~= true then
+			local slotCategory = slot:GetAttribute("Category")
+			if slot:GetAttribute("ItemType") == carrying and slot:GetAttribute("Occupied") ~= true and (slotCategory == nil or slotCategory == player:GetAttribute("CarryingCategory")) then
 				local distance = (slot.Position - root.Position).Magnitude
 				if distance < bestDistance then
 					bestPosition, bestDistance = slot.Position, distance
@@ -976,7 +1188,12 @@ local freeMouse = false
 local FREE_MOUSE_PRIORITY = 201 -- juste après la caméra (Enum.RenderPriority.Camera = 200)
 
 local function mouseShouldBeFree()
-	return freeMouse or introPanel.Visible or upgradesPanel.Visible or completePanel.Visible
+	return freeMouse
+		or introPanel.Visible
+		or upgradesPanel.Visible
+		or completePanel.Visible
+		or lobbyPanel.Visible
+		or player:GetAttribute("InAgency") ~= true
 end
 
 local function enableFirstPerson()
@@ -990,7 +1207,7 @@ RunService:BindToRenderStep("TidyFreeMouse", FREE_MOUSE_PRIORITY, function()
 		UserInputService.MouseIconEnabled = true
 		crosshair.Visible = false
 	else
-		crosshair.Visible = not isTouchOnly
+		crosshair.Visible = not isTouchOnly and player:GetAttribute("InAgency") == true
 	end
 end)
 
@@ -1020,11 +1237,14 @@ local function aimText(kind, target)
 	elseif kind == "zone" then
 		local zoneType = target:GetAttribute("ItemType")
 		local info = TidyConfig.ItemTypes[zoneType]
-		local heldList = player:GetAttribute("Held") or ""
-		if string.find("," .. heldList .. ",", "," .. zoneType .. ",", 1, true) then
-			return verb .. " to put away: " .. (info and info.DisplayName or "item")
+		local zoneCategory = target:GetAttribute("Category")
+		local cats = heldCategories()
+		for index, itemType in heldTypes() do
+			if itemType == zoneType and (zoneCategory == nil or cats[index] == zoneCategory) then
+				return verb .. " to put away: " .. (info and info.DisplayName or "item")
+			end
 		end
-		return (info and info.PlaceName or "Shelf") .. " (for " .. string.lower(info and info.Plural or "items") .. ")"
+		return target:GetAttribute("ZoneLabel") or (info and info.PlaceName or "Shelf")
 	end
 	return ""
 end
@@ -1103,6 +1323,8 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		upgradesPanel.Visible = not upgradesPanel.Visible
 	elseif input.KeyCode == Enum.KeyCode.Y then
 		freeMouse = not freeMouse
+	elseif input.KeyCode == Enum.KeyCode.M then
+		toggleMusic()
 	else
 		for _, tool in TOOLS do
 			if input.KeyCode == tool.Key then
@@ -1214,14 +1436,14 @@ end)
 ---------------------------------------------------------------------------
 -- Écoute des changements
 ---------------------------------------------------------------------------
-for _, name in { "Held", "Selected", "Capacity", "Carrying" } do
+for _, name in { "Held", "HeldCategories", "Selected", "Capacity", "Carrying", "CarryingCategory" } do
 	player:GetAttributeChangedSignal(name):Connect(function()
 		updateBag()
 		updateHint()
 		requestRefresh()
 	end)
 end
-for _, name in { "Points", "Level_Capacity", "Level_Speed", "Level_Magnet", "Level_Magnifier" } do
+for _, name in { "Points", "Rank", "Lifetime", "Level_Capacity", "Level_Speed", "Level_Magnet", "Level_Magnifier" } do
 	player:GetAttributeChangedSignal(name):Connect(function()
 		updateUpgrades()
 		updateTools()
@@ -1262,6 +1484,26 @@ task.spawn(function()
 		task.wait(0.25)
 	end
 end)
+
+-- Zone d'accueil ou agence : on montre le bon écran.
+local hudElements = { progressPanel, leftPanel, hotbar, bagBar, areaLabel, hintLabel, timerLabel, aimLabel, musicButton }
+local enteredAgency = false
+local function updateMode()
+	local inAgency = player:GetAttribute("InAgency") == true
+	for _, element in hudElements do
+		element.Visible = inAgency
+	end
+	controlsLabel.Visible = inAgency and not isTouchOnly
+	lobbyPanel.Visible = not inAgency
+	if inAgency and not enteredAgency then
+		enteredAgency = true
+		introPanel.Visible = true
+	elseif not inAgency then
+		introPanel.Visible = false
+	end
+end
+player:GetAttributeChangedSignal("InAgency"):Connect(updateMode)
+updateMode()
 
 updateCounters()
 updateHint()

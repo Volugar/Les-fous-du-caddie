@@ -35,39 +35,56 @@ effacez le texte par défaut et collez le contenu du fichier.
 
 ## Comment on joue
 
-Un jeu de rangement **calme et satisfaisant** : chaque objet a sa place, on range à son rythme
-dans une grande agence de 7 pièces et on la voit devenir propre et organisée.
+Un jeu de rangement **calme et satisfaisant**, en vue à la première personne : chaque objet a sa place,
+on range à son rythme une grande agence de **10 pièces** (organisation inspirée d'une agence publique
+pour l'emploi : accueil, espace libre-service, bureaux des conseillers, box d'entretien, ateliers,
+centre de ressources, courrier...). Environ **800 objets** par journée de travail.
 
-- **Vue à la première personne** avec un **viseur** au centre de l'écran.
-- **Ramasser :** visez un objet (« Click to pick up ») et cliquez. Sur mobile, appuyez sur l'objet.
-- **Ranger :** visez le meuble où il se range (« Click to put away ») et cliquez. Les places libres
-  brillent en vert, les meubles concernés sont entourés.
-- **Plusieurs objets en main :** 3 au départ. **Molette** (ou **E**, ou boutons < >) pour changer d'objet,
-  **Q** (A sur AZERTY) ou bouton « Drop » pour lâcher.
-- **Y :** libérer la souris (pour cliquer sur les boutons). Elle se libère aussi quand une fenêtre est ouverte.
-- **Points :** chaque objet rangé rapporte des points, et chaque pièce entièrement rangée donne **100 points bonus**.
-- **Pièces à débloquer :** cliquez sur une porte vitrée verrouillée pour l'ouvrir avec vos points.
-- **Améliorations (touche G) :** sac plus grand, chaussures de course, aimant, loupe.
-- **Outils (touches 1, 2, 3) :**
-  - **Main** : ramasser et ranger ;
-  - **Aimant** : un clic attire dans le sac les objets proches ;
-  - **Loupe** : un rayon doré montre l'objet le plus proche, ou la place où ranger.
-- En bas de l'écran, **« You are in: … »** affiche la pièce et sa progression.
-- En haut à droite : **« Items left to put away: … »** et le détail par catégorie.
-- **Fin :** message « The agency is in order. », puis **Play again**. Les pièces ouvertes,
-  les points et les améliorations sont conservés.
+### Zone d'accueil (lobby)
+En arrivant, le joueur est dans le **Staff Lobby** :
+- **Play here** : ranger l'agence de ce serveur, avec les autres joueurs présents ;
+- **Create private room** : crée un salon privé et y envoie le joueur ; le **code du salon** s'affiche en haut à gauche ;
+- **Join** : rejoindre le salon d'un ami avec son code à 6 caractères.
 
-| Pièce (nom dans le jeu)        | Prix pour ouvrir | Objets à ranger                           |
-|--------------------------------|------------------|-------------------------------------------|
-| Accueil (Reception)            | ouverte          | 12 piles de papiers, 18 chaises           |
-| Couloir (Hallway)              | ouvert           | 12 plantes                                |
-| Bureaux (Offices)              | 200 points       | 36 piles de papiers, 12 plantes           |
-| Salle de pause (Break Room)    | 400 points       | 36 tasses, 16 chaises                     |
-| Archives (Archives)            | 600 points       | 72 dossiers                               |
-| Réserve (Storage)              | 800 points       | 36 cartons                                |
-| Salle de formation (Training Room) | 1000 points  | 20 chaises, 6 piles de papiers, 6 plantes |
+Les salons privés ne fonctionnent que dans le **jeu publié** (pas dans Studio). Dans Studio, utilisez **Play here**.
 
-Total : **282 objets** par partie.
+### Commandes
+- **Viseur** au centre : visez un objet (« Click to pick up ») et cliquez ; visez sa place (« Click to put away ») et cliquez.
+  Sur mobile, appuyez sur l'objet ou le meuble.
+- **Molette** (ou **E**, ou boutons < >) : changer d'objet en main. **Q** (A sur AZERTY) : lâcher.
+- **Y** : libérer la souris. **G** : améliorations. **1, 2, 3** : main, aimant, loupe. **M** : musique.
+- **Livres** et **colis** se rangent sur le meuble de **la même couleur** (étiquette au-dessus du meuble).
+
+### Progression (sauvegardée)
+- Points, améliorations, pièces ouvertes et nombre total d'objets rangés sont **sauvegardés** (jeu publié).
+- **Rangs** selon le total d'objets rangés : Intern → Office Assistant → Filing Clerk → Records Officer →
+  Job Advisor → Senior Advisor → Office Manager → Agency Director.
+- **Bonus quotidien** : 50 points par jour de suite (jusqu'à 350 points au 7e jour).
+- **100 points bonus** par pièce entièrement rangée. Nouvelle journée (**Play again**) quand tout est rangé.
+
+| Pièce (nom dans le jeu)          | Prix     | Objets à ranger                                   |
+|----------------------------------|----------|---------------------------------------------------|
+| Accueil (Reception)              | ouverte  | 12 piles de papiers, 18 chaises                   |
+| Espace libre-service (Self-Service Area) | ouverte | 12 chaises, 6 piles de papiers, 12 plantes |
+| Bureaux (Advisor Offices)        | 200      | 36 piles de papiers, 12 plantes                   |
+| Salle de pause (Break Room)      | 400      | 72 tasses, 16 chaises                             |
+| Archives (Archives)              | 600      | 144 dossiers                                      |
+| Réserve (Storage)                | 800      | 54 cartons                                        |
+| Ateliers (Workshop Room)         | 1000     | 20 chaises, 6 piles de papiers, 6 plantes         |
+| Box d'entretien (Interview Booths) | 1200   | 16 chaises, 24 piles de papiers                   |
+| Centre de ressources (Resource Library) | 1500 | 192 livres, à trier par couleur              |
+| Courrier (Mail Room)             | 1800     | 144 colis, à trier par couleur                    |
+
+Total : **802 objets** par journée.
+
+## Musique d'ambiance (originale, libre de droits)
+
+Le fichier **`assets/chill_loop.mp3`** est une musique calme **composée pour ce jeu** (générée par
+`tools/compose_music.py`) : vous pouvez l'utiliser librement. Pour l'activer :
+1. Sur le site Roblox : **Create > Creator Hub > Development Items > Audio > Import**, choisissez `chill_loop.mp3`.
+2. Copiez l'identifiant de l'audio (un nombre).
+3. Dans le script `TidyConfig`, remplacez `TidyConfig.MusicSoundId = ""` par
+   `TidyConfig.MusicSoundId = "rbxassetid://VOTRE_NOMBRE"`.
 
 ## Plan (vue de dessus)
 
@@ -80,6 +97,9 @@ Exemple de partie. En rouge : les objets qui traînent (placés au hasard). En v
 - `AgencyName` : nom de l'agence affiché sur les panneaux et l'interface.
 - `ItemTypes` : noms affichés et consignes pour chaque type d'objet.
 - `Rooms` : les pièces, leur prix d'ouverture et le nombre d'objets de chaque type.
+- `Categories` : les couleurs des livres et des colis.
+- `Ranks`, `DailyBonusPerDay` : rangs et bonus quotidien.
+- `MusicSoundId`, `MusicVolume` : musique d'ambiance.
 - `RoomBonus` : points bonus pour une pièce entièrement rangée.
 - `ReachDistance` : distance à laquelle on peut ramasser / ranger.
 - `BaseCapacity`, `BaseWalkSpeed` : sac et vitesse de départ.
