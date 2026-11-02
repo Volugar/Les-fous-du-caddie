@@ -678,6 +678,123 @@ local function windowedSideWall(parent, name, x, windows, insideDirection, minZ,
 end
 
 ---------------------------------------------------------------------------
+-- Fonctions ajoutées, regroupées dans deux tables (limite de 200 variables locales) :
+-- AG = aile est de l'agence, murs épais, façades vitrées, plafonds légers ;
+-- BD = décors extérieurs vus par les fenêtres (rue, zone industrielle, quartier d'affaires).
+---------------------------------------------------------------------------
+local AG = {}
+local BD = {}
+AG.MinX, AG.MaxX = 80, 240 -- aile est de l'agence (rez-de-chaussée) : de X = 80 à X = 240
+
+-- Pièce d'un mur droit. alongX = true : le mur suit X (à Z = fixed) ; sinon il suit Z (à X = fixed).
+-- a, b = début et fin le long du mur ; offset = décalage perpendiculaire au mur.
+function AG.Piece(parent, name, alongX, fixed, a, b, y1, y2, depth, offset, color, material, options)
+	if b - a <= 0.01 or y2 - y1 <= 0.01 then
+		return nil
+	end
+	local mid, h = (a + b) / 2, y2 - y1
+	local size = if alongX then Vector3.new(b - a, h, depth) else Vector3.new(depth, h, b - a)
+	local position = if alongX then Vector3.new(mid, y1 + h / 2, fixed + offset) else Vector3.new(fixed + offset, y1 + h / 2, mid)
+	return block(parent, name, size, position, color, material, options)
+end
+
+-- Mur plein épais avec des portes (doors = liste de { From, To, Room }).
+-- Si le mur part plus bas que le sol (baseY), un seuil métallique bouche le sol sous chaque porte.
+function AG.Wall(parent, name, alongX, fixed, from, to, thickness, doors, baseY, color, material)
+	baseY = baseY or FLOOR_TOP
+	color = color or COLORS.Wall
+	material = material or "Plaster"
+	local top = CEILING_BOTTOM
+	table.sort(doors, function(a, b)
+		return a.From < b.From
+	end)
+	local cursor = from
+	for _, door in doors do
+		AG.Piece(parent, name, alongX, fixed, cursor, door.From, baseY, top, thickness, 0, color, material)
+		cursor = door.To
+	end
+	AG.Piece(parent, name, alongX, fixed, cursor, to, baseY, top, thickness, 0, color, material)
+	local trim = { CanCollide = false, CastShadow = false }
+	for _, door in doors do
+		local length = door.To - door.From
+		local mid = (door.From + door.To) / 2
+		AG.Piece(parent, name .. "Lintel", alongX, fixed, door.From, door.To, FLOOR_TOP + DOOR_HEIGHT, top, thickness, 0, color, material)
+		AG.Piece(parent, "Threshold", alongX, fixed, door.From, door.To, baseY, FLOOR_TOP, thickness, 0, COLORS.DarkMetal, "Metal")
+		-- Encadrement blanc, visible des deux côtés du mur.
+		AG.Piece(parent, "DoorCasing", alongX, fixed, door.From - 0.3, door.From, FLOOR_TOP, FLOOR_TOP + DOOR_HEIGHT, thickness + 0.2, 0, COLORS.Trim, "SmoothPlastic", trim)
+		AG.Piece(parent, "DoorCasing", alongX, fixed, door.To, door.To + 0.3, FLOOR_TOP, FLOOR_TOP + DOOR_HEIGHT, thickness + 0.2, 0, COLORS.Trim, "SmoothPlastic", trim)
+		AG.Piece(parent, "DoorCasingTop", alongX, fixed, door.From - 0.3, door.To + 0.3, FLOOR_TOP + DOOR_HEIGHT, FLOOR_TOP + DOOR_HEIGHT + 0.3, thickness + 0.2, 0, COLORS.Trim, "SmoothPlastic", trim)
+		if alongX then
+			addObstacle(door.From - 1, door.To + 1, fixed - 3, fixed + 3)
+			door.Center = Vector3.new(mid, FLOOR_TOP + DOOR_HEIGHT / 2, fixed)
+			door.Facing = Vector3.new(0, 0, 1)
+		else
+			addObstacle(fixed - 3, fixed + 3, door.From - 1, door.To + 1)
+			door.Center = Vector3.new(fixed, FLOOR_TOP + DOOR_HEIGHT / 2, mid)
+			door.Facing = Vector3.new(1, 0, 0)
+		end
+		door.Size = Vector3.new(length, DOOR_HEIGHT, 0.3)
+	end
+end
+
+-- Mur extérieur avec des fenêtres (même style que windowedSideWall, dans les deux directions).
+-- windows = liste de { début, fin } le long du mur ; insideDirection = côté intérieur (+1 ou -1).
+function AG.WindowWall(parent, name, alongX, fixed, from, to, windows, insideDirection, baseY)
+	local sillY, windowTop = FLOOR_TOP + 3, FLOOR_TOP + 9
+	AG.Piece(parent, name .. "Low", alongX, fixed, from, to, baseY, sillY, 1, 0, COLORS.Wall, "Plaster")
+	AG.Piece(parent, name .. "High", alongX, fixed, from, to, windowTop, CEILING_BOTTOM, 1, 0, COLORS.Wall, "Plaster")
+	local cursor = from
+	for _, window in windows do
+		AG.Piece(parent, name .. "Pillar", alongX, fixed, cursor, window[1], sillY, windowTop, 1, 0, COLORS.Wall, "Plaster")
+		AG.Piece(parent, name .. "Window", alongX, fixed, window[1], window[2], sillY, windowTop, 0.3, 0, COLORS.Glass, "Glass", { Transparency = 0.5 })
+		AG.Piece(parent, name .. "Sill", alongX, fixed, window[1], window[2], sillY, sillY + 0.2, 0.6, insideDirection * 0.8, COLORS.Trim, "SmoothPlastic")
+		cursor = window[2]
+	end
+	AG.Piece(parent, name .. "Pillar", alongX, fixed, cursor, to, sillY, windowTop, 1, 0, COLORS.Wall, "Plaster")
+end
+
+-- Façade de verre du sol au plafond (bureaux en haut de la tour) : socle, grande vitre, bandeau et meneaux.
+function AG.GlassWall(parent, name, alongX, fixed, from, to, baseY, frameColor, step)
+	local glassBottom, glassTop = FLOOR_TOP + 0.5, CEILING_BOTTOM - 1
+	AG.Piece(parent, name .. "Base", alongX, fixed, from, to, baseY, glassBottom, 1, 0, frameColor, "Metal")
+	AG.Piece(parent, name .. "Glass", alongX, fixed, from, to, glassBottom, glassTop, 0.4, 0, Color3.fromRGB(176, 214, 238), "Glass", { Transparency = 0.62, CastShadow = false })
+	AG.Piece(parent, name .. "Head", alongX, fixed, from, to, glassTop, CEILING_BOTTOM, 1, 0, frameColor, "Metal")
+	local count = math.max(1, math.floor((to - from) / step))
+	for i = 1, count - 1 do
+		local p = from + i * (to - from) / count
+		AG.Piece(parent, "Mullion", alongX, fixed, p - 0.15, p + 0.15, glassBottom, glassTop, 1.1, 0, frameColor, "Metal", { CanCollide = false, CastShadow = false })
+	end
+end
+
+-- Bandeaux lumineux (néon) d'une pièce, avec très peu de vraies lumières (performances).
+function AG.Strips(parent, minX, maxX, minZ, maxZ, lights)
+	local y = CEILING_BOTTOM - 0.4
+	local z = minZ + 7.75
+	while z <= maxZ - 5 do
+		block(parent, "LightStrip", Vector3.new(maxX - minX - 8, 0.15, 0.6), Vector3.new((minX + maxX) / 2, y, z), COLORS.Light, "Neon", { CanCollide = false, CastShadow = false, Transparency = 0.45 })
+		z += 12.5
+	end
+	for i = 1, lights do
+		local holder = block(parent, "LightPoint", Vector3.new(0.2, 0.1, 0.2), Vector3.new((minX + maxX) / 2, y - 0.2, minZ + (i - 0.5) * (maxZ - minZ) / lights), COLORS.Light, "SmoothPlastic", { CanCollide = false, CastShadow = false, Transparency = 1 })
+		local light = Instance.new("PointLight")
+		light.Range = 26
+		light.Brightness = lampPower(0.55)
+		light.Color = Color3.fromRGB(255, 236, 206)
+		light.Shadows = false
+		light.Parent = holder
+	end
+end
+
+-- Dalles lumineuses au plafond (sans lumière réelle), tous les "step" studs.
+function AG.Panels(parent, minX, maxX, minZ, maxZ, step, color)
+	for x = minX + step / 2, maxX - step / 2 + 0.01, step do
+		for z = minZ + step / 2, maxZ - step / 2 + 0.01, step do
+			block(parent, "CeilingPanel", Vector3.new(5, 0.1, 5), Vector3.new(x, CEILING_BOTTOM - 0.05, z), color or COLORS.Light, "Neon", { CanCollide = false, CastShadow = false, Transparency = 0.5 })
+		end
+	end
+end
+
+---------------------------------------------------------------------------
 -- Plafonds : dalle avec ouvertures (puits de lumière), lattes de bois, bandeaux lumineux
 ---------------------------------------------------------------------------
 

@@ -173,7 +173,7 @@ TidyConfig.Maps = {
 		Requires = "Agency",
 		Icon = "🏙️",
 		Color = Color3.fromRGB(150, 110, 230),
-		Spawn = Vector3.new(-1030, 1, 94),
+		Spawn = Vector3.new(-1030, 200, 94), -- dernier étage de la tour
 	},
 }
 
@@ -207,6 +207,16 @@ TidyConfig.Rooms = {
 	{ Id = "Workspace", Map = "Agency", Name = "Open Workspace", Floor = 2, MinX = -20, MaxX = 20, MinZ = -60, MaxZ = 20, Unlock = 0, Requires = "UpperHall", Items = { Chair = 8, Paper = 24, Plant = 6 } },
 	{ Id = "ITRoom", Map = "Agency", Name = "IT Room", Floor = 2, MinX = 20, MaxX = 80, MinZ = -60, MaxZ = 20, Unlock = 0, Requires = "UpperHall", Items = { Laptop = 72, Box = 18 } },
 	{ Id = "Director", Map = "Agency", Name = "Director's Office", Floor = 2, MinX = -80, MaxX = -20, MinZ = -60, MaxZ = 20, Unlock = 0, Requires = "UpperHall", Items = { Folder = 72, Paper = 6, Plant = 6 } },
+	-- Agence (aile est du rez-de-chaussée : un grand couloir et 8 pièces)
+	{ Id = "EastHall", Map = "Agency", Name = "East Wing Hall", MinX = 80, MaxX = 240, MinZ = -10, MaxZ = 20, Unlock = 10100, Items = { Paper = 30, Chair = 24, Plant = 18 } },
+	{ Id = "StaffCafe", Map = "Agency", Name = "Staff Café", MinX = 80, MaxX = 120, MinZ = 20, MaxZ = 60, Unlock = 10900, Items = { Chair = 16, Mug = 126 } },
+	{ Id = "RecordsHall", Map = "Agency", Name = "Records Hall", MinX = 80, MaxX = 120, MinZ = -100, MaxZ = -10, Unlock = 12200, Items = { Folder = 240 } },
+	{ Id = "JobClub", Map = "Agency", Name = "Job Club Lounge", MinX = 120, MaxX = 160, MinZ = 20, MaxZ = 60, Unlock = 14000, Items = { Plant = 12, Cushion = 66 } },
+	{ Id = "CareerLibrary", Map = "Agency", Name = "Career Library", MinX = 120, MaxX = 160, MinZ = -100, MaxZ = -10, Unlock = 14600, Items = { Book = 288 } },
+	{ Id = "ComputerLab", Map = "Agency", Name = "Computer Lab", MinX = 160, MaxX = 200, MinZ = 20, MaxZ = 60, Unlock = 16400, Items = { Paper = 24, Laptop = 132 } },
+	{ Id = "ParcelDepot", Map = "Agency", Name = "Parcel Depot", MinX = 160, MaxX = 200, MinZ = -100, MaxZ = -10, Unlock = 17800, Items = { Parcel = 288 } },
+	{ Id = "SupplyRoom", Map = "Agency", Name = "Supply Room", MinX = 200, MaxX = 240, MinZ = 20, MaxZ = 60, Unlock = 20400, Items = { Paper = 18, Box = 72 } },
+	{ Id = "Stockroom", Map = "Agency", Name = "Stockroom", MinX = 200, MaxX = 240, MinZ = -100, MaxZ = -10, Unlock = 21400, Items = { Box = 124 } },
 
 	-- Entrepôt de distribution (un immense hall découpé en sections, sans murs)
 	{ Id = "WReceiving", Map = "Warehouse", Name = "Receiving Dock", MinX = 820, MaxX = 1180, MinZ = 80, MaxZ = 120, Unlock = 0, Items = { Box = 90 } },
@@ -219,7 +229,7 @@ TidyConfig.Rooms = {
 	{ Id = "WOutbound", Map = "Warehouse", Name = "Outbound Shipping", MinX = 910, MaxX = 1000, MinZ = -120, MaxZ = -20, Unlock = 14900, Items = { Parcel = 320, Tape = 20 } },
 	{ Id = "WReturns", Map = "Warehouse", Name = "Returns", MinX = 820, MaxX = 910, MinZ = -120, MaxZ = -20, Unlock = 18000, Items = { ShoeBox = 40, Toy = 40, Bottle = 40, Can = 40, Gadget = 40 } },
 
-	-- Siège social (bureaux de direction luxueux)
+	-- Siège social (bureaux de direction luxueux, au dernier étage d'une tour)
 	{ Id = "HLobby", Map = "Headquarters", Name = "Grand Lobby", MinX = -1080, MaxX = -980, MinZ = 20, MaxZ = 100, Unlock = 0, Items = { Chair = 30, Plant = 20, Paper = 30 } },
 	{ Id = "HAtrium", Map = "Headquarters", Name = "Atrium", MinX = -1080, MaxX = -980, MinZ = -40, MaxZ = 20, Unlock = 0, Items = { Plant = 20, Paper = 20, Frame = 10 } },
 	{ Id = "HOpenOffice", Map = "Headquarters", Name = "Open Office", MinX = -1180, MaxX = -1080, MinZ = 20, MaxZ = 100, Unlock = 1500, Items = { Paper = 80, Chair = 40, Mug = 60 } },
@@ -229,6 +239,11 @@ TidyConfig.Rooms = {
 	{ Id = "HArchive", Map = "Headquarters", Name = "Records Vault", MinX = -1180, MaxX = -1080, MinZ = -100, MaxZ = -40, Unlock = 9800, Items = { Binder = 240, Folder = 120 } },
 	{ Id = "HExecutive", Map = "Headquarters", Name = "CEO Suite", MinX = -1080, MaxX = -980, MinZ = -100, MaxZ = -40, Unlock = 12500, Items = { Folder = 100, Frame = 60, Cushion = 30, Plant = 12 } },
 	{ Id = "HServer", Map = "Headquarters", Name = "Server Hub", MinX = -980, MaxX = -880, MinZ = -100, MaxZ = -40, Unlock = 14200, Items = { Laptop = 140, Box = 40 } },
+	-- Siège social (rangée nord ajoutée, face à la ville)
+	{ Id = "HSkyLounge", Map = "Headquarters", Name = "Sky Lounge", MinX = -1105, MaxX = -1030, MinZ = -200, MaxZ = -100, Unlock = 15900, Items = { Chair = 20, Mug = 108, Plant = 40, Cushion = 108 } },
+	{ Id = "HLegal", Map = "Headquarters", Name = "Legal Department", MinX = -1180, MaxX = -1105, MinZ = -200, MaxZ = -100, Unlock = 18200, Items = { Folder = 72, Paper = 30, Binder = 240 } },
+	{ Id = "HMarketing", Map = "Headquarters", Name = "Marketing Studio", MinX = -1030, MaxX = -955, MinZ = -200, MaxZ = -100, Unlock = 20800, Items = { Paper = 48, Chair = 48, Trophy = 40, Frame = 150 } },
+	{ Id = "HLab", Map = "Headquarters", Name = "Innovation Lab", MinX = -955, MaxX = -880, MinZ = -200, MaxZ = -100, Unlock = 23800, Items = { Paper = 30, Chair = 40, Box = 72, Laptop = 240 } },
 }
 
 -- Points bonus quand toute une pièce est rangée, et quand tout le niveau est rangé.
