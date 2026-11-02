@@ -157,7 +157,18 @@ local screenGui = make("ScreenGui", {
 	ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
 	Parent = playerGui,
 })
-make("UIScale", { Scale = if isTouchOnly then 0.75 else 1, Parent = screenGui })
+-- L'interface s'adapte à la taille de l'écran (petits écrans et téléphones).
+local uiScale = make("UIScale", { Scale = 1, Parent = screenGui })
+local function updateUiScale()
+	local camera = Workspace.CurrentCamera
+	local viewport = camera and camera.ViewportSize or Vector2.new(1920, 1080)
+	local scale = math.min(viewport.X / 1600, viewport.Y / 900)
+	uiScale.Scale = math.clamp(scale, 0.5, 1.15)
+end
+updateUiScale()
+if Workspace.CurrentCamera then
+	Workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateUiScale)
+end
 
 local hud = {}
 
@@ -1032,7 +1043,10 @@ local function refreshWorld()
 		if slot:IsA("BasePart") then
 			local slotCategory = slot:GetAttribute("Category")
 			local matches = carrying ~= "" and slot:GetAttribute("ItemType") == carrying and slot:GetAttribute("Occupied") ~= true and (slotCategory == nil or slotCategory == carryingCategory)
-			slot.Transparency = if matches then GHOST_TRANSPARENCY else 1
+			local wanted = if matches then GHOST_TRANSPARENCY else 1
+			if slot.Transparency ~= wanted then
+				slot.Transparency = wanted
+			end
 		end
 	end
 	local root = getRoot()
@@ -1050,7 +1064,9 @@ local function refreshWorld()
 		if billboard and billboard:IsA("BillboardGui") then
 			local anchor = billboard.Adornee
 			local near = root ~= nil and anchor ~= nil and anchor:IsA("BasePart") and (anchor.Position - root.Position).Magnitude < 45
-			billboard.Enabled = matches or near
+			if billboard.Enabled ~= (matches or near) then
+				billboard.Enabled = matches or near
+			end
 		end
 	end
 end
@@ -1546,6 +1562,24 @@ end)
 joinButton.Activated:Connect(function()
 	local ok, message = lobbyFunction:InvokeServer("Join", codeBox.Text)
 	showToast(message, if ok then "room" else "error")
+end)
+
+-- Petit son quand un objet arrive dans le panier.
+local lastHeldCount = 0
+local function playPickSound()
+	if not settings.Sfx then
+		return
+	end
+	local sound = make("Sound", { Name = "PickSound", SoundId = "rbxasset://sounds/clickfast.wav", Volume = 0.35, PlaybackSpeed = 1.1 + math.random() * 0.2, Parent = SoundService })
+	sound:Play()
+	Debris:AddItem(sound, 1)
+end
+player:GetAttributeChangedSignal("Held"):Connect(function()
+	local count = #heldTypes()
+	if count > lastHeldCount then
+		playPickSound()
+	end
+	lastHeldCount = count
 end)
 
 ---------------------------------------------------------------------------

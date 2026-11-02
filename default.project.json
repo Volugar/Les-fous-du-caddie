@@ -51,6 +51,9 @@
             "Enum": 1280
           }
         }
+      },
+      "$properties": {
+        "StreamingEnabled": true
       }
     },
     "ReplicatedStorage": {

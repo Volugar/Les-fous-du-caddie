@@ -132,6 +132,7 @@ Le volume se règle dans **Settings [R]**.
 - `GamePasses`, `Products`, `PassEffects`, `DealDuration` : boutique.
 - `Ranks`, `DailyBonusPerDay`, `QuestTemplates` : rangs, bonus quotidien, quêtes.
 - `BaseCapacity`, `BaseWalkSpeed`, `ReachDistance`, `RoomBonus`, `DayBonus`, `MaxPartySize`.
+- `LightLevel` : intensité de l'éclairage (1 = normal, 0.8 = plus sombre, 1.2 = plus clair).
 
 ## Plan de l'agence
 

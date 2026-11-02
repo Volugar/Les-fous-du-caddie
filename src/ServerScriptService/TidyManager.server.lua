@@ -290,7 +290,7 @@ end
 -- Étiquette dorée "VIP" au-dessus de la tête.
 local function applyVipTag(player, state)
 	local character = player.Character
-	local head = character and character:FindFirstChild("Head")
+	local head = character and (character:FindFirstChild("Head") or character:WaitForChild("Head", 5))
 	if not head then
 		return
 	end
@@ -1436,6 +1436,22 @@ end
 ---------------------------------------------------------------------------
 -- Entrer dans un niveau / revenir au hall
 ---------------------------------------------------------------------------
+-- Déplace un personnage en s'assurant que le décor autour est chargé chez le joueur
+-- (sinon il peut tomber à travers un sol pas encore chargé).
+local function moveCharacter(player, cframe)
+	pcall(function()
+		player:RequestStreamAroundAsync(cframe.Position, 4)
+	end)
+	local character = player.Character
+	if character then
+		character:PivotTo(cframe)
+		local root = character:FindFirstChild("HumanoidRootPart")
+		if root then
+			root.AssemblyLinearVelocity = Vector3.zero
+		end
+	end
+end
+
 local function enterMap(player, offsetIndex)
 	local state = states[player]
 	if not state or not level then
@@ -1445,11 +1461,8 @@ local function enterMap(player, offsetIndex)
 	player:SetAttribute("InMap", true)
 	player:SetAttribute("QueuePad", 0)
 	player.RespawnLocation = level.Spawn
-	local character = player.Character
-	if character then
-		local offset = Vector3.new(((offsetIndex or 1) - 2.5) * 3, 3, 0)
-		character:PivotTo(level.Spawn.CFrame * CFrame.Angles(0, 0, 0) + offset)
-	end
+	local offset = Vector3.new(((offsetIndex or 1) - 2.5) * 3, 3, 0)
+	moveCharacter(player, level.Spawn.CFrame + offset)
 	applyWalkSpeed(player, state)
 	notify(player, "enter", activeMap)
 	restoreDayProgress(player, state)
@@ -1484,10 +1497,7 @@ local function returnToHub(player)
 	player:SetAttribute("InMap", false)
 	if hub then
 		player.RespawnLocation = hub.Spawn
-		local character = player.Character
-		if character then
-			character:PivotTo(hub.Spawn.CFrame + Vector3.new(0, 3, 0))
-		end
+		moveCharacter(player, hub.Spawn.CFrame + Vector3.new(0, 3, 0))
 	end
 	applyWalkSpeed(player, state)
 end
@@ -1953,6 +1963,21 @@ end
 ---------------------------------------------------------------------------
 -- Classement du hall : meilleurs rangeurs (sauvegarde globale, sinon joueurs présents)
 ---------------------------------------------------------------------------
+local nameCache = {}
+local function nameOf(userId)
+	if nameCache[userId] then
+		return nameCache[userId]
+	end
+	local ok, name = pcall(function()
+		return Players:GetNameFromUserIdAsync(userId)
+	end)
+	if ok and type(name) == "string" then
+		nameCache[userId] = name
+		return name
+	end
+	return "Player"
+end
+
 function updateLeaderboard()
 	local gui = hub and hub.Leaderboard
 	if not gui then
@@ -1962,11 +1987,7 @@ function updateLeaderboard()
 	local ok = pcall(function()
 		local pages = lifetimeStore:GetSortedAsync(false, 10)
 		for _, entry in pages:GetCurrentPage() do
-			local name = "Player"
-			pcall(function()
-				name = Players:GetNameFromUserIdAsync(tonumber(entry.key))
-			end)
-			table.insert(entries, { Name = name, Items = entry.value })
+			table.insert(entries, { Name = nameOf(tonumber(entry.key) or 0), Items = entry.value })
 		end
 	end)
 	if not ok or #entries == 0 then
@@ -1995,6 +2016,23 @@ task.spawn(function()
 	while true do
 		updateLeaderboard()
 		task.wait(60)
+	end
+end)
+
+-- Filet de sécurité : un joueur tombé sous le sol est ramené au point d'arrivée.
+task.spawn(function()
+	while true do
+		task.wait(1.5)
+		for player, state in states do
+			local root = getLivingRoot(player)
+			if root and root.Position.Y < -25 then
+				local spawn = if state.InMap and level then level.Spawn elseif hub then hub.Spawn else nil
+				if spawn then
+					moveCharacter(player, spawn.CFrame + Vector3.new(0, 3, 0))
+					notify(player, "info", "Oops! You fell. Back to the start.")
+				end
+			end
+		end
 	end
 end)
 

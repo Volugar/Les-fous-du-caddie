@@ -2735,7 +2735,7 @@ function WH.Fence(parent, room)
 	local model = newModel(parent, "Fence_" .. room.Id)
 	local inset = 0.8
 	local minX, maxX, minZ, maxZ = room.MinX + inset, room.MaxX - inset, room.MinZ + inset, room.MaxZ - inset
-	local height = 7
+	local height = 9.5 -- plus haut qu'un saut
 	local text = "LOCKED\n" .. string.upper(room.Name) .. "\nOpens at " .. TidyConfig.FormatNumber(room.Unlock) .. " points earned"
 	local function side(from, to)
 		local center = (from + to) / 2
