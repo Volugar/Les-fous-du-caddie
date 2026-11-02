@@ -824,18 +824,18 @@ local shopScroll = make("ScrollingFrame", { Name = "ShopScroll", Position = UDim
 make("UIListLayout", { Padding = UDim.new(0, 14), SortOrder = Enum.SortOrder.LayoutOrder, HorizontalAlignment = Enum.HorizontalAlignment.Center, Parent = shopScroll })
 make("UIPadding", { PaddingTop = UDim.new(0, 8), PaddingBottom = UDim.new(0, 12), Parent = shopScroll })
 local shopSections = {}
-local function shopSection(order, text, color)
+local function shopSection(order, text, color, columns)
 	local header = make("Frame", { Name = "Section" .. order, LayoutOrder = order, Size = UDim2.new(1, -20, 0, 34), BackgroundTransparency = 1, ZIndex = 6, Parent = shopScroll })
 	local bar = make("Frame", { Name = "Bar", Position = UDim2.new(0, 0, 0, 4), Size = UDim2.new(0, 6, 0, 26), BackgroundColor3 = color, BorderSizePixel = 0, ZIndex = 7, Parent = header })
 	addCorner(bar, UDim.new(1, 0))
 	label(header, { Name = "Title", Position = UDim2.new(0, 16, 0, 0), Size = UDim2.new(1, -16, 0, 34), Text = text, Font = FONT_TITLE, TextSize = 26, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 7, Outline = 1.5 })
 	local grid = make("Frame", { Name = "Grid" .. order, LayoutOrder = order + 1, Size = UDim2.new(1, -20, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1, ZIndex = 6, Parent = shopScroll })
-	make("UIGridLayout", { CellSize = UDim2.new(1 / 3, -12, 0, 246), CellPadding = UDim2.new(0, 16, 0, 16), SortOrder = Enum.SortOrder.LayoutOrder, Parent = grid })
+	make("UIGridLayout", { CellSize = UDim2.new(1 / columns, -12, 0, 246), CellPadding = UDim2.new(0, 16, 0, 16), SortOrder = Enum.SortOrder.LayoutOrder, Parent = grid })
 	shopSections[order] = header
 	return grid
 end
-local passesGrid = shopSection(1, "GAME PASSES", THEME.Gold)
-local productsGrid = shopSection(3, "POINTS & BOOSTS", THEME.Green)
+local passesGrid = shopSection(1, "GAME PASSES", THEME.Gold, math.max(1, #TidyConfig.GamePasses))
+local productsGrid = shopSection(3, "POINTS & BOOSTS", THEME.Green, 3)
 local SHOP_COLORS = { THEME.Blue, THEME.Green, THEME.Gold, THEME.Purple, THEME.Pink, THEME.Red }
 local shopTiles = {}
 local function shopTile(grid, kind, entry, order, ribbonText)
@@ -1012,11 +1012,10 @@ for i, map in TidyConfig.Maps do
 	end
 	local logo = label(card, { Name = "Logo", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -26), Size = UDim2.new(1, -24, 0, 70), Text = map.Short or map.Name, Font = FONT_TITLE, TextScaled = true, MaxText = 58, TextColor3 = THEME.White, ZIndex = 8, Outline = 4 })
 	logo.Outline.Color = map.Color:Lerp(Color3.new(0, 0, 0), 0.55)
-	make("UIGradient", { Color = ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(255, 220, 90)), Rotation = 90, Parent = logo })
 	local number = make("Frame", { Name = "Number", Position = UDim2.new(0, 12, 0, 12), Size = UDim2.new(0, 40, 0, 40), BackgroundColor3 = THEME.Dark, BackgroundTransparency = 0.25, BorderSizePixel = 0, ZIndex = 8, Parent = card })
 	addCorner(number, UDim.new(1, 0))
 	label(number, { Size = UDim2.fromScale(1, 1), Text = tostring(i), Font = FONT_TITLE, TextSize = 24, ZIndex = 9 })
-	local lock = make("Frame", { Name = "Lock", Size = UDim2.fromScale(1, 1), BackgroundColor3 = THEME.Dark, BackgroundTransparency = 0.25, BorderSizePixel = 0, Visible = false, ZIndex = 10, Parent = card })
+	local lock = make("Frame", { Name = "Lock", Size = UDim2.fromScale(1, 1), BackgroundColor3 = THEME.Dark, BackgroundTransparency = 0.06, BorderSizePixel = 0, Visible = false, ZIndex = 10, Parent = card })
 	label(lock, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.4), Size = UDim2.new(0, 80, 0, 80), Text = "🔒", TextSize = 64, ZIndex = 11 })
 	local lockText = label(lock, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0.56, 0), Size = UDim2.new(0.86, 0, 0, 56), Text = "", Font = FONT_TITLE, TextSize = 22, TextWrapped = true, ZIndex = 11, Outline = 2 })
 	mapCards[map.Id] = { Card = card, Stroke = stroke, Lock = lock, LockText = lockText, Map = map }

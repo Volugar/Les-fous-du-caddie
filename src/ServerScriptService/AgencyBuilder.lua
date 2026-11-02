@@ -892,16 +892,17 @@ local function slatCeiling(parent, minX, maxX, minZ, maxZ, holes, rooms)
 			end
 			local length = room.MaxX - room.MinX - 8
 			local strip = block(parent, "LightStrip", Vector3.new(length, 0.15, 0.6), Vector3.new((room.MinX + room.MaxX) / 2, y - 0.25, stripZ), COLORS.Light, "Neon", { CanCollide = false, CastShadow = false, Transparency = 0.45 })
-			local lightX = room.MinX + 10
+			-- Une lumière tous les 32 studs (portée plus grande) : deux fois moins de lumières, moins de lag.
+			local lightX = room.MinX + 12
 			while lightX <= room.MaxX - 6 do
 				local holder = block(parent, "LightPoint", Vector3.new(0.2, 0.1, 0.2), Vector3.new(lightX, y - 0.4, stripZ), COLORS.Light, "SmoothPlastic", { CanCollide = false, CastShadow = false, Transparency = 1 })
 				local light = Instance.new("PointLight")
-				light.Range = 14
+				light.Range = 20
 				light.Brightness = lampPower(0.5)
 				light.Color = Color3.fromRGB(255, 236, 206)
 				light.Shadows = false
 				light.Parent = holder
-				lightX += 16
+				lightX += 32
 			end
 			strip.Name = "LightStrip"
 			stripZ += 12.5
@@ -929,6 +930,17 @@ local function buildStructure(parent)
 	floor("BoothsFloor", -80, -20, -100, -60, COLORS.Carpet, "Carpet")
 	floor("LibraryFloor", -20, 30, -100, -60, COLORS.WarmCarpet, "Carpet")
 	floor("MailRoomFloor", 30, 80, -100, -60, COLORS.Concrete, "Concrete")
+	-- Aile est : un grand couloir au milieu, 4 pièces au sud et 4 au nord (après le mur épais X = 80..81).
+	local wx = AG.MinX + 1
+	floor("EastHallFloor", wx, AG.MaxX, -10, 20, COLORS.Tiles, "CeramicTiles", { Reflectance = 0.05 })
+	floor("StaffCafeFloor", wx, 120, 20, 60, COLORS.MintTiles, "CeramicTiles", { Reflectance = 0.04 })
+	floor("JobClubFloor", 120, 160, 20, 60, COLORS.GreenCarpet, "Carpet")
+	floor("ComputerLabFloor", 160, 200, 20, 60, COLORS.Carpet, "Carpet")
+	floor("SupplyRoomFloor", 200, AG.MaxX, 20, 60, COLORS.Concrete, "Concrete")
+	floor("RecordsHallFloor", wx, 120, -100, -10, COLORS.WarmCarpet, "Carpet")
+	floor("CareerLibraryFloor", 120, 160, -100, -10, COLORS.WoodFloor, "WoodPlanks")
+	floor("ParcelDepotFloor", 160, 200, -100, -10, COLORS.Concrete, "Concrete")
+	floor("StockroomFloor", 200, AG.MaxX, -100, -10, Color3.fromRGB(196, 194, 188), "Concrete")
 
 	-- Murs extérieurs (hors de la zone intérieure).
 	local wallHeight = CEILING_BOTTOM
@@ -953,7 +965,10 @@ local function buildStructure(parent)
 
 	-- Murs est et ouest avec des fenêtres.
 	windowedSideWall(parent, "WestWall", -HALF_X - 0.5, { { -92, -70 }, { -52, -36 }, { -26, -10 }, { 0, 14 }, { 28, 52 } }, 1)
-	windowedSideWall(parent, "EastWall", HALF_X + 0.5, { { -92, -70 }, { -48, -24 }, { -6, 14 }, { 26, 54 } }, -1)
+	-- Murs extérieurs de l'aile est : nord plein, est et sud vitrés (vue sur la rue).
+	block(parent, "NorthWallEast", Vector3.new(AG.MaxX - AG.MinX, wallHeight, 1), Vector3.new((wx + AG.MaxX + 1) / 2, wallY, MIN_Z - 0.5), COLORS.Wall, "Plaster")
+	AG.WindowWall(parent, "WingEastWall", false, AG.MaxX + 0.5, MIN_Z, MAX_Z, { { -92, -72 }, { -60, -40 }, { -28, -14 }, { -4, 14 }, { 26, 54 } }, -1, 0)
+	AG.WindowWall(parent, "WingSouthWall", true, MAX_Z + 0.5, wx, AG.MaxX + 1, { { 86, 114 }, { 126, 154 }, { 166, 194 }, { 206, 234 } }, -1, 0)
 
 	-- Cloisons intérieures et portes. Room = pièce que la porte garde fermée.
 	local doors = {}
@@ -973,6 +988,14 @@ local function buildStructure(parent)
 	interiorWallAlongX(parent, -60, -80, 80, { door(-50, -42, "Booths"), door(-12, -4, "Library"), door(38, 46, "MailRoom") })
 	interiorWallAlongZ(parent, -20, -100, -60, { door(-84, -76, "Library") })
 	interiorWallAlongZ(parent, 30, -100, -60, { door(-84, -76, "MailRoom") })
+	-- Ancien mur est : mur plein entre l'agence et l'aile est, avec la porte du couloir.
+	AG.Wall(parent, "EastWall", false, HALF_X + 0.5, MIN_Z, MAX_Z, 1, { door(1, 9, "EastHall") }, 0)
+	interiorWallAlongX(parent, 20, wx, AG.MaxX, { door(96, 104, "StaffCafe"), door(136, 144, "JobClub"), door(176, 184, "ComputerLab"), door(216, 224, "SupplyRoom") })
+	interiorWallAlongX(parent, -10, wx, AG.MaxX, { door(96, 104, "RecordsHall"), door(136, 144, "CareerLibrary"), door(176, 184, "ParcelDepot"), door(216, 224, "Stockroom") })
+	for _, x in { 120, 160, 200 } do
+		interiorWallAlongZ(parent, x, 20.25, MAX_Z, {})
+		interiorWallAlongZ(parent, x, MIN_Z, -10.25, {})
+	end
 	for _, d in doors do
 		createLockedDoor(parent, d)
 	end
@@ -992,6 +1015,15 @@ local function buildStructure(parent)
 		{ "MAIL ROOM", Vector3.new(42, signY, -59.7), Vector3.new(0, 0, 1) },
 		{ "LIBRARY", Vector3.new(-19.7, signY, -80), Vector3.new(1, 0, 0) },
 		{ "MAIL ROOM", Vector3.new(29.7, signY, -80), Vector3.new(1, 0, 0) },
+		{ "EAST WING", Vector3.new(79.7, signY, 5), Vector3.new(-1, 0, 0) },
+		{ "STAFF CAFÉ", Vector3.new(100, signY, 19.7), Vector3.new(0, 0, -1) },
+		{ "JOB CLUB", Vector3.new(140, signY, 19.7), Vector3.new(0, 0, -1) },
+		{ "COMPUTER LAB", Vector3.new(180, signY, 19.7), Vector3.new(0, 0, -1) },
+		{ "SUPPLY ROOM", Vector3.new(220, signY, 19.7), Vector3.new(0, 0, -1) },
+		{ "RECORDS HALL", Vector3.new(100, signY, -9.7), Vector3.new(0, 0, 1) },
+		{ "CAREER LIBRARY", Vector3.new(140, signY, -9.7), Vector3.new(0, 0, 1) },
+		{ "PARCEL DEPOT", Vector3.new(180, signY, -9.7), Vector3.new(0, 0, 1) },
+		{ "STOCKROOM", Vector3.new(220, signY, -9.7), Vector3.new(0, 0, 1) },
 	}
 	for _, sign in roomSigns do
 		newSign(parent, "RoomSign", sign[1], Vector3.new(7, 1.2, 0.1), sign[2], sign[3])
@@ -1001,11 +1033,39 @@ local function buildStructure(parent)
 	block(parent, "Ceiling", Vector3.new(fullLengthX, 1, fullLengthZ), Vector3.new(0, CEILING_BOTTOM + 0.5, MID_Z), COLORS.Ceiling, "SmoothPlastic")
 	local groundRooms = {}
 	for _, room in TidyConfig.GetMapRooms("Agency") do
-		if (room.Floor or 1) == 1 then
+		if (room.Floor or 1) == 1 and room.MaxX <= HALF_X then
 			table.insert(groundRooms, room)
 		end
 	end
 	slatCeiling(parent, -HALF_X, HALF_X, MIN_Z, MAX_Z, {}, groundRooms)
+
+	-- Plafond de l'aile est : puits de lumière au-dessus du couloir, lattes de bois dans les pièces,
+	-- bandeaux lumineux avec seulement 2 vraies lumières par pièce.
+	local wingHoles = { { 100, 120, -4, 14 }, { 150, 170, -4, 14 }, { 200, 220, -4, 14 } }
+	slabWithHoles(parent, "WingCeiling", wx, AG.MaxX + 1, MIN_Z - 1, MAX_Z + 1, CEILING_BOTTOM, 1, wingHoles, COLORS.Ceiling, "SmoothPlastic")
+	for _, hole in wingHoles do
+		skylight(parent, hole, CEILING_BOTTOM + 1)
+		local cx, cz = (hole[1] + hole[2]) / 2, (hole[3] + hole[4]) / 2
+		local sx, sz = hole[2] - hole[1], hole[4] - hole[3]
+		for _, side in { -1, 1 } do
+			block(parent, "SkylightFrame", Vector3.new(sx + 0.6, 0.4, 0.3), Vector3.new(cx, CEILING_BOTTOM - 0.2, cz + side * (sz / 2 + 0.15)), COLORS.Trim, "SmoothPlastic", { CanCollide = false })
+			block(parent, "SkylightFrame", Vector3.new(0.3, 0.4, sz), Vector3.new(cx + side * (sx / 2 + 0.15), CEILING_BOTTOM - 0.2, cz), COLORS.Trim, "SmoothPlastic", { CanCollide = false })
+		end
+	end
+	slatCeiling(parent, wx, AG.MaxX, 20, MAX_Z, {}, {})
+	slatCeiling(parent, wx, AG.MaxX, MIN_Z, -10, {}, {})
+	for _, room in TidyConfig.GetMapRooms("Agency") do
+		if room.MinX >= AG.MinX then
+			if room.Id == "EastHall" then
+				for _, x1 in { wx, 120, 170, 220 } do
+					local x2 = if x1 == wx then 100 elseif x1 == 220 then AG.MaxX else x1 + 30
+					AG.Strips(parent, x1, x2, room.MinZ, room.MaxZ, 1)
+				end
+			else
+				AG.Strips(parent, math.max(room.MinX, wx), room.MaxX, room.MinZ, room.MaxZ, 2)
+			end
+		end
+	end
 
 	-- Bandeau de couleur en bas des murs extérieurs, avec une baguette blanche.
 	local bandTop = FLOOR_TOP + 3
@@ -1018,7 +1078,15 @@ local function buildStructure(parent)
 		end
 	end
 	band("NorthBand", Vector3.new(HALF_X * 2, 3, 0.1), Vector3.new(0, bandY, MIN_Z + 0.05), true)
-	band("EastBand", Vector3.new(0.1, 3, DEPTH_Z), Vector3.new(HALF_X - 0.05, bandY, MID_Z), false)
+	-- Le mur est a maintenant une porte (Z = 1 à 9) : bandeaux coupés de chaque côté, et bandeaux de l'aile est.
+	for _, side in { { MIN_Z, 0.7 }, { 9.3, MAX_Z } } do
+		local length, mid = side[2] - side[1], (side[1] + side[2]) / 2
+		band("EastBand", Vector3.new(0.1, 3, length), Vector3.new(HALF_X - 0.05, bandY, mid), false)
+		band("WingWestBand", Vector3.new(0.1, 3, length), Vector3.new(wx + 0.05, bandY, mid), false)
+	end
+	band("WingNorthBand", Vector3.new(AG.MaxX - wx, 3, 0.1), Vector3.new((wx + AG.MaxX) / 2, bandY, MIN_Z + 0.05), true)
+	band("WingSouthBand", Vector3.new(AG.MaxX - wx, 3, 0.1), Vector3.new((wx + AG.MaxX) / 2, bandY, MAX_Z - 0.05), true)
+	band("WingEastBand", Vector3.new(0.1, 3, DEPTH_Z), Vector3.new(AG.MaxX - 0.05, bandY, MID_Z), false)
 	band("WestBand", Vector3.new(0.1, 3, DEPTH_Z), Vector3.new(-HALF_X + 0.05, bandY, MID_Z), false)
 	local southLength = HALF_X - doorHalf
 	band("SouthBand", Vector3.new(southLength, 3, 0.1), Vector3.new(-(doorHalf + southLength / 2), bandY, HALF_Z - 0.05), true)
@@ -1710,7 +1778,7 @@ local function furnishSelfService(parent)
 		end
 	end
 	createPrinterStation(parent, 1, 77, -5)
-	createPrinterStation(parent, 2, 77, 7)
+	createPrinterStation(parent, 2, 77, 13) -- laisse libre la porte de l'aile est (Z = 1 à 9)
 	createPlanter(parent, 3, 42, 19.05)
 	createPlanter(parent, 4, 58, 19.05)
 	createBench(parent, 45, -8.6)
@@ -2882,6 +2950,7 @@ local function buildAgency(root)
 	furnishBooths(newFolder(furniture, "Booths"))
 	furnishLibrary(newFolder(furniture, "Library"))
 	furnishMailRoom(newFolder(furniture, "MailRoom"))
+	AG.FurnishWing(furniture, newFolder(root, "WingDecor"))
 
 	setFloor(UPPER_TOP)
 	buildUpperFloor(newFolder(root, "UpperBuilding"))
@@ -2895,6 +2964,7 @@ local function buildAgency(root)
 	setFloor(GROUND_TOP)
 
 	decorateAgency(newFolder(root, "Decor"))
+	BD.Agency(newFolder(root, "Backdrop"))
 	-- Endroit laissé libre : arrivée du joueur.
 	addObstacle(-5, 5, 48, HALF_Z)
 end
@@ -2939,12 +3009,13 @@ local function countNeeded(mapId)
 end
 
 -- Étagère double face (allée des deux côtés), le long de Z. Crée "perSlots" places.
-function WH.Rack(parent, name, cx, z1, z2, itemType, categoryId, perSlots, accent)
+-- height (facultatif, 10 par défaut) : étagère plus basse sous un plafond bas (agence).
+function WH.Rack(parent, name, cx, z1, z2, itemType, categoryId, perSlots, accent, height)
 	local model = newModel(parent, name)
 	local length = z2 - z1
 	local cz = (z1 + z2) / 2
 	local size = ITEM_SIZES[itemType]
-	local rackHeight = 10
+	local rackHeight = height or 10
 	local levelGap = math.max(1.5, size.Y + 0.75)
 	local levels = math.clamp(math.floor((rackHeight - 0.6) / levelGap), 1, 6)
 	local step = size.X + 0.3
@@ -2977,7 +3048,7 @@ function WH.Rack(parent, name, cx, z1, z2, itemType, categoryId, perSlots, accen
 		block(model, "TopStock", Vector3.new(3.4, 1.6, 3.4), Vector3.new(cx, FLOOR_TOP + rackHeight + 0.8, z), if i == 1 then accent else COLORS.Cardboard, "Cardboard")
 	end
 
-	local spots = makeZone(model, itemType, anchor, rackHeight - (anchor.Position.Y - FLOOR_TOP) + 3.2, categoryId)
+	local spots = makeZone(model, itemType, anchor, rackHeight - (anchor.Position.Y - FLOOR_TOP) + (if rackHeight < 10 then 2.2 else 3.2), categoryId)
 	local created = 0
 	for level = 0, levels - 1 do
 		local boardTop = FLOOR_TOP + 0.4 + level * levelGap
@@ -3123,7 +3194,7 @@ function WH.Build(root)
 	block(structure, "Floor", Vector3.new(width, 1, depth), Vector3.new(cx, FLOOR_TOP - 0.5, cz), Color3.fromRGB(228, 224, 214), "SmoothPlastic", { Reflectance = 0.06 })
 
 	-- Murs : bandeau bas coloré, crème au milieu, bande de fenêtres en haut.
-	local function wall(name, size, position)
+	local function wall(name, size, position, solid)
 		local alongX = size.X > size.Z
 		local lowH, midH, glassH = 3, 16, 6
 		local topH = top - (FLOOR_TOP + lowH + midH + glassH)
@@ -3132,12 +3203,38 @@ function WH.Build(root)
 			block(structure, name .. suffix, s, Vector3.new(position.X, y, position.Z), color, material, options)
 		end
 		piece("Low", lowH + FLOOR_TOP, (lowH + FLOOR_TOP) / 2, COLORS.WallBand, "SmoothPlastic")
-		piece("Mid", midH, FLOOR_TOP + lowH + midH / 2, COLORS.Wall, "Concrete")
+		-- Bande de fenêtres à hauteur des yeux (vue sur la cour), murs pleins derrière les portes de quai (solid).
+		local ribbonBottom, ribbonTop = FLOOR_TOP + lowH + 1.5, FLOOR_TOP + lowH + 7.5
+		piece("MidLow", ribbonBottom - (FLOOR_TOP + lowH), (FLOOR_TOP + lowH + ribbonBottom) / 2, COLORS.Wall, "Concrete")
+		piece("MidHigh", FLOOR_TOP + lowH + midH - ribbonTop, (ribbonTop + FLOOR_TOP + lowH + midH) / 2, COLORS.Wall, "Concrete")
+		local fixed = if alongX then position.Z else position.X
+		local length = if alongX then size.X else size.Z
+		local from = (if alongX then position.X else position.Z) - length / 2
+		local cursor = from
+		local segments = {}
+		for _, range in solid or {} do
+			table.insert(segments, { cursor, range[1], true })
+			table.insert(segments, { range[1], range[2], false })
+			cursor = range[2]
+		end
+		table.insert(segments, { cursor, from + length, true })
+		for _, seg in segments do
+			if seg[3] then
+				AG.Piece(structure, name .. "Ribbon", alongX, fixed, seg[1], seg[2], ribbonBottom, ribbonTop, 0.4, 0, COLORS.Glass, "Glass", { Transparency = 0.45 })
+				local count = math.floor((seg[2] - seg[1]) / 20)
+				for i = 1, count - 1 do
+					local p = seg[1] + i * (seg[2] - seg[1]) / count
+					AG.Piece(structure, "RibbonMullion", alongX, fixed, p - 0.25, p + 0.25, ribbonBottom, ribbonTop, 1.1, 0, COLORS.WallBand, "Metal", { CanCollide = false, CastShadow = false })
+				end
+			else
+				AG.Piece(structure, name .. "MidSolid", alongX, fixed, seg[1], seg[2], ribbonBottom, ribbonTop, 1, 0, COLORS.Wall, "Concrete")
+			end
+		end
 		piece("Glass", glassH, FLOOR_TOP + lowH + midH + glassH / 2, COLORS.Glass, "Glass", { Transparency = 0.5 })
 		piece("Top", topH, FLOOR_TOP + lowH + midH + glassH + topH / 2, COLORS.Wall, "Concrete")
 	end
 	wall("NorthWall", Vector3.new(width + 2, 0, 1), Vector3.new(cx, 0, minZ - 0.5))
-	wall("SouthWall", Vector3.new(width + 2, 0, 1), Vector3.new(cx, 0, maxZ + 0.5))
+	wall("SouthWall", Vector3.new(width + 2, 0, 1), Vector3.new(cx, 0, maxZ + 0.5), { { cx - 128, cx - 112 }, { cx - 68, cx - 52 }, { cx + 52, cx + 68 }, { cx + 112, cx + 128 } })
 	wall("WestWall", Vector3.new(1, 0, depth), Vector3.new(minX - 0.5, 0, cz))
 	wall("EastWall", Vector3.new(1, 0, depth), Vector3.new(maxX + 0.5, 0, cz))
 
@@ -3286,17 +3383,613 @@ function WH.Build(root)
 	-- Panneau d'accueil au-dessus de l'arrivée.
 	Deco.HangingSign(structure, "DISTRIBUTION WAREHOUSE", Vector3.new(cx, top - 6, maxZ - 20), Vector3.new(0, 0, 1), 30, Color3.fromRGB(240, 130, 40), top - 0.6)
 	addObstacle(cx - 6, cx + 6, maxZ - 14, maxZ)
+	-- Zone industrielle autour (vue par les fenêtres).
+	BD.Warehouse(newFolder(root, "Backdrop"))
 
 	WALL_HEIGHT = savedHeight
 	setFloor(1)
 end
 
 ---------------------------------------------------------------------------
+-- Agence : mobilier et décor de l'aile est (un grand couloir et 8 pièces de plain-pied)
+---------------------------------------------------------------------------
+function AG.FurnishWing(furniture, decor)
+	setFloor(GROUND_TOP)
+	local f = {}
+	for _, id in { "EastHall", "StaffCafe", "JobClub", "ComputerLab", "SupplyRoom", "RecordsHall", "CareerLibrary", "ParcelDepot", "Stockroom" } do
+		f[id] = newFolder(furniture, id)
+	end
+	local wx = AG.MinX + 1
+	local ceiling = CEILING_BOTTOM
+	local noCollide = { CanCollide = false, CastShadow = false }
+
+	-- Couloir : postes de travail libres, imprimantes, salles d'attente et jardinières.
+	local hall = f.EastHall
+	for i, x in { 110, 116, 150, 156, 190, 196 } do
+		createHotDesk(hall, 300 + i, x, -7.3)
+	end
+	for i, x in { 88, 128, 168, 208 } do
+		createPrinterStation(hall, 300 + i, x, -8.4)
+	end
+	for i, x in { 120, 160, 200 } do
+		createChairRug(hall, "WaitingArea" .. i, Vector2.new(x, 7), Vector2.new(14, 8), { x - 5, x - 1.7, x + 1.7, x + 5 }, { 5, 9 }, 0, if i == 2 then COLORS.GreenRug else COLORS.Rug, 5)
+	end
+	for i, x in { 116, 156, 196, 232 } do
+		createPlanter(hall, 300 + i, x, 19)
+		if i < 4 then
+			createWallArt(hall, Vector3.new(x, FLOOR_TOP + 6.5, 19.7), Vector3.new(0, 0, -1), Vector2.new(5, 3), BRIGHT_COLORS[i + 1])
+		end
+	end
+	createCredenza(hall, 300, AG.MaxX - 1.6, 5)
+	createBench(hall, 88, 13)
+	createBench(hall, 228, 12.5)
+	createWaterCooler(hall, 84, 17)
+	createTrashBin(hall, 84, -2)
+	createTrashBin(hall, 236, -6)
+	createPlant(hall, 237, 17.5)
+	createClock(hall, Vector3.new(AG.MaxX - 0.1, FLOOR_TOP + 9, -6), Vector3.new(-1, 0, 0))
+	createFireExtinguisher(hall, Vector3.new(wx + 0.3, FLOOR_TOP + 1.2, 14), Vector3.new(1, 0, 0))
+	newSign(hall, "WingDirectory", "EAST WING\nCafé - Job Club - Computer Lab - Supply Room\nRecords - Library - Parcels - Stockroom", Vector3.new(10, 3, 0.1), Vector3.new(88.5, FLOOR_TOP + 7, -9.7), Vector3.new(0, 0, 1), COLORS.SignBlue)
+	Deco.HangingSign(decor, "EAST WING", Vector3.new(90, FLOOR_TOP + 9, 5), Vector3.new(-1, 0, 0), 10, COLORS.WallBand, ceiling)
+	block(decor, "WayfindingLine", Vector3.new(AG.MaxX - wx - 2, 0.02, 0.4), Vector3.new((wx + AG.MaxX) / 2, FLOOR_TOP + 0.01, 0), COLORS.WallBand, "SmoothPlastic", noCollide)
+
+	-- Café du personnel : vaisseliers (mur et îlot), tables, frigo et distributeur.
+	local cafe = f.StaffCafe
+	for i, x in { 85, 91.5, 108.5, 115 } do
+		createCupboard(cafe, 300 + i, x, 21.1)
+	end
+	for i, x in { 87, 93.5, 106.5, 113 } do
+		createCupboard(cafe, 310 + i, x, 31)
+	end
+	for i, p in { { 90, 43 }, { 110, 43 }, { 90, 54 }, { 110, 54 } } do
+		createCafeTable(cafe, 300 + i, p[1], p[2])
+		Deco.Pendant(decor, p[1], ceiling - 0.3, p[2], 4, Color3.fromRGB(80, 180, 190), false)
+	end
+	block(cafe, "Fridge", Vector3.new(2.4, 6, 2.2), Vector3.new(117.5, FLOOR_TOP + 3, 57.6), COLORS.White, "SmoothPlastic")
+	local vending = newModel(cafe, "VendingMachine")
+	block(vending, "Body", Vector3.new(3, 6.5, 2), Vector3.new(84, FLOOR_TOP + 3.25, 57.8), Color3.fromRGB(200, 50, 50), "SmoothPlastic")
+	block(vending, "Window", Vector3.new(2.2, 3.6, 0.05), Vector3.new(83.6, FLOOR_TOP + 4.2, 56.77), Color3.fromRGB(255, 236, 200), "Neon", { CanCollide = false, CastShadow = false, Transparency = 0.3 })
+	createWaterCooler(cafe, 100, 58)
+	createTrashBin(cafe, 118, 36)
+	poster(cafe, "FREE COFFEE\nFOR JOB SEEKERS", Vector3.new(wx + 0.05, FLOOR_TOP + 7, 45), Vector3.new(1, 0, 0), COLORS.SignBlue)
+	createClock(cafe, Vector3.new(119.65, FLOOR_TOP + 8, 45), Vector3.new(-1, 0, 0))
+
+	-- Club emploi : coins canapés, jardinières et tableau du programme.
+	local club = f.JobClub
+	local index = 300
+	for _, gx in { 130, 150 } do
+		for _, gz in { 30, 42, 54 } do
+			index += 1
+			createSofa(club, index, gx, gz - 3.6, math.pi)
+			index += 1
+			createSofa(club, index, gx, gz + 3.6, 0)
+			createCoffeeTable(club, gx, gz)
+			Deco.Pendant(decor, gx, ceiling - 0.3, gz, 3.5, Color3.fromRGB(240, 170, 60), false)
+		end
+	end
+	createPlanter(club, 320, 140, 40)
+	createPlanter(club, 321, 140, 58.9)
+	newSign(club, "JobClubBoard", "JOB CLUB\nMondays & Thursdays 10:00\nCV reviews - Mock interviews", Vector3.new(10, 4, 0.1), Vector3.new(159.65, FLOOR_TOP + 6.5, 40), Vector3.new(-1, 0, 0), COLORS.White, Color3.fromRGB(40, 60, 120))
+	createWallArt(club, Vector3.new(120.35, FLOOR_TOP + 6.5, 36), Vector3.new(1, 0, 0), Vector2.new(4, 3), Color3.fromRGB(90, 130, 110))
+	createWallArt(club, Vector3.new(120.35, FLOOR_TOP + 6.5, 48), Vector3.new(1, 0, 0), Vector2.new(4, 3), Color3.fromRGB(180, 120, 80))
+	createPlant(club, 123, 23)
+
+	-- Salle informatique : chariots de recharge, bureaux de formateurs, baies serveurs.
+	local lab = f.ComputerLab
+	index = 300
+	for _, cz in { 21.2, 33, 44 } do
+		for _, x in { 165, 171, 189, 195 } do
+			index += 1
+			createLaptopCart(lab, index, x, cz)
+		end
+	end
+	createTeacherDesk(lab, 170, 55)
+	createTeacherDesk(lab, 190, 55)
+	createCredenza(lab, 301, 161.2, 52)
+	createCredenza(lab, 302, 198.8, 52)
+	createPrinterStation(lab, 301, 180, 49)
+	createServerRack(lab, 198.5, 25.5)
+	createServerRack(lab, 198.5, 28.7)
+	newSign(lab, "LabScreen", "COMPUTER LAB\nReturn laptops to the carts", Vector3.new(8, 3, 0.15), Vector3.new(160.35, FLOOR_TOP + 6.5, 35), Vector3.new(1, 0, 0), COLORS.Black, Color3.fromRGB(120, 200, 255))
+	createFireExtinguisher(lab, Vector3.new(160.35, FLOOR_TOP + 1.2, 27), Vector3.new(1, 0, 0))
+
+	-- Fournitures : étagères métalliques, imprimantes, buffets et palette.
+	local supply = f.SupplyRoom
+	index = 300
+	for _, cz in { 22, 35, 48 } do
+		for _, x in { 205, 211, 229, 235 } do
+			index += 1
+			createStorageShelf(supply, index, x, cz)
+		end
+	end
+	createPrinterStation(supply, 311, 220, 30)
+	createCredenza(supply, 311, AG.MaxX - 1.6, 29)
+	createCredenza(supply, 312, AG.MaxX - 1.6, 41.5)
+	Deco.PalletStack(supply, 220, 56, 2, COLORS.Cardboard)
+	for _, x in { 214.5, 225.5 } do
+		block(decor, "HazardLine", Vector3.new(0.4, 0.02, 34), Vector3.new(x, FLOOR_TOP + 0.01, 41), COLORS.Hazard, "SmoothPlastic", noCollide)
+	end
+	Deco.HangingSign(decor, "SUPPLY ROOM", Vector3.new(220, FLOOR_TOP + 9, 38), Vector3.new(0, 0, -1), 10, COLORS.RackOrange, ceiling)
+
+	-- Salle des dossiers : 3 rangées d'étagères à dossiers et des tables de lecture.
+	local records = f.RecordsHall
+	index = 300
+	for _, cz in { -98.9, -83, -67 } do
+		for _, x in { 84.5, 92, 99.5, 107, 114.5 } do
+			index += 1
+			createArchiveShelf(records, index, x, cz)
+		end
+	end
+	index = 0
+	for _, cz in { -45, -30 } do
+		for _, x in { 92, 108 } do
+			index += 1
+			createReadingTable(records, "RecordsTable" .. index, x, cz)
+		end
+	end
+	Deco.HangingSign(decor, "RECORDS HALL", Vector3.new(100, FLOOR_TOP + 9, -55), Vector3.new(0, 0, 1), 10, Color3.fromRGB(196, 96, 74), ceiling)
+	createClock(records, Vector3.new(119.65, FLOOR_TOP + 8, -40), Vector3.new(-1, 0, 0))
+	createWallArt(records, Vector3.new(wx + 0.05, FLOOR_TOP + 6.5, -45), Vector3.new(1, 0, 0), Vector2.new(4, 3), Color3.fromRGB(70, 110, 150))
+	createWallArt(records, Vector3.new(wx + 0.05, FLOOR_TOP + 6.5, -28), Vector3.new(1, 0, 0), Vector2.new(4, 3), Color3.fromRGB(160, 120, 70))
+	createPlant(records, 84, -13)
+	createPlant(records, 116, -13)
+	createTrashBin(records, 117, -52)
+
+	-- Bibliothèque des métiers : 16 bibliothèques de couleur, tables de lecture, lustres et boiseries.
+	local library = f.CareerLibrary
+	local bookCats = { "CV", "Interview", "Training", "Careers" }
+	index = 300
+	for row, cz in { -99.1, -86, -73, -60 } do
+		for col, x in { 125, 132, 148, 155 } do
+			index += 1
+			createBookcase(library, index, x, cz, bookCats[(row + col) % 4 + 1])
+		end
+	end
+	index = 0
+	for _, cz in { -42, -27 } do
+		for _, x in { 130, 150 } do
+			index += 1
+			createReadingTable(library, "LibraryTable" .. index, x, cz)
+		end
+	end
+	Deco.Chandelier(decor, 140, ceiling - 0.3, -34, 0.9)
+	Deco.Chandelier(decor, 140, ceiling - 0.3, -80, 0.9)
+	Deco.Wainscot(decor, Vector3.new(120.4, 0, -54), Vector3.new(120.4, 0, -13), Vector3.new(1, 0, 0), 3.5, COLORS.Walnut)
+	Deco.Wainscot(decor, Vector3.new(159.6, 0, -13), Vector3.new(159.6, 0, -54), Vector3.new(-1, 0, 0), 3.5, COLORS.Walnut)
+	newSign(library, "LibrarySign", "CAREER LIBRARY  -  QUIET PLEASE", Vector3.new(14, 1.2, 0.1), Vector3.new(140, FLOOR_TOP + 10.2, -10.35), Vector3.new(0, 0, -1))
+	createPlant(library, 123, -13)
+	createPlant(library, 157, -13)
+
+	-- Dépôt de colis : rayonnages d'entrepôt (un par couleur d'étiquette), tapis roulant, tables de tri.
+	local depot = f.ParcelDepot
+	local parcelCats = TidyConfig.Categories.Parcel
+	index = 0
+	for col, x in { 166, 175, 185, 194 } do
+		local category = parcelCats[col]
+		for _, range in { { -97, -85 }, { -79, -67 } } do
+			index += 1
+			WH.Rack(depot, "ParcelRack" .. index, x, range[1], range[2], "Parcel", category.Id, 40, category.Color, 7.5)
+		end
+	end
+	WH.Conveyor(depot, 164, 196, -45)
+	WH.WorkTable(depot, 172, -30, false)
+	WH.WorkTable(depot, 190, -30, false)
+	createMailCart(depot, 168, -56)
+	createMailCart(depot, 192, -58)
+	Deco.PalletStack(depot, 196, -20, 2, nil)
+	block(decor, "HazardLine", Vector3.new(36, 0.02, 0.4), Vector3.new(180, FLOOR_TOP + 0.01, -63), COLORS.Hazard, "SmoothPlastic", noCollide)
+	Deco.HangingSign(decor, "PARCEL DEPOT", Vector3.new(180, FLOOR_TOP + 9, -58), Vector3.new(0, 0, 1), 10, Color3.fromRGB(40, 140, 160), ceiling)
+	poster(depot, "SORT EVERY PARCEL\nBY LABEL COLOR", Vector3.new(160.35, FLOOR_TOP + 7, -40), Vector3.new(1, 0, 0), COLORS.SignBlue)
+
+	-- Réserve : rayonnages à cartons, palettes et chariot élévateur.
+	local stock = f.Stockroom
+	for i, x in { 206, 215, 225, 234 } do
+		WH.Rack(stock, "BoxRack" .. i, x, -97, -73, "Box", nil, 40, BRIGHT_COLORS[i], 8)
+	end
+	WH.Forklift(stock, 228, -45, math.rad(90))
+	Deco.PalletStack(stock, 206, -56, 3, COLORS.Cardboard)
+	Deco.PalletStack(stock, 234, -60, 2, COLORS.Cardboard)
+	block(decor, "HazardLine", Vector3.new(36, 0.02, 0.4), Vector3.new(220, FLOOR_TOP + 0.01, -69), COLORS.Hazard, "SmoothPlastic", noCollide)
+	Deco.HangingSign(decor, "STOCKROOM", Vector3.new(220, FLOOR_TOP + 9, -62), Vector3.new(0, 0, 1), 10, COLORS.RackOrange, ceiling)
+	createFireExtinguisher(stock, Vector3.new(200.35, FLOOR_TOP + 1.2, -30), Vector3.new(1, 0, 0))
+end
+
+---------------------------------------------------------------------------
+-- Décors extérieurs (vus par les fenêtres) : très peu de pièces, grandes et simples,
+-- sans collision, sans ombre et ignorées par les clics. Le sol cache le gazon de la Baseplate.
+---------------------------------------------------------------------------
+BD.Asphalt = Color3.fromRGB(54, 56, 60)
+BD.Line = Color3.fromRGB(236, 236, 230)
+BD.Yellow = Color3.fromRGB(240, 196, 50)
+BD.CarColors = {
+	Color3.fromRGB(200, 40, 40), Color3.fromRGB(230, 230, 228), Color3.fromRGB(40, 44, 52), Color3.fromRGB(46, 96, 170),
+	Color3.fromRGB(150, 154, 160), Color3.fromRGB(250, 196, 40), Color3.fromRGB(60, 120, 80), Color3.fromRGB(110, 30, 40),
+}
+
+function BD.Part(parent, name, size, cframe, color, material, transparency)
+	local part = newPart(parent, name, size, cframe, color, material or "SmoothPlastic", { CanCollide = false, CastShadow = false })
+	part.CanTouch = false
+	part.CanQuery = false
+	if transparency then
+		part.Transparency = transparency
+	end
+	return part
+end
+
+function BD.Box(parent, name, size, position, color, material, transparency)
+	return BD.Part(parent, name, size, CFrame.new(position), color, material, transparency)
+end
+
+-- Cylindre vertical.
+function BD.Cyl(parent, name, height, diameter, center, color, material)
+	local part = BD.Part(parent, name, Vector3.new(height, diameter, diameter), CFrame.new(center) * CFrame.Angles(0, 0, math.rad(90)), color, material)
+	part.Shape = Enum.PartType.Cylinder
+	return part
+end
+
+-- Dalle de sol (topY = hauteur du dessus).
+function BD.Ground(parent, name, minX, maxX, minZ, maxZ, topY, thickness, color, material)
+	return BD.Box(parent, name, Vector3.new(maxX - minX, thickness, maxZ - minZ), Vector3.new((minX + maxX) / 2, topY - thickness / 2, (minZ + maxZ) / 2), color, material)
+end
+
+-- Voiture (4 pièces) ; simple = sans roues (vue de très haut).
+function BD.Car(parent, x, z, yaw, color, groundY, simple)
+	local base = CFrame.new(x, groundY, z) * CFrame.Angles(0, yaw, 0)
+	BD.Part(parent, "CarBody", Vector3.new(4.4, 1.5, 9.5), base * CFrame.new(0, 1.35, 0), color, "SmoothPlastic")
+	BD.Part(parent, "CarCabin", Vector3.new(4, 1.3, 5), base * CFrame.new(0, 2.75, 0.4), Color3.fromRGB(40, 48, 60), "Glass")
+	if not simple then
+		for _, wz in { -3, 3 } do
+			BD.Part(parent, "Wheels", Vector3.new(4.6, 1.7, 1.7), base * CFrame.new(0, 0.85, wz), COLORS.Black, "SmoothPlastic").Shape = Enum.PartType.Cylinder
+		end
+	end
+end
+
+-- Semi-remorque : l'arrière de la remorque est à (x, z), le tracteur devant (vers +Z local).
+function BD.Truck(parent, x, z, yaw, color, withCab, groundY)
+	local base = CFrame.new(x, groundY, z) * CFrame.Angles(0, yaw, 0)
+	BD.Part(parent, "Trailer", Vector3.new(8, 9, 40), base * CFrame.new(0, 6.6, 20), color, "Metal")
+	BD.Part(parent, "TrailerStripe", Vector3.new(8.1, 0.5, 40.1), base * CFrame.new(0, 2.6, 20), Color3.fromRGB(220, 60, 50), "SmoothPlastic")
+	for _, wz in { 4, 7.5 } do
+		BD.Part(parent, "Wheels", Vector3.new(8.4, 2.6, 2.6), base * CFrame.new(0, 1.3, wz), COLORS.Black, "SmoothPlastic").Shape = Enum.PartType.Cylinder
+	end
+	if withCab then
+		BD.Part(parent, "Cab", Vector3.new(8, 7.5, 7), base * CFrame.new(0, 5.4, 45), Color3.fromRGB(230, 232, 236), "SmoothPlastic")
+		BD.Part(parent, "Windshield", Vector3.new(7.2, 2.6, 0.3), base * CFrame.new(0, 7, 48.55), Color3.fromRGB(40, 50, 64), "Glass")
+		BD.Part(parent, "Hood", Vector3.new(7.6, 3.6, 4.5), base * CFrame.new(0, 3.4, 50.7), Color3.fromRGB(200, 50, 46), "SmoothPlastic")
+		BD.Part(parent, "Wheels", Vector3.new(8.4, 2.8, 2.8), base * CFrame.new(0, 1.4, 49), COLORS.Black, "SmoothPlastic").Shape = Enum.PartType.Cylinder
+	end
+end
+
+-- Lampadaire (3 pièces, sans vraie lumière). facing = côté de la rue.
+function BD.Lamp(parent, x, z, facing, groundY)
+	local h = 13
+	BD.Box(parent, "LampPole", Vector3.new(0.5, h, 0.5), Vector3.new(x, groundY + h / 2, z), COLORS.DarkMetal, "Metal")
+	local top = Vector3.new(x, groundY + h - 0.2, z)
+	BD.Part(parent, "LampArm", Vector3.new(0.3, 0.3, 3.4), CFrame.lookAt(top + facing * 1.7, top + facing * 4), COLORS.DarkMetal, "Metal")
+	BD.Box(parent, "LampHead", Vector3.new(1.4, 0.35, 1.4), top + facing * 3.4 - Vector3.new(0, 0.3, 0), Color3.fromRGB(255, 240, 206), "Neon")
+end
+
+function BD.Tree(parent, x, z, groundY, scale)
+	BD.Box(parent, "TreeTrunk", Vector3.new(0.8, 5 * scale, 0.8), Vector3.new(x, groundY + 2.5 * scale, z), Color3.fromRGB(110, 80, 56), "Wood")
+	BD.Box(parent, "TreeCrown", Vector3.new(7, 6.5, 7) * scale, Vector3.new(x, groundY + 7 * scale, z), Color3.fromRGB(78, 140, 70), "Grass").Shape = Enum.PartType.Ball
+end
+
+-- Immeuble de bureaux : volume, bandeaux de fenêtres (un bloc un peu plus large, au plus 7), vitrine et corniche.
+function BD.Building(parent, cx, cz, w, d, h, bodyColor, bandColor, groundY)
+	BD.Box(parent, "Building", Vector3.new(w, h, d), Vector3.new(cx, groundY + h / 2, cz), bodyColor, "Concrete")
+	local floorH = 7
+	local floors = math.floor((h - 8) / floorH)
+	local step = math.max(1, math.ceil(floors / 7))
+	for i = 1, floors, step do
+		BD.Box(parent, "WindowBand", Vector3.new(w + 0.4, 3.2, d + 0.4), Vector3.new(cx, groundY + 6 + i * floorH - floorH / 2, cz), bandColor, "Glass")
+	end
+	BD.Box(parent, "Storefront", Vector3.new(w + 0.3, 5, d + 0.3), Vector3.new(cx, groundY + 2.5, cz), Color3.fromRGB(44, 56, 70), "Glass")
+	BD.Box(parent, "Cornice", Vector3.new(w + 1, 1, d + 1), Vector3.new(cx, groundY + h + 0.5, cz), bodyColor:Lerp(Color3.new(0, 0, 0), 0.25), "Concrete")
+	BD.Box(parent, "RoofUnit", Vector3.new(w * 0.3, 3, d * 0.3), Vector3.new(cx + w * 0.15, groundY + h + 2.5, cz - d * 0.1), Color3.fromRGB(150, 152, 156), "Metal")
+end
+
+-- Gratte-ciel de verre : corps, bandeaux techniques, étage en retrait, couronne et parfois une flèche.
+function BD.Tower(parent, cx, cz, w, d, h, color, trim)
+	local bodyH = math.floor(h * 0.8)
+	BD.Box(parent, "TowerBody", Vector3.new(w, bodyH, d), Vector3.new(cx, bodyH / 2, cz), color, "Glass").Reflectance = 0.25
+	BD.Box(parent, "TowerTier", Vector3.new(w * 0.72, h - bodyH, d * 0.72), Vector3.new(cx, bodyH + (h - bodyH) / 2, cz), color:Lerp(Color3.new(1, 1, 1), 0.12), "Glass").Reflectance = 0.25
+	for y = 64, bodyH - 16, 64 do
+		BD.Box(parent, "TowerBand", Vector3.new(w + 0.6, 1.6, d + 0.6), Vector3.new(cx, y, cz), trim, "Metal")
+	end
+	BD.Box(parent, "TowerCrown", Vector3.new(w * 0.72 + 0.8, 2.4, d * 0.72 + 0.8), Vector3.new(cx, h + 1.2, cz), trim, "Metal")
+	if h >= 280 then
+		BD.Box(parent, "TowerSpire", Vector3.new(1.2, 40, 1.2), Vector3.new(cx, h + 22, cz), trim, "Metal")
+	end
+end
+
+-- Agence : rue animée (avenue avec passage piéton, voitures garées, arrêt de bus, lampadaires, arbres)
+-- et immeubles de bureaux tout autour. Plus le toit de l'aile est (acrotère et climatiseurs).
+function BD.Agency(parent)
+	local wasCollecting = collectObstacles
+	collectObstacles = false
+	local g = 0.3 -- dessus de la chaussée
+	BD.Ground(parent, "Pavement", -480, 640, -420, 460, 0.2, 0.4, Color3.fromRGB(196, 192, 184), "Concrete")
+	BD.Ground(parent, "Avenue", -480, 640, 78, 108, g, 0.2, BD.Asphalt, "Asphalt")
+	BD.Ground(parent, "NorthStreet", -480, 640, -150, -126, g, 0.2, BD.Asphalt, "Asphalt")
+	for _, x in { -132, 268 } do
+		for _, seg in { { -420, -150 }, { -126, 78 }, { 108, 460 } } do
+			BD.Ground(parent, "SideStreet", x, x + 24, seg[1], seg[2], g, 0.2, BD.Asphalt, "Asphalt")
+		end
+	end
+	for _, z in { 92.6, 93.4 } do
+		BD.Box(parent, "CenterLine", Vector3.new(1120, 0.05, 0.3), Vector3.new(80, g + 0.03, z), BD.Yellow, "SmoothPlastic")
+	end
+	for _, z in { 79.6, 106.4 } do
+		BD.Box(parent, "EdgeLine", Vector3.new(1120, 0.05, 0.3), Vector3.new(80, g + 0.03, z), BD.Line, "SmoothPlastic")
+	end
+	BD.Box(parent, "CenterLine", Vector3.new(1120, 0.05, 0.3), Vector3.new(80, g + 0.03, -138), BD.Line, "SmoothPlastic")
+	for i = -3, 3 do
+		BD.Box(parent, "Crosswalk", Vector3.new(1.4, 0.05, 26), Vector3.new(i * 2.3, g + 0.04, 93), BD.Line, "SmoothPlastic")
+	end
+	for _, z in { 77.7, 108.3 } do
+		BD.Box(parent, "Curb", Vector3.new(1120, 0.3, 0.6), Vector3.new(80, 0.35, z), Color3.fromRGB(160, 158, 152), "Concrete")
+	end
+	-- Voitures garées des deux côtés de l'avenue.
+	for i, x in { -70, -50, 26, 46, 120, 142, 168, 214, 330, -200 } do
+		BD.Car(parent, x, 82.5, math.rad(90), BD.CarColors[(i - 1) % #BD.CarColors + 1], g)
+	end
+	for i, x in { -40, 10, 70, 190, 236, -150, 380 } do
+		BD.Car(parent, x, 103.5, math.rad(-90), BD.CarColors[(i + 3) % #BD.CarColors + 1], g)
+	end
+	-- Arrêt de bus et bus.
+	BD.Box(parent, "ShelterRoof", Vector3.new(10, 0.3, 3.6), Vector3.new(90, 8, 70), COLORS.DarkMetal, "Metal")
+	BD.Box(parent, "ShelterGlass", Vector3.new(10, 6, 0.2), Vector3.new(90, 4.4, 71.7), COLORS.Glass, "Glass", 0.5)
+	for _, x in { 85.2, 94.8 } do
+		BD.Box(parent, "ShelterPost", Vector3.new(0.3, 7.6, 0.3), Vector3.new(x, 4.1, 68.4), COLORS.DarkMetal, "Metal")
+	end
+	BD.Box(parent, "ShelterBench", Vector3.new(8, 0.4, 1.2), Vector3.new(90, 1.9, 71), COLORS.Wood, "Wood")
+	local stopSign = newSign(parent, "BusStopSign", "BUS 42  -  CITY CENTRE", Vector3.new(6, 1, 0.1), Vector3.new(90, 8.8, 68.2), Vector3.new(0, 0, -1), COLORS.SignBlue)
+	stopSign.CanQuery = false
+	BD.Box(parent, "Bus", Vector3.new(24, 6.4, 5), Vector3.new(90, g + 4.6, 82.5), Color3.fromRGB(40, 110, 190), "SmoothPlastic")
+	BD.Box(parent, "BusWindows", Vector3.new(24.1, 1.9, 5.1), Vector3.new(90, g + 6, 82.5), Color3.fromRGB(36, 44, 56), "Glass")
+	for _, dx in { -8, 8 } do
+		BD.Part(parent, "Wheels", Vector3.new(5.2, 2.4, 2.4), CFrame.new(90 + dx, g + 1.2, 82.5) * CFrame.Angles(0, math.rad(90), 0), COLORS.Black, "SmoothPlastic").Shape = Enum.PartType.Cylinder
+	end
+	-- Lampadaires, arbres, feux et bouche d'incendie.
+	for _, x in { -100, -60, -20, 30, 70, 130, 170, 210, 250 } do
+		BD.Lamp(parent, x, 76, Vector3.new(0, 0, 1), 0.2)
+	end
+	for _, x in { -80, -40, 0, 50, 110, 150, 230 } do
+		BD.Lamp(parent, x, 110, Vector3.new(0, 0, -1), 0.2)
+	end
+	for _, z in { -80, -20, 40 } do
+		BD.Lamp(parent, 266, z, Vector3.new(1, 0, 0), 0.2)
+		BD.Lamp(parent, -106, z, Vector3.new(-1, 0, 0), 0.2)
+	end
+	for _, x in { -120, -85, -45, 22, 60, 112, 150, 190, 228 } do
+		BD.Tree(parent, x, 70.5, 0.2, 1)
+	end
+	for _, z in { -90, -50, -10, 30 } do
+		BD.Tree(parent, 256, z, 0.2, 1.1)
+		BD.Tree(parent, -95, z, 0.2, 1.1)
+	end
+	for _, p in { { 10, 76.5, 0 }, { -10, 109.5, 180 } } do
+		BD.Box(parent, "TrafficPole", Vector3.new(0.4, 9, 0.4), Vector3.new(p[1], 4.7, p[2]), COLORS.DarkMetal, "Metal")
+		BD.Box(parent, "TrafficLight", Vector3.new(0.9, 2.4, 0.9), Vector3.new(p[1], 8.4, p[2]), Color3.fromRGB(30, 30, 34), "SmoothPlastic")
+	end
+	BD.Cyl(parent, "Hydrant", 1.2, 0.7, Vector3.new(60, 0.8, 76), Color3.fromRGB(200, 40, 40), "Metal")
+	-- Immeubles de bureaux autour de l'agence (sud, est, ouest, nord).
+	local styles = {
+		{ Color3.fromRGB(214, 204, 186), Color3.fromRGB(56, 70, 86) },
+		{ Color3.fromRGB(150, 70, 56), Color3.fromRGB(40, 48, 58) },
+		{ Color3.fromRGB(196, 202, 210), Color3.fromRGB(70, 110, 150) },
+		{ Color3.fromRGB(232, 226, 214), Color3.fromRGB(60, 90, 110) },
+		{ Color3.fromRGB(120, 126, 134), Color3.fromRGB(150, 196, 220) },
+	}
+	for i, b in {
+		{ -330, 150, 80, 60, 70 }, { -230, 145, 90, 50, 48 }, { -130, 150, 80, 60, 64 }, { -40, 158, 70, 70, 96 },
+		{ 40, 145, 60, 50, 42 }, { 110, 150, 70, 60, 78 }, { 190, 145, 70, 50, 52 }, { 236, 145, 36, 50, 36 },
+		{ 340, 150, 70, 60, 110 }, { 440, 150, 90, 60, 66 }, { 560, 150, 80, 60, 88 },
+		{ 330, 20, 60, 90, 58 }, { 420, 0, 90, 110, 120 }, { 330, -85, 60, 60, 40 }, { 540, -40, 100, 120, 76 },
+		{ -180, 0, 60, 120, 54 }, { -260, -85, 70, 60, 90 }, { -280, 30, 70, 80, 44 }, { -400, -20, 120, 120, 70 },
+		{ -60, -200, 100, 60, 60 }, { 60, -210, 90, 80, 84 }, { 170, -200, 100, 60, 46 }, { -200, -220, 90, 100, 100 }, { 330, -220, 80, 100, 130 },
+	} do
+		local style = styles[(i - 1) % #styles + 1]
+		BD.Building(parent, b[1], b[2], b[3], b[4], b[5], style[1], style[2], 0.2)
+	end
+	-- Toit de l'aile est : acrotère et climatiseurs (vus depuis l'étage).
+	local roofY = CEILING_BOTTOM + 1
+	BD.Box(parent, "Parapet", Vector3.new(AG.MaxX - AG.MinX, 1.2, 0.6), Vector3.new((AG.MinX + AG.MaxX) / 2 + 1, roofY + 0.6, MIN_Z - 0.7), COLORS.Wall, "Concrete")
+	BD.Box(parent, "Parapet", Vector3.new(AG.MaxX - AG.MinX, 1.2, 0.6), Vector3.new((AG.MinX + AG.MaxX) / 2 + 1, roofY + 0.6, MAX_Z + 0.7), COLORS.Wall, "Concrete")
+	BD.Box(parent, "Parapet", Vector3.new(0.6, 1.2, DEPTH_Z + 2), Vector3.new(AG.MaxX + 0.7, roofY + 0.6, MID_Z), COLORS.Wall, "Concrete")
+	for _, p in { { 140, -60 }, { 200, -40 }, { 180, 40 }, { 110, 36 } } do
+		BD.Box(parent, "RoofHVAC", Vector3.new(8, 3, 6), Vector3.new(p[1], roofY + 1.5, p[2]), Color3.fromRGB(176, 180, 186), "Metal")
+		BD.Cyl(parent, "HVACFan", 0.3, 4, Vector3.new(p[1] + 1.5, roofY + 3.1, p[2]), COLORS.DarkMetal, "Metal")
+	end
+	collectObstacles = wasCollecting
+end
+
+-- Entrepôt : zone industrielle (cour en asphalte, camions aux quais, remorques, conteneurs,
+-- clôture, parking du personnel, mâts d'éclairage, autres entrepôts au loin).
+function BD.Warehouse(parent)
+	local wasCollecting = collectObstacles
+	collectObstacles = false
+	local g = 0.3
+	BD.Ground(parent, "Concrete", 420, 1720, -560, 600, 0.2, 0.4, Color3.fromRGB(172, 170, 164), "Concrete")
+	BD.Ground(parent, "Yard", 680, 1340, -240, 330, g, 0.2, BD.Asphalt, "Asphalt")
+	BD.Ground(parent, "DockApron", 840, 1160, 121, 150, 0.45, 0.2, Color3.fromRGB(190, 188, 182), "Concrete")
+	BD.Ground(parent, "SouthRoad", 420, 1720, 360, 390, g, 0.2, BD.Asphalt, "Asphalt")
+	BD.Ground(parent, "EastRoad", 1380, 1410, -560, 360, g, 0.2, BD.Asphalt, "Asphalt")
+	BD.Box(parent, "RoadLine", Vector3.new(1300, 0.05, 0.3), Vector3.new(1070, g + 0.03, 375), BD.Yellow, "SmoothPlastic")
+	-- Camions à quai (devant les 4 portes de quai) et remorques garées.
+	for i, x in { 880, 940, 1060, 1120 } do
+		BD.Truck(parent, x, 122.5, 0, if i % 2 == 0 then Color3.fromRGB(236, 236, 232) else Color3.fromRGB(70, 110, 170), true, 0.45)
+	end
+	for i, x in { 760, 775, 790, 805, 1150, 1165, 1180, 1195 } do
+		BD.Truck(parent, x, 200, 0, if i % 3 == 0 then Color3.fromRGB(200, 70, 50) else Color3.fromRGB(226, 228, 230), false, g)
+	end
+	for _, x in { 752.5, 767.5, 782.5, 797.5, 812.5, 1142.5, 1157.5, 1172.5, 1187.5, 1202.5 } do
+		BD.Box(parent, "ParkingLine", Vector3.new(0.4, 0.05, 44), Vector3.new(x, g + 0.03, 220), BD.Yellow, "SmoothPlastic")
+	end
+	-- Parking du personnel (ouest).
+	for z = -60, 12, 6 do
+		BD.Box(parent, "ParkingLine", Vector3.new(14, 0.05, 0.25), Vector3.new(760, g + 0.03, z), BD.Line, "SmoothPlastic")
+	end
+	for i, z in { -57, -45, -39, -27, -15, -3, 9 } do
+		BD.Car(parent, 760, z, math.rad(90), BD.CarColors[i], g)
+	end
+	-- Conteneurs empilés (est).
+	local containerColors = { Color3.fromRGB(170, 70, 50), Color3.fromRGB(40, 90, 160), Color3.fromRGB(60, 130, 80), Color3.fromRGB(150, 150, 156), Color3.fromRGB(220, 130, 40) }
+	local n = 0
+	for _, x in { 1240, 1250, 1260, 1290, 1300 } do
+		for _, z in { -150, -100, -50, 10 } do
+			n += 1
+			for level = 0, (n * 7) % 3 do
+				BD.Box(parent, "Container", Vector3.new(8, 8.5, 40), Vector3.new(x, g + 4.25 + level * 8.5, z), containerColors[(n + level) % #containerColors + 1], "Metal")
+			end
+		end
+	end
+	-- Clôture grillagée autour de la cour, avec poteaux et un poste de garde.
+	local fx1, fx2, fz1, fz2 = 660, 1360, -260, 340
+	for _, side in { { fx1, fz1, fx2, fz1 }, { fx1, fz2, fx2, fz2 }, { fx1, fz1, fx1, fz2 }, { fx2, fz1, fx2, fz2 } } do
+		local alongX = side[2] == side[4]
+		local length = if alongX then side[3] - side[1] else side[4] - side[2]
+		local center = Vector3.new((side[1] + side[3]) / 2, 0, (side[2] + side[4]) / 2)
+		BD.Box(parent, "FenceMesh", if alongX then Vector3.new(length, 9, 0.15) else Vector3.new(0.15, 9, length), center + Vector3.new(0, 4.7, 0), Color3.fromRGB(130, 136, 144), "Metal", 0.6)
+		local posts = math.floor(length / 100)
+		for i = 0, posts do
+			local t = side[1] == side[3] and Vector3.new(side[1], 4.7, side[2] + i * length / posts) or Vector3.new(side[1] + i * length / posts, 4.7, side[2])
+			BD.Box(parent, "FencePost", Vector3.new(0.4, 9.4, 0.4), t, COLORS.DarkMetal, "Metal")
+		end
+	end
+	BD.Box(parent, "Gatehouse", Vector3.new(8, 8, 6), Vector3.new(1040, 4.2, 330), COLORS.Wall, "Concrete")
+	BD.Box(parent, "GatehouseWindows", Vector3.new(8.2, 2.4, 6.2), Vector3.new(1040, 5.6, 330), Color3.fromRGB(40, 50, 64), "Glass")
+	BD.Box(parent, "GatehouseRoof", Vector3.new(10, 0.6, 8), Vector3.new(1040, 8.5, 330), COLORS.WallBand, "SmoothPlastic")
+	BD.Box(parent, "GateBarrier", Vector3.new(14, 0.4, 0.4), Vector3.new(1024, 3.5, 340), Color3.fromRGB(220, 50, 40), "SmoothPlastic")
+	-- Mâts d'éclairage de la cour (visibles par les fenêtres hautes).
+	for _, p in { { 700, -230 }, { 700, 300 }, { 1330, -230 }, { 1330, 300 }, { 1000, 290 }, { 760, 150 }, { 1240, 150 } } do
+		BD.Box(parent, "LightMast", Vector3.new(1, 40, 1), Vector3.new(p[1], 20.2, p[2]), Color3.fromRGB(150, 154, 160), "Metal")
+		BD.Box(parent, "MastLights", Vector3.new(6, 1.5, 3), Vector3.new(p[1], 40.5, p[2]), Color3.fromRGB(255, 244, 214), "Neon")
+	end
+	-- Autres entrepôts au loin.
+	for i, w in {
+		{ 1440, 1700, -220, 80, 34 }, { 460, 640, -360, -140, 30 }, { 760, 1240, -520, -330, 40 },
+		{ 1440, 1700, 200, 460, 28 }, { 460, 640, 120, 440, 32 }, { 1440, 1650, -520, -300, 36 },
+	} do
+		local cx, cz = (w[1] + w[2]) / 2, (w[3] + w[4]) / 2
+		local color = if i % 2 == 0 then Color3.fromRGB(196, 200, 206) else Color3.fromRGB(226, 220, 206)
+		BD.Box(parent, "FarWarehouse", Vector3.new(w[2] - w[1], w[5], w[4] - w[3]), Vector3.new(cx, w[5] / 2, cz), color, "Concrete")
+		BD.Box(parent, "FarWarehouseBand", Vector3.new(w[2] - w[1] + 0.6, 4, w[4] - w[3] + 0.6), Vector3.new(cx, 2, cz), BRIGHT_COLORS[i], "SmoothPlastic")
+		BD.Box(parent, "FarWarehouseRoof", Vector3.new(w[2] - w[1] + 1.2, 1.2, w[4] - w[3] + 1.2), Vector3.new(cx, w[5] + 0.6, cz), Color3.fromRGB(150, 152, 156), "Metal")
+	end
+	-- Silos et château d'eau.
+	for _, z in { -60, -38, -16 } do
+		BD.Cyl(parent, "Silo", 50, 16, Vector3.new(560, 25.2, z), Color3.fromRGB(210, 212, 214), "Metal")
+	end
+	for _, s in { { -6, -6 }, { 6, -6 }, { -6, 6 }, { 6, 6 } } do
+		BD.Box(parent, "TowerLeg", Vector3.new(1, 40, 1), Vector3.new(1425 + s[1], 20.2, 150 + s[2]), COLORS.DarkMetal, "Metal")
+	end
+	BD.Cyl(parent, "WaterTank", 14, 20, Vector3.new(1425, 47, 150), Color3.fromRGB(80, 140, 190), "Metal")
+	BD.Cyl(parent, "WaterTankRoof", 1, 21, Vector3.new(1425, 54.5, 150), Color3.fromRGB(60, 110, 160), "Metal")
+	collectObstacles = wasCollecting
+end
+
+-- Siège social : la tour sous les bureaux (corps vitré, bandeaux d'étages, socle, couronne)
+-- et le quartier d'affaires autour (gratte-ciel, avenues tout en bas, esplanade avec fontaine).
+function BD.Headquarters(parent, HQ) -- HQ est passé en paramètre (table définie plus bas)
+	local wasCollecting = collectObstacles
+	collectObstacles = false
+	local tx, tz = (HQ.MinX + HQ.MaxX) / 2, (HQ.MinZ + HQ.MaxZ) / 2
+	local w, d = HQ.MaxX - HQ.MinX, HQ.MaxZ - HQ.MinZ
+	local slabBottom = HQ.Floor - 1
+	local glass = Color3.fromRGB(58, 92, 118)
+	local trim = Color3.fromRGB(196, 200, 206)
+	-- Tour.
+	BD.Box(parent, "TowerPodium", Vector3.new(w + 40, 24, d + 40), Vector3.new(tx, 12.2, tz), Color3.fromRGB(206, 200, 190), "Limestone")
+	BD.Box(parent, "TowerBody", Vector3.new(w - 2, slabBottom - 24.4, d - 2), Vector3.new(tx, 24.4 + (slabBottom - 24.4) / 2 - 0.1, tz), glass, "Glass").Reflectance = 0.25
+	for y = 40, slabBottom - 8, 16 do
+		BD.Box(parent, "TowerFloorBand", Vector3.new(w + 0.4, 1.2, d + 0.4), Vector3.new(tx, y, tz), trim, "Metal")
+	end
+	for _, sx in { -1, 1 } do
+		for _, sz in { -1, 1 } do
+			BD.Box(parent, "TowerCorner", Vector3.new(5, slabBottom - 24.4, 5), Vector3.new(tx + sx * (w / 2 - 1.5), 24.4 + (slabBottom - 24.4) / 2 - 0.1, tz + sz * (d / 2 - 1.5)), trim, "Metal")
+		end
+	end
+	BD.Box(parent, "TowerCanopy", Vector3.new(50, 1, 16), Vector3.new(tx, 14, HQ.MaxZ + 28), COLORS.Walnut, "Wood")
+	local logo = newSign(parent, "TowerLogo", "APEX HOLDINGS", Vector3.new(70, 9, 0.5), Vector3.new(tx, 19, HQ.MaxZ + 20.3), Vector3.new(0, 0, 1), COLORS.Walnut, COLORS.Gold)
+	logo.CanQuery = false
+	-- Toit : acrotère, héliport, locaux techniques et antenne.
+	local roofY = CEILING_BOTTOM + 1
+	for _, e in { { true, HQ.MinZ - 1.4 }, { true, HQ.MaxZ + 1.4 }, { false, HQ.MinX - 1.4 }, { false, HQ.MaxX + 1.4 } } do
+		local size = if e[1] then Vector3.new(w + 3.6, 3, 0.8) else Vector3.new(0.8, 3, d + 2)
+		local position = if e[1] then Vector3.new(tx, roofY + 1.5, e[2]) else Vector3.new(e[2], roofY + 1.5, tz)
+		BD.Box(parent, "Parapet", size, position, trim, "Metal")
+	end
+	BD.Cyl(parent, "Helipad", 0.4, 44, Vector3.new(-930, roofY + 0.2, -150), Color3.fromRGB(60, 64, 70), "Concrete")
+	BD.Box(parent, "HelipadH", Vector3.new(2, 0.1, 16), Vector3.new(-935, roofY + 0.45, -150), COLORS.White, "SmoothPlastic")
+	BD.Box(parent, "HelipadH", Vector3.new(2, 0.1, 16), Vector3.new(-925, roofY + 0.45, -150), COLORS.White, "SmoothPlastic")
+	BD.Box(parent, "HelipadH", Vector3.new(8, 0.1, 2), Vector3.new(-930, roofY + 0.45, -150), COLORS.White, "SmoothPlastic")
+	BD.Box(parent, "RoofPlant", Vector3.new(30, 8, 20), Vector3.new(-1130, roofY + 4, -150), Color3.fromRGB(176, 180, 186), "Metal")
+	BD.Box(parent, "RoofPlant", Vector3.new(24, 6, 18), Vector3.new(-1130, roofY + 3, 50), Color3.fromRGB(176, 180, 186), "Metal")
+	BD.Box(parent, "Antenna", Vector3.new(1.5, 60, 1.5), Vector3.new(-1130, roofY + 38, -150), trim, "Metal")
+	BD.Box(parent, "AntennaLight", Vector3.new(1.2, 1.2, 1.2), Vector3.new(-1130, roofY + 68.6, -150), Color3.fromRGB(255, 60, 50), "Neon")
+	-- Sol du quartier, esplanade, avenues et voitures (tout en bas).
+	local g = 0.3
+	BD.Ground(parent, "CityPavement", -1820, -260, -820, 720, 0.2, 0.4, Color3.fromRGB(178, 176, 172), "Concrete")
+	BD.Ground(parent, "Plaza", -1270, -790, -290, 190, 0.45, 0.3, Color3.fromRGB(214, 206, 192), "Slate")
+	for _, z in { 230, -360 } do
+		BD.Ground(parent, "Avenue", -1820, -260, z, z + 30, g, 0.2, BD.Asphalt, "Asphalt")
+		BD.Box(parent, "AvenueLine", Vector3.new(1560, 0.05, 0.4), Vector3.new(-1040, g + 0.03, z + 15), BD.Yellow, "SmoothPlastic")
+	end
+	for _, x in { -1340, -750 } do
+		for _, seg in { { -820, -360 }, { -330, 230 }, { 260, 720 } } do
+			BD.Ground(parent, "Avenue", x, x + 30, seg[1], seg[2], g, 0.2, BD.Asphalt, "Asphalt")
+			BD.Box(parent, "AvenueLine", Vector3.new(0.4, 0.05, seg[2] - seg[1]), Vector3.new(x + 15, g + 0.03, (seg[1] + seg[2]) / 2), BD.Line, "SmoothPlastic")
+		end
+	end
+	local k = 0
+	for _, x in { -1700, -1560, -1420, -1180, -980, -860, -640, -480, -350 } do
+		for _, z in { 238, 252, -352, -338 } do
+			k += 1
+			if k % 3 ~= 0 then
+				BD.Car(parent, x + (k % 5) * 9, z, math.rad(if z == 238 or z == -352 then 90 else -90), BD.CarColors[k % #BD.CarColors + 1], g, true)
+			end
+		end
+	end
+	for _, z in { -700, -500, -100, 100, 400, 600 } do
+		BD.Car(parent, -1332, z, 0, BD.CarColors[(z // 100) % #BD.CarColors + 1], g, true)
+		BD.Car(parent, -728, z + 30, math.pi, BD.CarColors[(z // 100 + 3) % #BD.CarColors + 1], g, true)
+	end
+	for _, p in { { -1240, -260 }, { -820, -260 }, { -1240, 160 }, { -820, 160 } } do
+		BD.Ground(parent, "Lawn", p[1] - 22, p[1] + 22, p[2] - 22, p[2] + 22, 0.55, 0.2, Color3.fromRGB(86, 150, 74), "Grass")
+	end
+	BD.Cyl(parent, "FountainBasin", 2, 34, Vector3.new(tx, 1.3, 155), Color3.fromRGB(230, 226, 218), "Marble")
+	BD.Cyl(parent, "FountainWater", 0.3, 31, Vector3.new(tx, 2.2, 155), Color3.fromRGB(90, 170, 220), "Glass")
+	for i = 0, 15 do
+		local angle = i / 16 * math.pi * 2
+		BD.Tree(parent, tx + math.cos(angle) * 225, tz + math.sin(angle) * 225, 0.45, 1.6)
+	end
+	-- Gratte-ciel tout autour (certains plus hauts que les bureaux, d'autres bien plus bas).
+	local glassColors = {
+		Color3.fromRGB(70, 110, 140), Color3.fromRGB(110, 130, 150), Color3.fromRGB(50, 70, 100),
+		Color3.fromRGB(150, 160, 170), Color3.fromRGB(90, 120, 110), Color3.fromRGB(150, 124, 92),
+	}
+	for i, t in {
+		{ -1420, -200, 70, 70, 320 }, { -1450, 50, 60, 80, 240 }, { -1430, 160, 80, 60, 180 }, { -1420, -460, 70, 70, 280 },
+		{ -1600, -100, 90, 90, 380 }, { -1620, 120, 70, 70, 150 }, { -1600, -520, 80, 60, 220 }, { -1450, 400, 80, 80, 260 }, { -1650, 420, 90, 70, 200 },
+		{ -640, -200, 70, 70, 300 }, { -630, 60, 80, 60, 210 }, { -650, 170, 60, 60, 260 }, { -640, -470, 80, 80, 170 },
+		{ -460, -50, 90, 90, 340 }, { -450, 150, 70, 70, 190 }, { -470, -440, 70, 70, 250 }, { -600, 420, 80, 80, 230 }, { -420, 450, 90, 90, 280 },
+		{ -1200, -470, 80, 70, 260 }, { -1030, -520, 90, 80, 360 }, { -860, -470, 70, 70, 200 }, { -1120, -680, 100, 80, 300 }, { -920, -680, 80, 80, 230 },
+		{ -1200, 360, 80, 70, 230 }, { -1030, 420, 90, 80, 290 }, { -860, 370, 70, 70, 180 }, { -1120, 600, 80, 80, 260 }, { -920, 600, 90, 70, 330 },
+	} do
+		BD.Tower(parent, t[1], t[2], t[3], t[4], t[5], glassColors[(i - 1) % #glassColors + 1], if i % 3 == 0 then Color3.fromRGB(220, 222, 226) else Color3.fromRGB(150, 156, 164))
+	end
+	collectObstacles = wasCollecting
+end
+
+---------------------------------------------------------------------------
 -- Niveau 3 : siège social (bureaux de direction luxueux)
 ---------------------------------------------------------------------------
 local HQ = {}
-HQ.MinX, HQ.MaxX, HQ.MinZ, HQ.MaxZ = -1180, -880, -100, 100
+HQ.MinX, HQ.MaxX, HQ.MinZ, HQ.MaxZ = -1180, -880, -200, 100
 HQ.WallHeight = 16
+HQ.Floor = 200 -- les bureaux sont au dernier étage d'une tour : surface du sol à Y = 200
+HQ.OldMinZ = -100 -- limite nord des pièces d'origine (mur épais vers la nouvelle rangée nord)
 
 -- Repère d'un meuble posé au sol à (x, z) et tourné vers "facing".
 local function facingBase(x, z, facing)
@@ -3455,17 +4148,140 @@ function HQ.Coffers(parent, room)
 	for z = room.MinZ + 10, room.MaxZ - 5, 10 do
 		block(parent, "CofferBeam", Vector3.new(w, 0.4, 0.6), Vector3.new(cx, y, z), COLORS.Gold, "Foil", { CanCollide = false, CastShadow = false })
 	end
-	for x = room.MinX + 5, room.MaxX - 5, 10 do
-		for z = room.MinZ + 5, room.MaxZ - 5, 10 do
+	-- Une dalle lumineuse sur deux caissons (moins de pièces, même effet).
+	for x = room.MinX + 5, room.MaxX - 5, 20 do
+		for z = room.MinZ + 5, room.MaxZ - 5, 20 do
 			block(parent, "CofferLight", Vector3.new(4, 0.1, 4), Vector3.new(x, CEILING_BOTTOM - 0.05, z), COLORS.Light, "Neon", { CanCollide = false, CastShadow = false, Transparency = 0.55 })
 		end
 	end
 end
 
+-- Rangée nord des bureaux (4 pièces derrière la suite du PDG, face aux baies vitrées).
+function HQ.FurnishNorth(f, top)
+	local index
+
+	-- Département juridique : classeurs de couleur, dossiers, bureaux d'avocats.
+	local legal = f.HLegal
+	local binderCats = { "Finance", "Legal", "HR", "Marketing" }
+	for i = 1, 8 do
+		HQ.RecordsShelf(legal, 300 + i, -1181 + i * 8, -199.3, binderCats[(i - 1) % 4 + 1])
+	end
+	for i, x in { -1170, -1162, -1154, -1146 } do
+		createArchiveShelf(legal, 300 + i, x, -178)
+	end
+	index = 300
+	for _, x in { -1165, -1150, -1135, -1120 } do
+		index += 1
+		createAdvisorDesk(legal, index, x, -145)
+	end
+	createCredenza(legal, 301, -1106.2, -180)
+	createCredenza(legal, 302, -1106.2, -168)
+	block(legal, "LegalRug", Vector3.new(60, 0.04, 34), Vector3.new(-1142, FLOOR_TOP + 0.02, -145), Color3.fromRGB(150, 40, 46), "Fabric", { CanCollide = false })
+	newSign(legal, "LegalSign", "LEGAL DEPARTMENT", Vector3.new(12, 1.6, 0.15), Vector3.new(-1142, FLOOR_TOP + 11, -101.1), Vector3.new(0, 0, -1), COLORS.Walnut, COLORS.Gold)
+	createWallArt(legal, Vector3.new(-1105.35, FLOOR_TOP + 7, -150), Vector3.new(-1, 0, 0), Vector2.new(6, 4), Color3.fromRGB(60, 80, 110))
+	Deco.Pendant(legal, -1142, top - 0.3, -165, 6, COLORS.Gold, true)
+	Deco.Pendant(legal, -1142, top - 0.3, -125, 6, COLORS.Gold, true)
+	for _, p in { { -1177, -104 }, { -1108, -194 } } do
+		createPlant(legal, p[1], p[2])
+	end
+
+	-- Salon panoramique : bar le long de la vitre, coins canapés, tables, jardinières.
+	local lounge = f.HSkyLounge
+	for i, x in { -1097, -1090.5, -1084, -1077.5, -1071, -1064.5 } do
+		createCupboard(lounge, 300 + i, x, -199.1)
+	end
+	index = 300
+	for _, x in { -1055, -1045, -1035 } do
+		index += 1
+		createPlanter(lounge, index, x, -199)
+	end
+	for _, x in { -1092, -1076, -1058, -1040 } do
+		index += 1
+		createPlanter(lounge, index, x, -188)
+	end
+	index = 300
+	for _, g in { { -1094, -172 }, { -1076, -172 }, { -1058, -172 }, { -1040, -172 }, { -1094, -152 }, { -1076, -152 }, { -1058, -152 }, { -1040, -152 }, { -1040, -132 } } do
+		index += 1
+		createSofa(lounge, index, g[1], g[2] - 3.6, math.pi)
+		index += 1
+		createSofa(lounge, index, g[1], g[2] + 3.6, 0)
+		createCoffeeTable(lounge, g[1], g[2])
+	end
+	index = 300
+	for _, p in { { -1076, -132 }, { -1058, -132 }, { -1094, -118 }, { -1076, -115 }, { -1058, -115 } } do
+		index += 1
+		createCafeTable(lounge, index, p[1], p[2])
+	end
+	newSign(lounge, "LoungeSign", "SKY LOUNGE", Vector3.new(10, 1.6, 0.15), Vector3.new(-1067, FLOOR_TOP + 11, -101.1), Vector3.new(0, 0, -1), COLORS.Walnut, COLORS.Gold)
+	Deco.Pendant(lounge, -1067, top - 0.3, -162, 6, COLORS.Gold, true)
+	Deco.Pendant(lounge, -1067, top - 0.3, -123, 6, COLORS.Gold, true)
+
+	-- Studio marketing : murs de cadres, vitrines à trophées, tables de réunion, postes de travail.
+	local studio = f.HMarketing
+	index = 300
+	for _, z in { -190, -181, -172 } do
+		index += 1
+		HQ.FrameShelf(studio, index, -1029.05, z, Vector3.new(1, 0, 0))
+		index += 1
+		HQ.FrameShelf(studio, index, -955.95, z, Vector3.new(-1, 0, 0))
+	end
+	HQ.TrophyCabinet(studio, 301, -1000, -199, Vector3.new(0, 0, 1))
+	HQ.TrophyCabinet(studio, 302, -985, -199, Vector3.new(0, 0, 1))
+	createConferenceTable(studio, 301, -1010, -172)
+	createConferenceTable(studio, 302, -975, -172)
+	createConferenceTable(studio, 303, -992.5, -152)
+	index = 300
+	for _, x in { -1020, -1008, -996, -984, -972 } do
+		index += 1
+		createHotDesk(studio, index, x, -128)
+	end
+	for i, p in { { -1028.8, -145 }, { -1028.8, -127 }, { -956.2, -145 }, { -956.2, -127 } } do
+		createCredenza(studio, 300 + i, p[1], p[2])
+	end
+	newSign(studio, "CampaignScreen", "NEW CAMPAIGN: TIDY IS THE NEW BLACK", Vector3.new(10, 3.5, 0.15), Vector3.new(-1029.65, FLOOR_TOP + 9, -136), Vector3.new(1, 0, 0), COLORS.Black, Color3.fromRGB(255, 120, 170))
+	Deco.Pendant(studio, -1000, top - 0.3, -172, 6, Color3.fromRGB(240, 120, 160), true)
+	Deco.Pendant(studio, -985, top - 0.3, -128, 6, Color3.fromRGB(240, 120, 160), true)
+
+	-- Labo d'innovation : chariots de portables, étagères de cartons, postes de travail, salle de démo.
+	local lab = f.HLab
+	index = 300
+	for _, z in { -198.8, -186, -173 } do
+		for _, x in { -949, -942, -935, -928, -921, -914, -907 } do
+			if not (z == -173 and x == -907) then
+				index += 1
+				createLaptopCart(lab, index, x, z)
+			end
+		end
+	end
+	index = 300
+	for _, z in { -197, -192, -187, -182, -177, -172, -167 } do
+		index += 1
+		createStorageShelf(lab, index, -885, z)
+		if z < -172 then
+			index += 1
+			createStorageShelf(lab, index, -894.5, z)
+		end
+	end
+	index = 320
+	for _, z in { -150, -135 } do
+		for _, x in { -948, -936, -924, -912, -900 } do
+			index += 1
+			createHotDesk(lab, index, x, z)
+		end
+	end
+	createChairRug(lab, "DemoSeating", Vector2.new(-925, -115), Vector2.new(40, 14), { -942, -937, -932, -927, -922, -917, -912, -907 }, { -120, -116, -112, -108.5 }, 180, Color3.fromRGB(70, 90, 150), 6)
+	for i = 0, 3 do
+		createServerRack(lab, -882, -150 + i * 3.2)
+	end
+	newSign(lab, "LabScreen", "INNOVATION LAB  -  DEMO DAY FRIDAY", Vector3.new(10, 3.5, 0.15), Vector3.new(-954.65, FLOOR_TOP + 8, -158), Vector3.new(1, 0, 0), COLORS.Black, Color3.fromRGB(120, 220, 160))
+	Deco.Pendant(lab, -925, top - 0.3, -186, 6, COLORS.DarkMetal, true)
+	Deco.Pendant(lab, -925, top - 0.3, -128, 6, COLORS.DarkMetal, true)
+end
+
 function HQ.Build(root)
 	local savedHeight = WALL_HEIGHT
 	WALL_HEIGHT = HQ.WallHeight
-	setFloor(1)
+	setFloor(HQ.Floor)
 	PARTITION_STYLE = { Color = Color3.fromRGB(240, 232, 216), Material = "Plaster", Base = COLORS.Walnut }
 	local structure = newFolder(root, "Building")
 	local furniture = newFolder(root, "Furniture")
@@ -3484,24 +4300,31 @@ function HQ.Build(root)
 		HArchive = { Color3.fromRGB(92, 104, 126), "Carpet" },
 		HExecutive = { Color3.fromRGB(110, 70, 44), "WoodPlanks" },
 		HServer = { Color3.fromRGB(190, 194, 200), "Concrete" },
+		HSkyLounge = { Color3.fromRGB(64, 58, 70), "WoodPlanks" },
+		HLegal = { Color3.fromRGB(46, 70, 120), "Carpet" },
+		HMarketing = { Color3.fromRGB(236, 230, 220), "Concrete" },
+		HLab = { Color3.fromRGB(210, 214, 220), "SmoothPlastic" },
 	}
 	local rooms = TidyConfig.GetMapRooms("Headquarters")
 	for _, room in rooms do
 		local style = floors[room.Id]
-		block(structure, room.Id .. "Floor", Vector3.new(room.MaxX - room.MinX, 1, room.MaxZ - room.MinZ), Vector3.new((room.MinX + room.MaxX) / 2, FLOOR_TOP - 0.5, (room.MinZ + room.MaxZ) / 2), style[1], style[2], { Reflectance = if style[2] == "Marble" then 0.08 else 0 })
+		-- La rangée nord s'arrête au mur épais (Z = -101 à -100) qui la sépare des pièces d'origine.
+		local roomMaxZ = if room.MinZ < HQ.OldMinZ then HQ.OldMinZ - 1 else room.MaxZ
+		block(structure, room.Id .. "Floor", Vector3.new(room.MaxX - room.MinX, 1, roomMaxZ - room.MinZ), Vector3.new((room.MinX + room.MaxX) / 2, FLOOR_TOP - 0.5, (room.MinZ + roomMaxZ) / 2), style[1], style[2], { Reflectance = if style[2] == "Marble" then 0.08 else 0 })
 	end
 	-- Incrustations du hall : bordure noire et rosace dorée.
 	block(structure, "LobbyInlay", Vector3.new(60, 0.02, 1), Vector3.new(-1030, FLOOR_TOP + 0.01, 30), Color3.fromRGB(40, 40, 46), "Marble", { CanCollide = false })
 	local rosette = cylinder(structure, "LobbyRosette", 0.02, 10, Vector3.new(-1030, FLOOR_TOP + 0.01, 80), COLORS.Gold, "Foil")
 	rosette.CanCollide = false
 
-	-- Murs extérieurs : façade vitrée au sud (entrée), fenêtres ailleurs.
+	-- Murs extérieurs : grandes baies vitrées du sol au plafond sur les côtés ouest, est et nord
+	-- (vue sur la ville, 200 studs plus bas), façade dorée au sud avec les ascenseurs.
 	local wallTop = top
-	block(structure, "NorthWall", Vector3.new(maxX - minX + 2, wallTop, 1), Vector3.new(cx, wallTop / 2, minZ - 0.5), Color3.fromRGB(240, 232, 216), "Plaster")
-	for x = minX + 20, maxX - 20, 30 do
-		block(structure, "NorthWindow", Vector3.new(12, 7, 0.04), Vector3.new(x, FLOOR_TOP + 9, minZ + 0.03), Color3.fromRGB(170, 214, 240), "Glass", { Reflectance = 0.2, CanCollide = false })
-	end
-	-- Façade sud : verre et montants dorés, porte d'entrée au milieu du hall.
+	local slabBottom = FLOOR_TOP - 1
+	AG.GlassWall(structure, "NorthFacade", true, minZ - 0.5, minX - 1, maxX + 1, slabBottom, Color3.fromRGB(60, 64, 74), 24)
+	AG.GlassWall(structure, "WestFacade", false, minX - 0.5, minZ, maxZ + 1, slabBottom, Color3.fromRGB(60, 64, 74), 24)
+	AG.GlassWall(structure, "EastFacade", false, maxX + 0.5, minZ, maxZ + 1, slabBottom, Color3.fromRGB(60, 64, 74), 24)
+	-- Façade sud : verre et montants dorés, ascenseurs au milieu du hall.
 	local doorX = -1030
 	for _, piece in { { minX, doorX - 5 }, { doorX + 5, maxX } } do
 		local length = piece[2] - piece[1]
@@ -3514,10 +4337,10 @@ function HQ.Build(root)
 	end
 	block(structure, "EntranceLintel", Vector3.new(10, wallTop - FLOOR_TOP - 9, 1), Vector3.new(doorX, FLOOR_TOP + 9 + (wallTop - FLOOR_TOP - 9) / 2, maxZ + 0.5), COLORS.Walnut, "Wood")
 	for _, side in { -1, 1 } do
-		block(structure, "EntranceDoor", Vector3.new(4.9, 9, 0.3), Vector3.new(doorX + side * 2.5, FLOOR_TOP + 4.5, maxZ + 0.6), COLORS.Glass, "Glass", { Transparency = 0.6 })
+		block(structure, "ElevatorDoor", Vector3.new(5, 9, 0.3), Vector3.new(doorX + side * 2.5, FLOOR_TOP + 4.5, maxZ + 0.6), COLORS.Metal, "Metal", { Reflectance = 0.15 })
 	end
-	windowedSideWall(structure, "WestWall", minX - 0.5, { { -90, -70 }, { -60, -44 }, { -30, -10 }, { 30, 50 }, { 64, 90 } }, 1, minZ, maxZ, 0)
-	windowedSideWall(structure, "EastWall", maxX + 0.5, { { -90, -70 }, { -60, -44 }, { -30, -10 }, { 30, 50 }, { 64, 90 } }, -1, minZ, maxZ, 0)
+	block(structure, "ElevatorThreshold", Vector3.new(10, 1, 1), Vector3.new(doorX, FLOOR_TOP - 0.5, maxZ + 0.5), COLORS.DarkMetal, "Metal")
+	newSign(structure, "SkyLobbySign", "SKY LOBBY  -  FLOOR 52", Vector3.new(9, 1.2, 0.1), Vector3.new(doorX, FLOOR_TOP + 11.6, maxZ - 0.06), Vector3.new(0, 0, -1), COLORS.Walnut, COLORS.Gold)
 
 	-- Cloisons et portes (les portes des pièces fermées sont vitrées et verrouillées).
 	local doors = {}
@@ -3528,8 +4351,13 @@ function HQ.Build(root)
 		end
 		return d
 	end
-	interiorWallAlongZ(structure, -1080, minZ, maxZ, { door(52, 60, "HOpenOffice"), door(-14, -6, "HTrophy"), door(-74, -66, "HExecutive") })
-	interiorWallAlongZ(structure, -980, minZ, maxZ, { door(52, 60, "HCafe"), door(-14, -6, "HBoard"), door(-74, -66, "HServer") })
+	interiorWallAlongZ(structure, -1080, HQ.OldMinZ, maxZ, { door(52, 60, "HOpenOffice"), door(-14, -6, "HTrophy"), door(-74, -66, "HExecutive") })
+	interiorWallAlongZ(structure, -980, HQ.OldMinZ, maxZ, { door(52, 60, "HCafe"), door(-14, -6, "HBoard"), door(-74, -66, "HServer") })
+	-- Ancien mur nord : mur épais vers la rangée nord (4 nouvelles pièces face à la ville).
+	AG.Wall(structure, "OldNorthWall", true, HQ.OldMinZ - 0.5, minX, maxX, 1, { door(-1114, -1106, "HLegal"), door(-1052, -1044, "HSkyLounge"), door(-1016, -1008, "HMarketing"), door(-920, -912, "HLab") }, slabBottom, Color3.fromRGB(240, 232, 216), "Plaster")
+	for _, x in { -1105, -1030, -955 } do
+		interiorWallAlongZ(structure, x, minZ, HQ.OldMinZ - 1, {})
+	end
 	interiorWallAlongX(structure, 20, minX, maxX, { door(-1134, -1126, "HTrophy"), door(-1042, -1018, nil), door(-934, -926, "HBoard") })
 	interiorWallAlongX(structure, -40, minX, maxX, { door(-1134, -1126, "HArchive"), door(-1034, -1026, "HExecutive"), door(-934, -926, "HServer") })
 	for _, d in doors do
@@ -3545,6 +4373,10 @@ function HQ.Build(root)
 		{ "CEO SUITE", Vector3.new(-1030, signY, -39.7), Vector3.new(0, 0, 1) },
 		{ "RECORDS VAULT", Vector3.new(-1130, signY, -39.7), Vector3.new(0, 0, 1) },
 		{ "SERVER HUB", Vector3.new(-930, signY, -39.7), Vector3.new(0, 0, 1) },
+		{ "LEGAL", Vector3.new(-1110, signY, -99.9), Vector3.new(0, 0, 1) },
+		{ "SKY LOUNGE", Vector3.new(-1048, signY, -99.9), Vector3.new(0, 0, 1) },
+		{ "MARKETING", Vector3.new(-1012, signY, -99.9), Vector3.new(0, 0, 1) },
+		{ "INNOVATION LAB", Vector3.new(-916, signY, -99.9), Vector3.new(0, 0, 1) },
 	} do
 		newSign(structure, "RoomSign", sign[1], Vector3.new(8, 1.3, 0.1), sign[2], sign[3], COLORS.Walnut, COLORS.Gold)
 	end
@@ -3555,7 +4387,11 @@ function HQ.Build(root)
 	skylight(structure, holes[1], top + 1)
 	for _, room in rooms do
 		if room.Id == "HOpenOffice" or room.Id == "HCafe" or room.Id == "HServer" or room.Id == "HArchive" then
-			slatCeiling(structure, room.MinX, room.MaxX, room.MinZ, room.MaxZ, {}, { room })
+			-- Lattes de bois et bandeaux lumineux, avec peu de vraies lumières (performances).
+			slatCeiling(structure, room.MinX, room.MaxX, room.MinZ, room.MaxZ, {}, {})
+			AG.Strips(structure, room.MinX, room.MaxX, room.MinZ, room.MaxZ, 2)
+		elseif room.MinZ < HQ.OldMinZ then
+			AG.Panels(structure, room.MinX, room.MaxX, room.MinZ, room.MaxZ, 20)
 		elseif room.Id ~= "HAtrium" then
 			HQ.Coffers(structure, room)
 		end
@@ -3728,8 +4564,8 @@ function HQ.Build(root)
 	vaultDoor.Shape = Enum.PartType.Cylinder
 	block(vault, "Wheel", Vector3.new(0.4, 2.4, 0.3), Vector3.new(-1081, FLOOR_TOP + 5, -88), COLORS.Gold, "Foil", { CanCollide = false })
 	block(vault, "Wheel", Vector3.new(0.4, 0.3, 2.4), Vector3.new(-1081, FLOOR_TOP + 5, -88), COLORS.Gold, "Foil", { CanCollide = false })
-	createFilingCabinet(archive, -1108, -99.9)
-	createFilingCabinet(archive, -1105.9, -99.9)
+	createFilingCabinet(archive, -1090, -99.9)
+	createFilingCabinet(archive, -1087.9, -99.9)
 
 	-- Suite du PDG.
 	local exec = f.HExecutive
@@ -3755,7 +4591,7 @@ function HQ.Build(root)
 	block(exec, "CEORug", Vector3.new(16, 0.04, 12), Vector3.new(-1030, FLOOR_TOP + 0.02, -80), Color3.fromRGB(170, 40, 46), "Fabric", { CanCollide = false })
 	Deco.Chandelier(exec, -1030, top - 0.4, -80, 1.1)
 	Deco.Chandelier(exec, -1030, top - 0.4, -56, 0.9)
-	Deco.Wainscot(exec, Vector3.new(-1052, 0, -99.6), Vector3.new(-1008, 0, -99.6), Vector3.new(0, 0, 1), 3.5, COLORS.Walnut)
+	Deco.Wainscot(exec, Vector3.new(-1043.5, 0, -99.6), Vector3.new(-1016.5, 0, -99.6), Vector3.new(0, 0, 1), 3.5, COLORS.Walnut)
 
 	-- Salle des serveurs.
 	local server = f.HServer
@@ -3775,6 +4611,11 @@ function HQ.Build(root)
 		createStorageShelf(server, index, x, -50)
 	end
 	createFireExtinguisher(server, Vector3.new(-979.7, FLOOR_TOP + 1.2, -50), Vector3.new(1, 0, 0))
+
+	-- Rangée nord (face à la ville) : département juridique, salon panoramique, studio marketing, labo.
+	HQ.FurnishNorth(f, top)
+	-- Tour sous les bureaux et quartier d'affaires autour (décor sans collision).
+	BD.Headquarters(newFolder(root, "Backdrop"), HQ)
 
 	-- Endroit laissé libre : arrivée du joueur.
 	addObstacle(doorX - 6, doorX + 6, 86, maxZ)
@@ -4385,10 +5226,42 @@ local currentMap = nil
 
 -- Limites de chaque niveau (pour lâcher les objets à l'intérieur).
 local MAP_BOUNDS = {
-	Agency = { -HALF_X, HALF_X, MIN_Z, MAX_Z },
+	Agency = { -HALF_X, AG.MaxX, MIN_Z, MAX_Z }, -- avec l'aile est
 	Warehouse = { WH.MinX, WH.MaxX, WH.MinZ, WH.MaxZ },
 	Headquarters = { HQ.MinX, HQ.MaxX, HQ.MinZ, HQ.MaxZ },
 }
+
+-- Grand panneau sur pieds (14 x 10 studs) à quelques pas du point d'arrivée, tourné vers lui.
+-- Réglages par niveau : distance devant l'arrivée et décalage sur le côté (pour éviter les meubles).
+AG.TutorialSpots = {
+	Warehouse = { Distance = 14, Side = -16 },
+	Agency = { Distance = 9, Side = -18 },
+	Headquarters = { Distance = 10, Side = 0 },
+}
+function AG.TutorialBoard(root, mapId, spawnPosition)
+	local bounds = MAP_BOUNDS[mapId]
+	local center = Vector3.new((bounds[1] + bounds[2]) / 2, spawnPosition.Y, (bounds[3] + bounds[4]) / 2)
+	local toward = center - spawnPosition
+	local dir = if math.abs(toward.X) > math.abs(toward.Z) then Vector3.new(math.sign(toward.X), 0, 0) else Vector3.new(0, 0, math.sign(toward.Z))
+	local right = Vector3.new(-dir.Z, 0, dir.X)
+	local spot = AG.TutorialSpots[mapId] or { Distance = 10, Side = 0 }
+	local base = Vector3.new(spawnPosition.X, spawnPosition.Y, spawnPosition.Z) + dir * spot.Distance + right * spot.Side
+	local floorY = spawnPosition.Y
+	local model = newModel(root, "TutorialStand")
+	local facing = CFrame.lookAt(base, base - dir)
+	for _, offset in { -6, 6 } do
+		newPart(model, "Leg", Vector3.new(0.5, 11.5, 0.5), facing * CFrame.new(offset, 5.75, 0.45), Color3.fromRGB(28, 30, 70), "SmoothPlastic")
+		newPart(model, "Foot", Vector3.new(1.4, 0.3, 2.4), facing * CFrame.new(offset, 0.15, 0.45), Color3.fromRGB(28, 30, 70), "SmoothPlastic")
+	end
+	newPart(model, "Frame", Vector3.new(14.6, 10.6, 0.3), facing * CFrame.new(0, 6.6, 0.25), Color3.fromRGB(240, 190, 74), "Foil")
+	local board = newPart(model, "TutorialBoard", Vector3.new(14, 10, 0.2), facing * CFrame.new(0, 6.6, 0), Color3.fromRGB(30, 30, 66), "SmoothPlastic")
+	board.CastShadow = false
+	if collectObstacles then
+		table.insert(obstacles, { base.X - 7.5, base.X + 7.5, base.Z - 7.5, base.Z + 7.5, floorY })
+	end
+	return board
+end
+
 
 -- Supprime le point d'apparition du modèle Baseplate (les joueurs apparaissent dans le hall).
 function AgencyBuilder.ClearTemplate()
@@ -4443,6 +5316,8 @@ function AgencyBuilder.Build(mapId)
 	else
 		HQ.Build(root)
 	end
+	-- Panneau du tutoriel face au point d'arrivée (les cartes sont dessinées par l'écran du joueur).
+	AG.TutorialBoard(root, mapId, map.Spawn)
 	collectObstacles = false
 	setFloor(GROUND_TOP)
 
@@ -4479,7 +5354,7 @@ function AgencyBuilder.ScatterItems(seed)
 	local obstacleGrids = {}
 	local placedGrids = {}
 	for _, room in TidyConfig.GetMapRooms(currentMap) do
-		local floorTop = if room.Map == "Agency" then TidyConfig.FloorHeights[room.Floor or 1] else 1
+		local floorTop = if room.Map == "Agency" then TidyConfig.FloorHeights[room.Floor or 1] elseif room.Map == "Headquarters" then HQ.Floor else 1
 		setFloor(floorTop)
 		local grid = obstacleGrids[floorTop]
 		if not grid then

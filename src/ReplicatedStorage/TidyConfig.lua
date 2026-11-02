@@ -210,13 +210,13 @@ TidyConfig.Rooms = {
 	-- Agence (aile est du rez-de-chaussée : un grand couloir et 8 pièces)
 	{ Id = "EastHall", Map = "Agency", Name = "East Wing Hall", MinX = 80, MaxX = 240, MinZ = -10, MaxZ = 20, Unlock = 10100, Items = { Paper = 30, Chair = 24, Plant = 18 } },
 	{ Id = "StaffCafe", Map = "Agency", Name = "Staff Café", MinX = 80, MaxX = 120, MinZ = 20, MaxZ = 60, Unlock = 10900, Items = { Chair = 16, Mug = 126 } },
-	{ Id = "RecordsHall", Map = "Agency", Name = "Records Hall", MinX = 80, MaxX = 120, MinZ = -100, MaxZ = -10, Unlock = 12200, Items = { Folder = 240 } },
+	{ Id = "RecordsHall", Map = "Agency", Name = "Records Hall", MinX = 80, MaxX = 120, MinZ = -100, MaxZ = -10, Unlock = 12200, Items = { Folder = 248 } },
 	{ Id = "JobClub", Map = "Agency", Name = "Job Club Lounge", MinX = 120, MaxX = 160, MinZ = 20, MaxZ = 60, Unlock = 14000, Items = { Plant = 12, Cushion = 66 } },
 	{ Id = "CareerLibrary", Map = "Agency", Name = "Career Library", MinX = 120, MaxX = 160, MinZ = -100, MaxZ = -10, Unlock = 14600, Items = { Book = 288 } },
 	{ Id = "ComputerLab", Map = "Agency", Name = "Computer Lab", MinX = 160, MaxX = 200, MinZ = 20, MaxZ = 60, Unlock = 16400, Items = { Paper = 24, Laptop = 132 } },
 	{ Id = "ParcelDepot", Map = "Agency", Name = "Parcel Depot", MinX = 160, MaxX = 200, MinZ = -100, MaxZ = -10, Unlock = 17800, Items = { Parcel = 288 } },
-	{ Id = "SupplyRoom", Map = "Agency", Name = "Supply Room", MinX = 200, MaxX = 240, MinZ = 20, MaxZ = 60, Unlock = 20400, Items = { Paper = 18, Box = 72 } },
-	{ Id = "Stockroom", Map = "Agency", Name = "Stockroom", MinX = 200, MaxX = 240, MinZ = -100, MaxZ = -10, Unlock = 21400, Items = { Box = 124 } },
+	{ Id = "SupplyRoom", Map = "Agency", Name = "Supply Room", MinX = 200, MaxX = 240, MinZ = 20, MaxZ = 60, Unlock = 20400, Items = { Paper = 18, Box = 48 } },
+	{ Id = "Stockroom", Map = "Agency", Name = "Stockroom", MinX = 200, MaxX = 240, MinZ = -100, MaxZ = -10, Unlock = 21100, Items = { Box = 140 } },
 
 	-- Entrepôt de distribution (un immense hall découpé en sections, sans murs)
 	{ Id = "WReceiving", Map = "Warehouse", Name = "Receiving Dock", MinX = 820, MaxX = 1180, MinZ = 80, MaxZ = 120, Unlock = 0, Items = { Box = 90 } },
