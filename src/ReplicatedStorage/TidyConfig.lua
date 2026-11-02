@@ -145,34 +145,34 @@ TidyConfig.Categories = {
 }
 
 ---------------------------------------------------------------------------
--- Niveaux (cartes). WinsRequired = journées terminées nécessaires pour y jouer.
+-- Niveaux (cartes), dans l'ordre. Requires = niveau qu'il faut avoir terminé pour débloquer celui-ci.
 ---------------------------------------------------------------------------
 TidyConfig.Maps = {
 	{
-		Id = "Agency",
-		Name = "Employment Agency",
-		Description = "16 rooms on 2 floors: offices, archives, library, mail room...",
-		WinsRequired = 0,
-		Icon = "🏢",
-		Color = Color3.fromRGB(64, 150, 230),
-		Spawn = Vector3.new(0, 1, 54),
-	},
-	{
 		Id = "Warehouse",
 		Name = "Distribution Warehouse",
-		Description = "A giant warehouse: 9 sections, over 2,300 items to sort onto the racks.",
-		WinsRequired = 1,
+		Short = "Warehouse",
+		Requires = nil,
 		Icon = "🏭",
 		Color = Color3.fromRGB(240, 150, 40),
 		Spawn = Vector3.new(1000, 1, 112),
 	},
 	{
+		Id = "Agency",
+		Name = "Employment Agency",
+		Short = "Agency",
+		Requires = "Warehouse",
+		Icon = "🏢",
+		Color = Color3.fromRGB(64, 150, 230),
+		Spawn = Vector3.new(0, 1, 54),
+	},
+	{
 		Id = "Headquarters",
-		Name = "Corporate Headquarters",
-		Description = "A luxury head office: boardroom, hall of fame, CEO suite, records vault...",
-		WinsRequired = 3,
+		Name = "Corporate Offices",
+		Short = "Offices",
+		Requires = "Agency",
 		Icon = "🏙️",
-		Color = Color3.fromRGB(180, 120, 230),
+		Color = Color3.fromRGB(150, 110, 230),
 		Spawn = Vector3.new(-1030, 1, 94),
 	},
 }
@@ -253,8 +253,6 @@ TidyConfig.Upgrades = {
 	{ Id = "Capacity", Name = "Bigger Basket", Icon = "🧺", Description = "Carry one more item", MaxLevel = 12, BaseCost = 60 },
 	{ Id = "Speed", Name = "Comfy Sneakers", Icon = "👟", Description = "Walk a little faster", MaxLevel = 6, BaseCost = 90 },
 	{ Id = "Magnet", Name = "Magnet", Icon = "🧲", Description = "Unlocks tool 2, then more range", MaxLevel = 6, BaseCost = 150 },
-	{ Id = "Magnifier", Name = "Magnifier", Icon = "🔍", Description = "Tool 3: a beam shows where to go", MaxLevel = 1, BaseCost = 120 },
-	{ Id = "QuickStock", Name = "Quick Stock", Icon = "🗄️", Description = "Tool 4: put away all matching items", MaxLevel = 1, BaseCost = 600 },
 }
 
 ---------------------------------------------------------------------------
@@ -265,20 +263,17 @@ TidyConfig.Upgrades = {
 -- dans le jeu publié ; dans Studio, il est offert pour la session afin de le tester.
 -- Price = prix conseillé en Robux (affiché dans la boutique ; le vrai prix est celui du Creator Hub).
 TidyConfig.GamePasses = {
-	{ Id = "Carry5", Name = "+5 Carry", Icon = "🧺", Description = "Carry 5 more items, forever.", Price = 49, GamePassId = 0 },
-	{ Id = "Carry15", Name = "+15 Carry", Icon = "🛒", Description = "Carry 15 more items, forever. Stacks with +5!", Price = 129, GamePassId = 0, Best = true },
-	{ Id = "MaxSpeed", Name = "Max Speed", Icon = "⚡", Description = "Walk at top speed right away, plus an extra boost.", Price = 79, GamePassId = 0 },
-	{ Id = "InfiniteMagnet", Name = "Infinite Magnet", Icon = "🧲", Description = "Magnet unlocked with a huge 60-stud range.", Price = 99, GamePassId = 0 },
-	{ Id = "DoublePoints", Name = "x2 Points", Icon = "💰", Description = "Earn double points for everything, forever.", Price = 149, GamePassId = 0, Best = true },
-	{ Id = "VIP", Name = "VIP", Icon = "👑", Description = "Gold VIP tag, +25% points and x2 daily bonus.", Price = 199, GamePassId = 0 },
+	{ Id = "DoublePoints", Name = "x2 Points", Icon = "💰", Description = "Earn double points for everything, forever.", Price = 199, GamePassId = 0, Best = true },
+	{ Id = "Carry15", Name = "Big Basket", Icon = "🧺", Description = "Carry 15 more items at once, forever.", Price = 149, GamePassId = 0 },
+	{ Id = "InfiniteMagnet", Name = "Super Magnet", Icon = "🧲", Description = "Magnet unlocked with a huge 60-stud range.", Price = 249, GamePassId = 0 },
+	{ Id = "VIP", Name = "VIP", Icon = "👑", Description = "Gold VIP tag, +25% points and x2 daily bonus.", Price = 399, GamePassId = 0 },
 }
 
+-- Produits (achats répétables, sauf l'offre de départ).
 TidyConfig.Products = {
-	{ Id = "Deal", Name = "Starter Deal", Icon = "🎁", Description = "3,000 points + permanent +3 carry. One time only!", Price = 19, ProductId = 0, Points = 3000, OneTime = true },
-	{ Id = "Points1", Name = "1,000 Points", Icon = "🪙", Description = "A small pile of points.", Price = 25, ProductId = 0, Points = 1000 },
-	{ Id = "Points2", Name = "6,000 Points", Icon = "💵", Description = "A bag of points. Best for upgrades!", Price = 99, ProductId = 0, Points = 6000 },
-	{ Id = "Points3", Name = "30,000 Points", Icon = "💎", Description = "A vault of points. Best value!", Price = 399, ProductId = 0, Points = 30000 },
-	{ Id = "Helper", Name = "Tidy Helper", Icon = "🤖", Description = "Instantly puts away 50 items in open rooms (you get the points).", Price = 49, ProductId = 0, HelperItems = 50 },
+	{ Id = "Deal", Name = "Starter Deal", Icon = "🎁", Description = "3,000 points + permanent +3 carry. One time only!", Price = 49, ProductId = 0, Points = 3000, OneTime = true },
+	{ Id = "Points2", Name = "Points Pack", Icon = "💎", Description = "10,000 points to spend on upgrades.", Price = 99, ProductId = 0, Points = 10000 },
+	{ Id = "Helper", Name = "Tidy Helper", Icon = "🤖", Description = "Instantly puts away 50 items in open rooms (you get the points).", Price = 25, ProductId = 0, HelperItems = 50 },
 }
 
 -- Offre limitée (badge "DEAL" en haut à droite) : durée de l'offre à chaque session, en secondes.
@@ -330,7 +325,7 @@ TidyConfig.QuestTemplates = {
 	{ Kind = "Earn", Target = 2000, Reward = 500, Text = "Earn %d points" },
 	{ Kind = "Earn", Target = 6000, Reward = 1200, Text = "Earn %d points" },
 }
-TidyConfig.QuestsPerDay = 3
+TidyConfig.QuestsPerDay = 0 -- quêtes du jour désactivées
 
 ---------------------------------------------------------------------------
 -- Hall d'accueil : files d'attente pour partir à plusieurs
@@ -349,8 +344,20 @@ TidyConfig.TestUnlockAll = true
 TidyConfig.TestPoints = 1000000
 
 -- Musique d'ambiance. Mettez ici l'identifiant de la musique après l'avoir importée sur Roblox,
--- au format "rbxassetid://123456789". Laissez vide pour jouer sans musique.
+-- au format "rbxassetid://123456789" pour remplacer les musiques ci-dessous (vide = musiques par niveau).
 TidyConfig.MusicSoundId = ""
+-- Musiques d'ambiance libres de droits de la bibliothèque audio de Roblox (utilisables dans tous les jeux).
+-- Une musique pour le hall et une par niveau. Pour en changer : collez un autre numéro "rbxassetid://...".
+-- Si MusicSoundId est rempli, il remplace toutes ces musiques.
+TidyConfig.Music = {
+	Lobby = "rbxassetid://1841998846", -- Lobby Soirée
+	Warehouse = "rbxassetid://1836057733", -- Leisure Simulation Game
+	Agency = "rbxassetid://9044565954", -- Smooth Vibes
+	Headquarters = "rbxassetid://1841647093", -- Life in an Elevator
+}
+-- Images des cartes du choix de niveau (facultatif) : collez le numéro d'une image importée, sinon
+-- la carte affiche une illustration faite avec l'interface.
+TidyConfig.MapImages = { Warehouse = "", Agency = "", Headquarters = "" }
 TidyConfig.MusicVolume = 0.3
 
 -- Son joué quand un objet est rangé (son intégré à Roblox).
@@ -458,6 +465,11 @@ function TidyConfig.GetRank(lifetimeItems)
 end
 
 -- Nom précis d'un objet selon son numéro (ex. "Tomato Soup").
+-- Un niveau est-il débloqué ? cleared = table { [idDuNiveau] = true } des niveaux terminés.
+function TidyConfig.IsMapUnlocked(map, cleared)
+	return map.Requires == nil or (cleared ~= nil and cleared[map.Requires] == true)
+end
+
 function TidyConfig.GetVariantName(itemType, index)
 	local info = TidyConfig.ItemTypes[itemType]
 	if not info then

@@ -2,10 +2,10 @@
 -- Emplacement : StarterPlayer > StarterPlayerScripts
 -- Écran du joueur et commandes, style "verre sombre" (panneaux bleu nuit, boutons colorés en relief) :
 --  * une seule famille de polices : Fredoka One (titres, chiffres, boutons) et Builder Sans (textes) ;
---  * menu en bas à gauche (en haut à gauche sur mobile) : points, rang, Upgrades, Shop, Quests, Settings ;
+--  * menu en bas à gauche (à gauche au milieu sur mobile) : points, rang, Upgrades, Shop, Settings ;
 --  * chronomètre, consigne, compteurs (objets rangés, panier), offre limitée "DEAL" ;
---  * carte de l'objet en main, barre d'outils à 4 cases (main, aimant, loupe, rangement rapide) ;
---  * 6 cartes de tutoriel à l'entrée d'un niveau ;
+--  * carte de l'objet en main, barre d'outils à 2 cases (main, aimant) ;
+--  * 6 cartes de tutoriel affichées sur un panneau à l'entrée de chaque niveau ;
 --  * fenêtres : améliorations, boutique Robux, quêtes du jour, paramètres, fin de niveau,
 --    choix du niveau dans les files d'attente du hall, rejoindre un ami ;
 --  * clic / appui pour ramasser et ranger, aimant, loupe, effets et sons.
@@ -219,6 +219,9 @@ local function iconBadge(parent, properties, color, icon)
 	addCorner(frame, UDim.new(1, 0))
 	addGradient(frame, Color3.fromRGB(255, 255, 255), Color3.fromRGB(170, 170, 185))
 	addStroke(frame, THEME.Edge, 2, 0.6)
+	-- Reflet brillant en haut à gauche.
+	local shine = make("Frame", { Name = "Shine", Position = UDim2.fromScale(0.18, 0.1), Size = UDim2.fromScale(0.38, 0.22), Rotation = -25, BackgroundColor3 = THEME.White, BackgroundTransparency = 0.6, BorderSizePixel = 0, ZIndex = frame.ZIndex, Parent = frame })
+	addCorner(shine, UDim.new(1, 0))
 	label(frame, { Name = "Icon", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(0.66, 0.66), Text = icon, MaxText = 60, ZIndex = frame.ZIndex + 1 })
 	return frame
 end
@@ -259,17 +262,21 @@ local screenGui = make("ScreenGui", {
 	ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
 	Parent = playerGui,
 })
--- L'interface s'adapte à la taille de l'écran (petits écrans et téléphones).
-local uiScale = make("UIScale", { Scale = 1, Parent = screenGui })
+-- L'interface s'adapte à la taille de l'écran : chaque bloc est agrandi / réduit autour de son
+-- point d'ancrage, donc rien ne sort de l'écran (avant, les compteurs de droite étaient coupés).
 local function updateUiScale()
 	local camera = Workspace.CurrentCamera
 	local viewport = camera and camera.ViewportSize or Vector2.new(1920, 1080)
-	local scale = math.min(viewport.X / 1500, viewport.Y / 860)
-	uiScale.Scale = math.clamp(scale, 0.5, 1.1)
-end
-updateUiScale()
-if Workspace.CurrentCamera then
-	Workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateUiScale)
+	local scale = math.clamp(math.min(viewport.X / 1500, viewport.Y / 860), 0.5, 1.05)
+	for _, child in screenGui:GetChildren() do
+		if child:IsA("GuiObject") then
+			local uiScale = child:FindFirstChild("AutoScale")
+			if not uiScale then
+				uiScale = make("UIScale", { Name = "AutoScale", Parent = child })
+			end
+			uiScale.Scale = scale
+		end
+	end
 end
 
 local hud = {}
@@ -279,28 +286,34 @@ hud.Timer = glass(screenGui, { Name = "Timer", AnchorPoint = Vector2.new(0.5, 0)
 label(hud.Timer, { Name = "Icon", Position = UDim2.new(0, 14, 0, 9), Size = UDim2.new(0, 36, 0, 36), Text = "⏱️", TextSize = 26 })
 hud.TimerText = label(hud.Timer, { Name = "Time", Position = UDim2.new(0, 50, 0, 6), Size = UDim2.new(1, -62, 0, 42), Text = "00:00", Font = FONT_TITLE, TextSize = 32, Outline = 2 })
 
-hud.Hint = outlined(screenGui, {
+-- Consigne dans une pastille sombre (lisible sur tous les décors), la pièce en petit dessous.
+hud.Hint = label(screenGui, {
 	Name = "Hint",
 	AnchorPoint = Vector2.new(0.5, 0),
 	Position = UDim2.new(0.5, 0, 0, 72),
-	Size = UDim2.new(0, 760, 0, 26),
+	Size = UDim2.new(0, 0, 0, 34),
+	AutomaticSize = Enum.AutomaticSize.X,
 	Text = "",
 	Font = FONT_HEAVY,
-	TextSize = 21,
-	TextColor3 = THEME.Yellow,
+	TextSize = 18,
+	TextColor3 = THEME.White,
 })
-hud.Area = outlined(screenGui, { Name = "Area", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 100), Size = UDim2.new(0, 520, 0, 22), Text = "", Font = FONT, TextSize = 17, TextColor3 = THEME.Muted })
+hud.Hint.BackgroundTransparency = 0.25
+hud.Hint.BackgroundColor3 = THEME.Dark
+addCorner(hud.Hint, UDim.new(1, 0))
+make("UIPadding", { PaddingLeft = UDim.new(0, 18), PaddingRight = UDim.new(0, 18), Parent = hud.Hint })
+hud.Area = outlined(screenGui, { Name = "Area", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 110), Size = UDim2.new(0, 520, 0, 20), Text = "", Font = FONT, TextSize = 15, TextColor3 = THEME.Muted, Outline = 1.5 })
 
 -- Compteurs en haut à droite : objets rangés et panier.
 local function counter(name, y, icon, color, caption)
-	local holder = glass(screenGui, { Name = name, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -16, 0, y), Size = UDim2.new(0, 210, 0, 58) }, 29)
-	iconBadge(holder, { Name = "Badge", Position = UDim2.new(0, 6, 0, 6), Size = UDim2.new(0, 46, 0, 46) }, color, icon)
-	label(holder, { Name = "Caption", Position = UDim2.new(0, 62, 0, 6), Size = UDim2.new(1, -76, 0, 16), Text = caption, Font = FONT_HEAVY, TextSize = 13, TextColor3 = THEME.Muted, TextXAlignment = Enum.TextXAlignment.Left })
-	local value = label(holder, { Name = "Value", Position = UDim2.new(0, 62, 0, 20), Size = UDim2.new(1, -76, 0, 32), Text = "0/0", Font = FONT_TITLE, TextSize = 27, TextXAlignment = Enum.TextXAlignment.Left, Outline = 1.5 })
+	local holder = glass(screenGui, { Name = name, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -20, 0, y), Size = UDim2.new(0, 190, 0, 52) }, 26)
+	iconBadge(holder, { Name = "Badge", Position = UDim2.new(0, 6, 0, 6), Size = UDim2.new(0, 40, 0, 40) }, color, icon)
+	label(holder, { Name = "Caption", Position = UDim2.new(0, 54, 0, 6), Size = UDim2.new(1, -66, 0, 14), Text = caption, Font = FONT_HEAVY, TextSize = 12, TextColor3 = THEME.Muted, TextXAlignment = Enum.TextXAlignment.Left })
+	local value = label(holder, { Name = "Value", Position = UDim2.new(0, 54, 0, 19), Size = UDim2.new(1, -66, 0, 28), Text = "0/0", Font = FONT_TITLE, TextSize = 24, TextXAlignment = Enum.TextXAlignment.Left, Outline = 1.5 })
 	return holder, value
 end
-hud.PlacedHolder, hud.Placed = counter("PlacedCounter", 10, "🗄️", THEME.Green, "TIDIED UP")
-hud.BagHolder, hud.Bag = counter("BagCounter", 76, "🧺", THEME.Blue, "BASKET")
+hud.PlacedHolder, hud.Placed = counter("PlacedCounter", 12, "🗄️", THEME.Green, "TIDIED UP")
+hud.BagHolder, hud.Bag = counter("BagCounter", 72, "🧺", THEME.Blue, "BASKET")
 
 -- Offre limitée "DEAL" (carte à droite, compte à rebours).
 do
@@ -308,7 +321,7 @@ do
 	hud.Deal = make("TextButton", {
 		Name = "DealBadge",
 		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, -16, 0, 146),
+		Position = UDim2.new(1, -20, 0, 134),
 		Size = UDim2.new(0, 210, 0, 128),
 		BackgroundColor3 = THEME.Panel,
 		BackgroundTransparency = 0.06,
@@ -339,8 +352,8 @@ end
 hud.Menu = make("Frame", {
 	Name = "Menu",
 	AnchorPoint = if isTouchOnly then Vector2.new(0, 0.5) else Vector2.new(0, 1),
-	Position = if isTouchOnly then UDim2.new(0, 14, 0.42, 0) else UDim2.new(0, 16, 1, -16),
-	Size = UDim2.new(0, 236, 0, 330),
+	Position = if isTouchOnly then UDim2.new(0, 20, 0.42, 0) else UDim2.new(0, 20, 1, -20),
+	Size = UDim2.new(0, 252, 0, 260),
 	BackgroundTransparency = 1,
 	Parent = screenGui,
 })
@@ -349,33 +362,32 @@ make("UIListLayout", { Padding = UDim.new(0, 10), SortOrder = Enum.SortOrder.Lay
 hud.LobbyButton = button(hud.Menu, { Name = "LobbyButton", LayoutOrder = 1, Size = UDim2.new(0, 160, 0, 40), Text = "🏠 Lobby", TextSize = 20 }, "Blue")
 hud.RoomCode = outlined(hud.Menu, { Name = "RoomCode", LayoutOrder = 2, Size = UDim2.new(1, 0, 0, 20), Text = "", Font = FONT, TextSize = 16, TextXAlignment = Enum.TextXAlignment.Left, Visible = false })
 
-hud.PointsPanel = glass(hud.Menu, { Name = "PointsPanel", LayoutOrder = 3, Size = UDim2.new(1, 0, 0, 72) }, 18)
-iconBadge(hud.PointsPanel, { Name = "Coin", Position = UDim2.new(0, 10, 0, 10), Size = UDim2.new(0, 52, 0, 52) }, THEME.Gold, "🪙")
-hud.Points = label(hud.PointsPanel, { Name = "Points", Position = UDim2.new(0, 72, 0, 8), Size = UDim2.new(1, -82, 0, 36), Text = "0", Font = FONT_TITLE, TextSize = 31, TextXAlignment = Enum.TextXAlignment.Left, Outline = 2 })
-hud.Rank = label(hud.PointsPanel, { Name = "Rank", Position = UDim2.new(0, 72, 0, 44), Size = UDim2.new(1, -82, 0, 18), Text = "Intern", Font = FONT, TextSize = 15, TextColor3 = THEME.Muted, TextXAlignment = Enum.TextXAlignment.Left })
+hud.PointsPanel = glass(hud.Menu, { Name = "PointsPanel", LayoutOrder = 3, Size = UDim2.new(1, 0, 0, 60) }, 16)
+iconBadge(hud.PointsPanel, { Name = "Coin", Position = UDim2.new(0, 8, 0, 8), Size = UDim2.new(0, 44, 0, 44) }, THEME.Gold, "🪙")
+hud.Points = label(hud.PointsPanel, { Name = "Points", Position = UDim2.new(0, 60, 0, 6), Size = UDim2.new(1, -70, 0, 30), Text = "0", Font = FONT_TITLE, TextSize = 27, TextXAlignment = Enum.TextXAlignment.Left, Outline = 2 })
+hud.Rank = label(hud.PointsPanel, { Name = "Rank", Position = UDim2.new(0, 60, 0, 36), Size = UDim2.new(1, -70, 0, 16), Text = "Intern", Font = FONT, TextSize = 14, TextColor3 = THEME.Muted, TextXAlignment = Enum.TextXAlignment.Left })
 
-local menuGrid = make("Frame", { Name = "Buttons", LayoutOrder = 4, Size = UDim2.new(1, 0, 0, 178), BackgroundTransparency = 1, Parent = hud.Menu })
-make("UIGridLayout", { CellSize = UDim2.new(0, 113, 0, 84), CellPadding = UDim2.new(0, 10, 0, 10), SortOrder = Enum.SortOrder.LayoutOrder, Parent = menuGrid })
+local menuGrid = make("Frame", { Name = "Buttons", LayoutOrder = 4, Size = UDim2.new(1, 0, 0, 76), BackgroundTransparency = 1, Parent = hud.Menu })
+make("UIGridLayout", { CellSize = UDim2.new(0, 76, 0, 76), CellPadding = UDim2.new(0, 12, 0, 0), SortOrder = Enum.SortOrder.LayoutOrder, Parent = menuGrid })
 
 local sideButtons = {}
 local function sideButton(name, text, key, order, icon, style)
 	local colors = BUTTON_STYLES[style]
 	local b = make("TextButton", { Name = name .. "Button", LayoutOrder = order, BackgroundColor3 = colors[1], BorderSizePixel = 0, Text = "", AutoButtonColor = true, Parent = menuGrid })
-	addCorner(b, UDim.new(0, 18))
+	addCorner(b, UDim.new(0, 16))
 	addGradient(b, Color3.fromRGB(255, 255, 255), Color3.fromRGB(190, 190, 205))
-	local stroke = addStroke(b, colors[2], 3)
-	label(b, { Name = "Icon", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 6), Size = UDim2.new(0, 44, 0, 44), Text = icon, TextSize = 34 })
-	label(b, { Name = "Label", Position = UDim2.new(0, 4, 1, -32), Size = UDim2.new(1, -8, 0, 26), Text = text, Font = FONT_TITLE, TextSize = 20, Outline = 2 }).Outline.Color = colors[2]
-	local badge = make("Frame", { Name = "KeyBadge", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -6, 0, 6), Size = UDim2.new(0, 24, 0, 24), BackgroundColor3 = THEME.Dark, BackgroundTransparency = 0.35, BorderSizePixel = 0, Visible = not isTouchOnly, Parent = b })
+	local stroke = addStroke(b, colors[2], 2.5)
+	label(b, { Name = "Icon", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 6), Size = UDim2.new(0, 36, 0, 36), Text = icon, TextSize = 29 })
+	label(b, { Name = "Label", Position = UDim2.new(0, 2, 1, -25), Size = UDim2.new(1, -4, 0, 20), Text = text, Font = FONT_TITLE, TextSize = 15, Outline = 1.5 }).Outline.Color = colors[2]
+	local badge = make("Frame", { Name = "KeyBadge", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -4, 0, 4), Size = UDim2.new(0, 20, 0, 20), BackgroundColor3 = THEME.Dark, BackgroundTransparency = 0.35, BorderSizePixel = 0, Visible = not isTouchOnly, Parent = b })
 	addCorner(badge, UDim.new(0, 7))
-	label(badge, { Size = UDim2.fromScale(1, 1), Text = keyName(key), Font = FONT_TITLE, TextSize = 15 })
+	label(badge, { Size = UDim2.fromScale(1, 1), Text = keyName(key), Font = FONT_TITLE, TextSize = 13 })
 	sideButtons[name] = { Button = b, Stroke = stroke }
 	return b
 end
 sideButton("Upgrades", "Upgrades", Enum.KeyCode.G, 1, "⚡", "Green")
 sideButton("Shop", "Shop", Enum.KeyCode.F, 2, "🛒", "Gold")
-sideButton("Quests", "Quests", Enum.KeyCode.J, 3, "📜", "Blue")
-sideButton("Settings", "Settings", Enum.KeyCode.R, 4, "⚙️", "Purple")
+sideButton("Settings", "Settings", Enum.KeyCode.R, 3, "⚙️", "Purple")
 -- Bord arc-en-ciel animé sur le bouton de la boutique.
 local shopGradient = make("UIGradient", {
 	Color = ColorSequence.new({
@@ -391,31 +403,29 @@ sideButtons.Shop.Stroke.Color = THEME.White
 sideButtons.Shop.Stroke.Thickness = 3.5
 
 -- Carte de l'objet en main et barre d'outils (en bas au centre).
-hud.ItemCard = glass(screenGui, { Name = "ItemCard", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -116), Size = UDim2.new(0, 400, 0, 82) }, 18)
-make("Frame", { Name = "Accent", Position = UDim2.new(0, 14, 0, 14), Size = UDim2.new(0, 5, 1, -28), BackgroundColor3 = THEME.Gold, BorderSizePixel = 0, Parent = hud.ItemCard })
-hud.ItemSection = label(hud.ItemCard, { Name = "Section", Position = UDim2.new(0, 30, 0, 12), Size = UDim2.new(1, -120, 0, 18), Text = "", Font = FONT_HEAVY, TextSize = 15, TextColor3 = THEME.Gold, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd })
-hud.ItemName = label(hud.ItemCard, { Name = "ItemName", Position = UDim2.new(0, 30, 0, 32), Size = UDim2.new(1, -44, 0, 36), Text = "", Font = FONT_TITLE, TextSize = 27, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Outline = 1.5 })
-hud.ItemCount = label(hud.ItemCard, { Name = "Count", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -14, 0, 12), Size = UDim2.new(0, 80, 0, 18), Text = "", Font = FONT_TITLE, TextSize = 16, TextColor3 = THEME.Muted, TextXAlignment = Enum.TextXAlignment.Right })
+hud.ItemCard = glass(screenGui, { Name = "ItemCard", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -106), Size = UDim2.new(0, 340, 0, 66) }, 16)
+make("Frame", { Name = "Accent", Position = UDim2.new(0, 12, 0, 12), Size = UDim2.new(0, 4, 1, -24), BackgroundColor3 = THEME.Gold, BorderSizePixel = 0, Parent = hud.ItemCard })
+hud.ItemSection = label(hud.ItemCard, { Name = "Section", Position = UDim2.new(0, 26, 0, 9), Size = UDim2.new(1, -110, 0, 16), Text = "", Font = FONT_HEAVY, TextSize = 13, TextColor3 = THEME.Gold, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd })
+hud.ItemName = label(hud.ItemCard, { Name = "ItemName", Position = UDim2.new(0, 26, 0, 26), Size = UDim2.new(1, -40, 0, 30), Text = "", Font = FONT_TITLE, TextSize = 23, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Outline = 1.5 })
+hud.ItemCount = label(hud.ItemCard, { Name = "Count", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -12, 0, 9), Size = UDim2.new(0, 80, 0, 16), Text = "", Font = FONT_TITLE, TextSize = 14, TextColor3 = THEME.Muted, TextXAlignment = Enum.TextXAlignment.Right })
 
-hud.Hotbar = make("Frame", { Name = "Hotbar", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -14), Size = UDim2.new(0, 4 * 92, 0, 92), BackgroundTransparency = 1, Parent = screenGui })
+hud.Hotbar = make("Frame", { Name = "Hotbar", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -18), Size = UDim2.new(0, 2 * 86, 0, 80), BackgroundTransparency = 1, Parent = screenGui })
 make("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Center, Padding = UDim.new(0, 10), Parent = hud.Hotbar })
 local TOOLS = {
 	{ Id = "Hand", Key = Enum.KeyCode.One, Number = 1, Icon = "🖐️", Name = "Hand" },
 	{ Id = "Magnet", Key = Enum.KeyCode.Two, Number = 2, Icon = "🧲", Name = "Magnet" },
-	{ Id = "Magnifier", Key = Enum.KeyCode.Three, Number = 3, Icon = "🔍", Name = "Magnifier" },
-	{ Id = "QuickStock", Key = Enum.KeyCode.Four, Number = 4, Icon = "🗄️", Name = "Quick Stock" },
 }
 local toolSlots = {}
 for _, tool in TOOLS do
-	local slot = make("TextButton", { Name = tool.Id, Size = UDim2.new(0, 84, 0, 88), BackgroundColor3 = THEME.Panel, BackgroundTransparency = 0.06, BorderSizePixel = 0, Text = "", AutoButtonColor = true, Parent = hud.Hotbar })
+	local slot = make("TextButton", { Name = tool.Id, Size = UDim2.new(0, 76, 0, 80), BackgroundColor3 = THEME.Panel, BackgroundTransparency = 0.06, BorderSizePixel = 0, Text = "", AutoButtonColor = true, Parent = hud.Hotbar })
 	addCorner(slot, UDim.new(0, 18))
 	addGradient(slot, Color3.fromRGB(255, 255, 255), Color3.fromRGB(120, 120, 150))
 	local stroke = addStroke(slot, THEME.Edge, 2, 0.8)
 	local badge = make("Frame", { Name = "Number", Position = UDim2.new(0, 6, 0, 6), Size = UDim2.new(0, 22, 0, 22), BackgroundColor3 = THEME.Dark, BackgroundTransparency = 0.3, BorderSizePixel = 0, Parent = slot })
 	addCorner(badge, UDim.new(1, 0))
 	label(badge, { Size = UDim2.fromScale(1, 1), Text = tostring(tool.Number), Font = FONT_TITLE, TextSize = 14 })
-	label(slot, { Name = "Icon", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 10), Size = UDim2.new(0, 48, 0, 48), Text = tool.Icon, TextSize = 38 })
-	label(slot, { Name = "ToolName", Position = UDim2.new(0, 2, 1, -24), Size = UDim2.new(1, -4, 0, 18), Text = tool.Name, Font = FONT_HEAVY, TextSize = 13, TextColor3 = THEME.Muted })
+	label(slot, { Name = "Icon", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 10), Size = UDim2.new(0, 42, 0, 42), Text = tool.Icon, TextSize = 33 })
+	label(slot, { Name = "ToolName", Position = UDim2.new(0, 2, 1, -22), Size = UDim2.new(1, -4, 0, 16), Text = tool.Name, Font = FONT_HEAVY, TextSize = 12, TextColor3 = THEME.Muted })
 	local lock = make("Frame", { Name = "Lock", Size = UDim2.fromScale(1, 1), BackgroundColor3 = THEME.Dark, BackgroundTransparency = 0.35, BorderSizePixel = 0, ZIndex = 3, Parent = slot })
 	addCorner(lock, UDim.new(0, 18))
 	label(lock, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.45), Size = UDim2.new(0, 34, 0, 34), Text = "🔒", TextSize = 28, ZIndex = 4 })
@@ -429,13 +439,13 @@ hud.DropButton = button(hud.TouchBar, { Name = "Drop", AnchorPoint = Vector2.new
 hud.NextButton = button(hud.TouchBar, { Name = "Next", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, 0, 0, 0), Size = UDim2.new(0, 60, 1, 0), Text = ">" }, "Purple")
 
 -- Aide des commandes (en bas à droite, ordinateur seulement).
-hud.Controls = glass(screenGui, { Name = "Controls", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -16, 1, -16), Size = UDim2.new(0, 214, 0, 104), BackgroundTransparency = 0.25, Visible = not isTouchOnly }, 14)
+hud.Controls = glass(screenGui, { Name = "Controls", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -20, 1, -20), Size = UDim2.new(0, 200, 0, 104), BackgroundTransparency = 0.45, Visible = not isTouchOnly }, 14)
 do
 	local lines = {
 		{ keyName(Enum.KeyCode.Q), "Drop item" },
 		{ "Wheel", "Switch item" },
 		{ keyName(Enum.KeyCode.Y), "Free mouse" },
-		{ keyName(Enum.KeyCode.M), "Music on / off" },
+		{ "M", "Music on / off" },
 	}
 	for i, line in lines do
 		local y = 10 + (i - 1) * 22
@@ -474,14 +484,14 @@ end
 ---------------------------------------------------------------------------
 local panels = {}
 local function makeWindow(name, title, size, icon)
-	local window = glass(screenGui, { Name = name .. "Window", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = size, Visible = false, ZIndex = 5 }, 22)
+	local window = glass(screenGui, { Name = name .. "Window", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = size, Visible = false, ZIndex = 5, BackgroundTransparency = 0 }, 22)
 	local header = make("Frame", { Name = "Header", Size = UDim2.new(1, 0, 0, 68), BackgroundTransparency = 1, ZIndex = 5, Parent = window })
 	if icon then
 		iconBadge(header, { Name = "Badge", Position = UDim2.new(0, 16, 0, 12), Size = UDim2.new(0, 46, 0, 46), ZIndex = 6 }, THEME.Gold, icon)
 	end
 	label(header, { Name = "Title", Position = UDim2.new(0, if icon then 74 else 22, 0, 14), Size = UDim2.new(1, -150, 0, 42), Text = title, Font = FONT_TITLE, TextSize = 32, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 6, Outline = 2 })
 	make("Frame", { Name = "Line", Position = UDim2.new(0, 16, 1, -2), Size = UDim2.new(1, -32, 0, 2), BackgroundColor3 = THEME.White, BackgroundTransparency = 0.86, BorderSizePixel = 0, ZIndex = 6, Parent = header })
-	local close = button(header, { Name = "Close", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -14, 0, 14), Size = UDim2.new(0, 42, 0, 42), Text = "✕", TextSize = 22, ZIndex = 6 }, "Red")
+	local close = button(header, { Name = "Close", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -14, 0, 14), Size = UDim2.new(0, 42, 0, 42), Text = "X", TextSize = 24, ZIndex = 6 }, "Red")
 	close.UICorner.CornerRadius = UDim.new(1, 0)
 	close.Activated:Connect(function()
 		window.Visible = false
@@ -511,10 +521,22 @@ end
 ---------------------------------------------------------------------------
 local settings = { Music = TidyConfig.MusicVolume, Sfx = true, Tutorial = true, Controls = true, LowGraphics = false }
 local musicMuted = false
-local musicSound = nil
-if TidyConfig.MusicSoundId ~= "" then
-	musicSound = make("Sound", { Name = "ChillMusic", SoundId = TidyConfig.MusicSoundId, Looped = true, Volume = settings.Music, Parent = SoundService })
-	musicSound:Play()
+-- Une musique pour le hall et une par niveau (TidyConfig.Music), qui change toute seule.
+local musicSound = make("Sound", { Name = "ChillMusic", Looped = true, Volume = settings.Music, Parent = SoundService })
+local function musicFor(mapId)
+	if TidyConfig.MusicSoundId ~= "" then
+		return TidyConfig.MusicSoundId
+	end
+	local list = TidyConfig.Music or {}
+	return list[mapId or "Lobby"] or list.Lobby or ""
+end
+local function updateMusic()
+	local playing = player:GetAttribute("InMap") == true
+	local id = musicFor(if playing then ReplicatedStorage:GetAttribute("ActiveMap") else "Lobby")
+	if id ~= "" and musicSound.SoundId ~= id then
+		musicSound.SoundId = id
+		musicSound:Play()
+	end
 end
 
 local function applySettings()
@@ -635,7 +657,11 @@ end
 ---------------------------------------------------------------------------
 -- Tutoriel : 6 cartes à l'entrée d'un niveau (images 3D faites de pièces)
 ---------------------------------------------------------------------------
-local tutorial = make("Frame", { Name = "Tutorial", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, -6), Size = UDim2.new(0, 780, 0, 492), BackgroundTransparency = 1, Visible = false, ZIndex = 8, Parent = screenGui })
+-- Le tutoriel est affiché sur un grand panneau ("TutorialBoard") posé dans chaque niveau, face au point d'arrivée.
+-- Toile de 840 x 600 pixels (panneau de 14 x 10 studs, 60 pixels par stud).
+local tutorialSurface = make("SurfaceGui", { Name = "TutorialBoardGui", Face = Enum.NormalId.Front, SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud, PixelsPerStud = 60, LightInfluence = 0.2, Enabled = false, ResetOnSpawn = false, Parent = playerGui })
+make("Frame", { Name = "Background", Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(30, 30, 66), BorderSizePixel = 0, Parent = tutorialSurface })
+local tutorial = make("Frame", { Name = "Tutorial", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -24), Size = UDim2.new(0, 780, 0, 492), BackgroundTransparency = 1, Visible = true, ZIndex = 8, Parent = tutorialSurface })
 outlined(tutorial, { Name = "Title", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 0, -8), Size = UDim2.new(1, 0, 0, 40), Text = "HOW TO PLAY", Font = FONT_TITLE, TextSize = 38, TextColor3 = THEME.Yellow, Outline = 3, ZIndex = 8 })
 
 local function viewportScene(parent, build, cameraCFrame)
@@ -756,9 +782,6 @@ for index, texts in CARD_TEXTS do
 	end
 	label(card, { Name = "Caption", Position = UDim2.new(0, 14, 0, 178), Size = UDim2.new(1, -28, 0, 56), Text = texts[2], Font = FONT, TextSize = 16, TextColor3 = THEME.Muted, TextWrapped = true, TextYAlignment = Enum.TextYAlignment.Top, ZIndex = 9 })
 end
-local tutorialGo = button(tutorial, { Name = "Go", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 1, 6), Size = UDim2.new(0, 240, 0, 56), Text = "Let's go!", TextSize = 28, ZIndex = 9 }, "Green")
-local tutorialHide = make("TextButton", { Name = "DontShow", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, 0, 1, 20), Size = UDim2.new(0, 200, 0, 26), BackgroundTransparency = 1, Text = "Don't show again", Font = FONT, TextSize = 17, TextColor3 = THEME.Muted, ZIndex = 9, Parent = tutorial })
-make("UIStroke", { Color = THEME.Ink, Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual, Parent = tutorialHide })
 
 ---------------------------------------------------------------------------
 -- Fenêtre des améliorations : icône, nom, description, barre de niveaux, prix
@@ -832,13 +855,54 @@ local function shopTile(grid, kind, entry, order, ribbonText)
 			showToast(message, if ok then "purchase" else "error")
 		end
 	end)
+	-- Survol : la carte grossit un peu et son bord s'illumine.
+	local hoverScale = make("UIScale", { Name = "Hover", Scale = 1, Parent = tile })
+	local edge = tile:FindFirstChild("Edge")
+	tile.MouseEnter:Connect(function()
+		TweenService:Create(hoverScale, TweenInfo.new(0.12), { Scale = 1.04 }):Play()
+		if edge then
+			edge.Color, edge.Transparency, edge.Thickness = THEME.Gold, 0, 3
+		end
+	end)
+	tile.MouseLeave:Connect(function()
+		TweenService:Create(hoverScale, TweenInfo.new(0.12), { Scale = 1 }):Play()
+		if edge then
+			edge.Color, edge.Transparency, edge.Thickness = THEME.Edge, 0.88, 1.5
+		end
+	end)
 	shopTiles[kind .. entry.Id] = { Buy = buy, Entry = entry, Kind = kind }
 end
 for i, pass in TidyConfig.GamePasses do
-	shopTile(passesGrid, "Pass", pass, i, if i == 1 then "NEW!" elseif pass.Best then "BEST!" else nil)
+	shopTile(passesGrid, "Pass", pass, i, if pass.Best then "BEST!" elseif pass.Id == "VIP" then "VIP" else nil)
 end
-for i, product in TidyConfig.Products do
-	shopTile(productsGrid, "Product", product, i, if product.OneTime then "DEAL!" else nil)
+local productOrder = 0
+for _, product in TidyConfig.Products do
+	if not product.OneTime then
+		productOrder += 1
+		shopTile(productsGrid, "Product", product, productOrder, nil)
+	end
+end
+-- Meilleure offre mise en avant tout en haut : l'offre de départ (cachée une fois achetée).
+local featuredDeal = nil
+do
+	local deal = TidyConfig.GetProduct("Deal")
+	if deal then
+		featuredDeal = make("Frame", { Name = "FeaturedDeal", LayoutOrder = 0, Size = UDim2.new(1, -20, 0, 126), BackgroundColor3 = THEME.Pink, BorderSizePixel = 0, ZIndex = 7, Parent = shopScroll })
+		addCorner(featuredDeal, UDim.new(0, 18))
+		make("UIGradient", { Color = ColorSequence.new(THEME.Pink, THEME.Purple), Rotation = 0, Parent = featuredDeal })
+		addStroke(featuredDeal, THEME.Gold, 3)
+		iconBadge(featuredDeal, { Name = "Badge", Position = UDim2.new(0, 20, 0.5, -46), Size = UDim2.new(0, 92, 0, 92), ZIndex = 8 }, THEME.Gold, deal.Icon)
+		label(featuredDeal, { Name = "Tag", Position = UDim2.new(0, 130, 0, 16), Size = UDim2.new(0, 300, 0, 18), Text = "★ BEST VALUE • ONE TIME ONLY", Font = FONT_HEAVY, TextSize = 15, TextColor3 = THEME.Yellow, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 8 })
+		label(featuredDeal, { Name = "Name", Position = UDim2.new(0, 130, 0, 36), Size = UDim2.new(0, 360, 0, 40), Text = string.upper(deal.Name), Font = FONT_TITLE, TextSize = 34, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 8, Outline = 2 })
+		label(featuredDeal, { Name = "Desc", Position = UDim2.new(0, 130, 0, 80), Size = UDim2.new(0, 380, 0, 20), Text = deal.Description, Font = FONT, TextSize = 16, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 8 })
+		local buyDeal = button(featuredDeal, { Name = "Buy", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -22, 0.5, 0), Size = UDim2.new(0, 170, 0, 58), Text = ROBUX .. " " .. deal.Price, TextSize = 28, ZIndex = 8 }, "Green")
+		buyDeal.Activated:Connect(function()
+			local ok, message = shopFunction:InvokeServer("Product", deal.Id)
+			if message and message ~= "" then
+				showToast(message, if ok then "purchase" else "error")
+			end
+		end)
+	end
 end
 -- Fait défiler la boutique jusqu'à une section ("Passes" ou "Products").
 local function showShopTab(name)
@@ -852,27 +916,6 @@ end
 showShopTab("Passes")
 
 ---------------------------------------------------------------------------
--- Quêtes du jour
----------------------------------------------------------------------------
-local questsWindow = makeWindow("Quests", "DAILY QUESTS", UDim2.new(0, 580, 0, 420), "📜")
-local questRows = {}
-for i = 1, TidyConfig.QuestsPerDay do
-	local r = row(questsWindow, { Name = "Quest" .. i, Position = UDim2.new(0, 16, 0, 84 + (i - 1) * 96), Size = UDim2.new(1, -32, 0, 86), ZIndex = 6 })
-	local text = label(r, { Name = "Text", Position = UDim2.new(0, 16, 0, 10), Size = UDim2.new(1, -160, 0, 26), Text = "", Font = FONT_HEAVY, TextSize = 19, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, ZIndex = 7 })
-	local rewardPill = make("Frame", { Name = "RewardPill", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -14, 0, 9), Size = UDim2.new(0, 120, 0, 28), BackgroundColor3 = THEME.Dark, BackgroundTransparency = 0.4, BorderSizePixel = 0, ZIndex = 7, Parent = r })
-	addCorner(rewardPill, UDim.new(1, 0))
-	local reward = label(rewardPill, { Name = "Reward", Size = UDim2.fromScale(1, 1), Text = "", Font = FONT_TITLE, TextSize = 17, TextColor3 = THEME.Gold, ZIndex = 8 })
-	local bar = make("Frame", { Name = "Bar", Position = UDim2.new(0, 16, 0, 48), Size = UDim2.new(1, -32, 0, 24), BackgroundColor3 = THEME.Dark, BackgroundTransparency = 0.3, BorderSizePixel = 0, ZIndex = 7, Parent = r })
-	addCorner(bar, UDim.new(1, 0))
-	local fill = make("Frame", { Name = "Fill", Size = UDim2.new(0, 0, 1, 0), BackgroundColor3 = THEME.Green, BorderSizePixel = 0, ZIndex = 8, Parent = bar })
-	addCorner(fill, UDim.new(1, 0))
-	addGradient(fill, Color3.fromRGB(255, 255, 255), Color3.fromRGB(190, 190, 200))
-	local progress = label(bar, { Name = "Progress", Size = UDim2.fromScale(1, 1), Text = "", Font = FONT_TITLE, TextSize = 16, ZIndex = 9, Outline = 1.5 })
-	questRows[i] = { Row = r, Text = text, Reward = reward, Fill = fill, Progress = progress }
-end
-label(questsWindow, { Name = "Footer", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -14), Size = UDim2.new(1, -40, 0, 20), Text = "New quests every day. Rewards are given automatically!", Font = FONT_LIGHT, TextSize = 16, TextColor3 = THEME.Muted, ZIndex = 6 })
-
----------------------------------------------------------------------------
 -- Paramètres
 ---------------------------------------------------------------------------
 local settingsWindow = makeWindow("Settings", "SETTINGS", UDim2.new(0, 540, 0, 500), "⚙️")
@@ -883,7 +926,7 @@ local function settingsRow(index, text)
 	return r
 end
 local function musicText()
-	return if musicSound then (math.floor(settings.Music * 100 + 0.5) .. "%") else "not set"
+	return math.floor(settings.Music * 100 + 0.5) .. "%"
 end
 do
 	local r = settingsRow(1, "🎵  Music volume")
@@ -920,13 +963,12 @@ local function toggleRow(index, text, key)
 end
 toggleRow(2, "🔊  Sound effects", "Sfx")
 toggleRow(3, "⌨️  Show controls", "Controls")
-toggleRow(4, "📖  Tutorial at level start", "Tutorial")
-toggleRow(5, "⚡  Low graphics (faster)", "LowGraphics")
+toggleRow(4, "⚡  Low graphics (faster)", "LowGraphics")
 local settingsLobby = button(settingsWindow, { Name = "BackToLobby", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -16), Size = UDim2.new(0, 260, 0, 48), Text = "🏠 Back to lobby", TextSize = 22, ZIndex = 6 }, "Blue")
 
 local function refreshSettingsUI()
 	settingsRows.Music.Text = musicText()
-	for _, key in { "Sfx", "Controls", "Tutorial", "LowGraphics" } do
+	for _, key in { "Sfx", "Controls", "LowGraphics" } do
 		showToggle(settingsRows[key], settings[key])
 	end
 end
@@ -940,53 +982,68 @@ local replayButton = button(completeWindow, { Name = "Replay", AnchorPoint = Vec
 local completeLobby = button(completeWindow, { Name = "Lobby", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -24, 1, -22), Size = UDim2.new(0.5, -36, 0, 58), Text = "Back to lobby", TextSize = 26, ZIndex = 6 }, "Blue")
 
 ---------------------------------------------------------------------------
--- Choix du niveau (file d'attente du hall)
+-- Choix du niveau (file d'attente du hall) : 3 grandes cartes illustrées, joueurs, START
 ---------------------------------------------------------------------------
-local mapsWindow = makeWindow("Maps", "CHOOSE A LEVEL", UDim2.new(0, 840, 0, 560), "🗺️")
-local selectedMap = "Agency"
+local mapsWindow = makeWindow("Maps", "CHOOSE A LEVEL", UDim2.new(0, 900, 0, 590), "🗺️")
+local selectedMap = TidyConfig.Maps[1].Id
 local selectedSize = 1
 local mapCards = {}
+local function mapCleared(id)
+	return player:GetAttribute("Cleared_" .. id) == true
+end
 local function mapLocked(map)
-	return not testUnlockAll() and (player:GetAttribute("Wins") or 0) < map.WinsRequired
+	if testUnlockAll() then
+		return false
+	end
+	return map.Requires ~= nil and not mapCleared(map.Requires)
 end
 for i, map in TidyConfig.Maps do
-	local card = make("TextButton", { Name = map.Id, Position = UDim2.new(0, 18 + (i - 1) * 272, 0, 84), Size = UDim2.new(0, 260, 0, 320), BackgroundColor3 = THEME.White, BackgroundTransparency = 0.9, BorderSizePixel = 0, Text = "", AutoButtonColor = true, ZIndex = 6, Parent = mapsWindow })
-	addCorner(card, UDim.new(0, 16))
-	local stroke = addStroke(card, THEME.Edge, 2, 0.85)
-	local picture = make("Frame", { Name = "Picture", Position = UDim2.new(0, 8, 0, 8), Size = UDim2.new(1, -16, 0, 150), BackgroundColor3 = map.Color, BorderSizePixel = 0, ZIndex = 7, Parent = card })
-	addCorner(picture, UDim.new(0, 12))
-	make("UIGradient", { Color = ColorSequence.new(map.Color:Lerp(Color3.new(1, 1, 1), 0.35), map.Color), Rotation = 90, Parent = picture })
-	label(picture, { Name = "Icon", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(0, 100, 0, 100), Text = map.Icon, TextSize = 84, ZIndex = 8 })
-	label(card, { Name = "Name", Position = UDim2.new(0, 10, 0, 166), Size = UDim2.new(1, -20, 0, 30), Text = map.Name, Font = FONT_TITLE, TextScaled = true, MaxText = 23, ZIndex = 7, Outline = 1.5 })
-	label(card, { Name = "Desc", Position = UDim2.new(0, 14, 0, 200), Size = UDim2.new(1, -28, 0, 72), Text = map.Description, TextWrapped = true, TextYAlignment = Enum.TextYAlignment.Top, Font = FONT_LIGHT, TextSize = 15, TextColor3 = THEME.Muted, ZIndex = 7 })
-	local requirement = label(card, { Name = "Requirement", Position = UDim2.new(0, 10, 1, -36), Size = UDim2.new(1, -20, 0, 26), Text = "", Font = FONT_TITLE, TextSize = 18, TextColor3 = THEME.Green, ZIndex = 7 })
-	local lock = make("Frame", { Name = "Lock", Size = UDim2.fromScale(1, 1), BackgroundColor3 = THEME.Dark, BackgroundTransparency = 0.12, BorderSizePixel = 0, Visible = false, ZIndex = 9, Parent = card })
-	addCorner(lock, UDim.new(0, 16))
-	label(lock, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.42), Size = UDim2.new(0, 70, 0, 70), Text = "🔒", TextSize = 56, ZIndex = 10 })
-	local lockText = label(lock, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0.58, 0), Size = UDim2.new(0.9, 0, 0, 28), Text = "", Font = FONT_TITLE, TextSize = 21, ZIndex = 10, Outline = 2 })
-	mapCards[map.Id] = { Card = card, Stroke = stroke, Lock = lock, LockText = lockText, Requirement = requirement, Map = map }
+	local card = make("TextButton", { Name = map.Id, Position = UDim2.new(0, 24 + (i - 1) * 288, 0, 86), Size = UDim2.new(0, 272, 0, 300), BackgroundColor3 = map.Color, BorderSizePixel = 0, Text = "", AutoButtonColor = true, ClipsDescendants = true, ZIndex = 6, Parent = mapsWindow })
+	addCorner(card, UDim.new(0, 18))
+	local stroke = addStroke(card, THEME.Edge, 3, 0.6)
+	local imageId = TidyConfig.MapImages and TidyConfig.MapImages[map.Id] or ""
+	if imageId ~= "" then
+		-- Image importée par le créateur (voir TidyConfig.MapImages).
+		make("ImageLabel", { Name = "Picture", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Image = imageId, ScaleType = Enum.ScaleType.Crop, ZIndex = 7, Parent = card })
+	else
+		-- Illustration faite avec l'interface : ciel dégradé, grande icône, nom du niveau en logo.
+		make("UIGradient", { Color = ColorSequence.new(map.Color:Lerp(Color3.new(1, 1, 1), 0.45), map.Color:Lerp(Color3.new(0, 0, 0), 0.25)), Rotation = 90, Parent = card })
+		label(card, { Name = "Icon", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 24), Size = UDim2.new(0, 150, 0, 150), Text = map.Icon, TextSize = 128, ZIndex = 7 })
+	end
+	local logo = label(card, { Name = "Logo", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -26), Size = UDim2.new(1, -24, 0, 70), Text = map.Short or map.Name, Font = FONT_TITLE, TextScaled = true, MaxText = 58, TextColor3 = THEME.White, ZIndex = 8, Outline = 4 })
+	logo.Outline.Color = map.Color:Lerp(Color3.new(0, 0, 0), 0.55)
+	make("UIGradient", { Color = ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(255, 220, 90)), Rotation = 90, Parent = logo })
+	local number = make("Frame", { Name = "Number", Position = UDim2.new(0, 12, 0, 12), Size = UDim2.new(0, 40, 0, 40), BackgroundColor3 = THEME.Dark, BackgroundTransparency = 0.25, BorderSizePixel = 0, ZIndex = 8, Parent = card })
+	addCorner(number, UDim.new(1, 0))
+	label(number, { Size = UDim2.fromScale(1, 1), Text = tostring(i), Font = FONT_TITLE, TextSize = 24, ZIndex = 9 })
+	local lock = make("Frame", { Name = "Lock", Size = UDim2.fromScale(1, 1), BackgroundColor3 = THEME.Dark, BackgroundTransparency = 0.25, BorderSizePixel = 0, Visible = false, ZIndex = 10, Parent = card })
+	label(lock, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.4), Size = UDim2.new(0, 80, 0, 80), Text = "🔒", TextSize = 64, ZIndex = 11 })
+	local lockText = label(lock, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0.56, 0), Size = UDim2.new(0.86, 0, 0, 56), Text = "", Font = FONT_TITLE, TextSize = 22, TextWrapped = true, ZIndex = 11, Outline = 2 })
+	mapCards[map.Id] = { Card = card, Stroke = stroke, Lock = lock, LockText = lockText, Map = map }
 	card.Activated:Connect(function()
 		if mapLocked(map) then
-			showToast("🔒 Needs " .. map.WinsRequired .. " win(s). Finish a level first!", "error")
+			local previous = TidyConfig.GetMap(map.Requires)
+			showToast("🔒 Finish the " .. (previous and previous.Short or "previous level") .. " to unlock it!", "error")
 			return
 		end
 		selectedMap = map.Id
 		queueEvent:FireServer("Configure", selectedMap, selectedSize)
 	end)
 end
-label(mapsWindow, { Name = "PlayersLabel", Position = UDim2.new(0, 24, 1, -130), Size = UDim2.new(0, 110, 0, 40), Text = "Players", Font = FONT_TITLE, TextSize = 22, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 6 })
+label(mapsWindow, { Name = "PlayersLabel", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 398), Size = UDim2.new(0, 300, 0, 30), Text = "Players", Font = FONT_TITLE, TextSize = 26, ZIndex = 6, Outline = 1.5 })
 local sizeButtons = {}
 for size = 1, TidyConfig.MaxPartySize do
-	local b = button(mapsWindow, { Name = "Size" .. size, Position = UDim2.new(0, 130 + (size - 1) * 62, 1, -134), Size = UDim2.new(0, 52, 0, 48), Text = tostring(size), TextSize = 24, ZIndex = 6 }, "Gray")
+	local b = button(mapsWindow, { Name = "Size" .. size, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, (size - (TidyConfig.MaxPartySize + 1) / 2) * 76, 0, 434), Size = UDim2.new(0, 62, 0, 50), Text = tostring(size), TextSize = 26, ZIndex = 6 }, "Gray")
+	b.UICorner.CornerRadius = UDim.new(1, 0)
 	sizeButtons[size] = b
 	b.Activated:Connect(function()
 		selectedSize = size
 		queueEvent:FireServer("Configure", selectedMap, selectedSize)
 	end)
 end
-local mapsStart = button(mapsWindow, { Name = "Start", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -20, 1, -20), Size = UDim2.new(0, 230, 0, 62), Text = "START", TextSize = 32, ZIndex = 6 }, "Green")
-local mapsLeave = button(mapsWindow, { Name = "Leave", AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 20, 1, -20), Size = UDim2.new(0, 150, 0, 50), Text = "Leave", TextSize = 22, ZIndex = 6 }, "Red")
-local mapsStatus = label(mapsWindow, { Name = "Status", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -32), Size = UDim2.new(0, 300, 0, 26), Text = "", Font = FONT_TITLE, TextSize = 20, TextColor3 = THEME.Muted, ZIndex = 6 })
+local mapsStart = button(mapsWindow, { Name = "Start", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -20), Size = UDim2.new(0, 300, 0, 64), Text = "START", TextSize = 36, ZIndex = 6 }, "Green")
+local mapsLeave = button(mapsWindow, { Name = "Leave", AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 24, 1, -26), Size = UDim2.new(0, 130, 0, 46), Text = "Leave", TextSize = 21, ZIndex = 6 }, "Red")
+local mapsStatus = label(mapsWindow, { Name = "Status", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -24, 1, -36), Size = UDim2.new(0, 190, 0, 24), Text = "", Font = FONT_TITLE, TextSize = 19, TextColor3 = THEME.Muted, TextXAlignment = Enum.TextXAlignment.Right, ZIndex = 6 })
 
 ---------------------------------------------------------------------------
 -- Rejoindre un ami avec un code
@@ -1092,19 +1149,20 @@ end
 local function updateHint()
 	if not inMap() then
 		hud.Hint.Text = ""
+		hud.Hint.Visible = false
 		return
 	end
+	hud.Hint.Visible = true
 	if finished then
-		hud.Hint.Text = "Everything is spotless!"
+		hud.Hint.Text = "✨ Everything is spotless!"
 		return
 	end
 	local carrying = player:GetAttribute("Carrying") or ""
 	local info = TidyConfig.ItemTypes[carrying]
-	local types = heldTypes()
 	if info then
-		hud.Hint.Text = info.Hint .. " (" .. #types .. "/" .. (player:GetAttribute("Capacity") or 0) .. ")"
+		hud.Hint.Text = info.Icon .. "  " .. info.Hint
 	else
-		hud.Hint.Text = if isTouchOnly then "Tap to pick up an item" else "Click to pick up an item"
+		hud.Hint.Text = if isTouchOnly then "👆  Tap an item to pick it up" else "🖱️  Click an item to pick it up"
 	end
 end
 
@@ -1140,27 +1198,8 @@ local function updatePoints()
 		setButton(tile.Buy, if owned then "OWNED" else (ROBUX .. " " .. tile.Entry.Price), if owned then "Gray" else "Green")
 		tile.Buy.Active = not owned
 	end
-end
-
-local function updateQuests()
-	local ok, quests = pcall(function()
-		return HttpService:JSONDecode(player:GetAttribute("Quests") or "[]")
-	end)
-	if not ok or type(quests) ~= "table" then
-		return
-	end
-	for i, row in questRows do
-		local quest = quests[i]
-		row.Row.Visible = quest ~= nil
-		if quest then
-			row.Text.Text = (if quest.Done then "✅ " else "📋 ") .. tostring(quest.Text)
-			row.Reward.Text = "🪙 " .. fmt(quest.Reward or 0)
-			local target = math.max(1, tonumber(quest.Target) or 1)
-			local progress = tonumber(quest.Progress) or 0
-			row.Fill.Size = UDim2.new(math.clamp(progress / target, 0, 1), 0, 1, 0)
-			row.Fill.BackgroundColor3 = if quest.Done then THEME.Gold else THEME.Green
-			row.Progress.Text = fmt(progress) .. " / " .. fmt(target)
-		end
+	if featuredDeal then
+		featuredDeal.Visible = player:GetAttribute("DealBought") ~= true
 	end
 end
 
@@ -1246,6 +1285,7 @@ local function refreshWorld()
 	end
 	local root = getRoot()
 	local highlighted = 0
+	local nearestBoards, boardStates = {}, {}
 	for _, zone in CollectionService:GetTagged(TidyConfig.ZoneTag) do
 		local distance = math.huge
 		if root then
@@ -1268,12 +1308,31 @@ local function refreshWorld()
 			highlight:Destroy()
 			zoneHighlights[zone] = nil
 		end
+		-- Panneaux : un seul par groupe de meubles identiques (le plus proche), caché quand on est collé
+		-- au meuble ; vert quand on porte le bon objet.
 		local billboard = zone:FindFirstChild("CategoryBillboard")
 		if billboard and billboard:IsA("BillboardGui") then
-			local show = matches or distance < 45
-			if billboard.Enabled ~= show then
-				billboard.Enabled = show
+			local key = (zone:GetAttribute("ItemType") or "") .. "|" .. tostring(zoneCategory)
+			local limit = if matches then 90 else 45
+			if distance > 6 and distance < limit then
+				local best = nearestBoards[key]
+				if not best or distance < best.Distance then
+					nearestBoards[key] = { Zone = zone, Distance = distance }
+				end
 			end
+			boardStates[zone] = { Billboard = billboard, Matches = matches, Key = key }
+		end
+	end
+	for zone, info in boardStates do
+		local best = nearestBoards[info.Key]
+		local show = best ~= nil and best.Zone == zone
+		if info.Billboard.Enabled ~= show then
+			info.Billboard.Enabled = show
+		end
+		local panel = info.Billboard:FindFirstChild("Panel")
+		local wanted = if info.Matches then Color3.fromRGB(30, 150, 80) else Color3.fromRGB(28, 30, 70)
+		if panel and panel.BackgroundColor3 ~= wanted then
+			panel.BackgroundColor3 = wanted
 		end
 	end
 end
@@ -1352,7 +1411,7 @@ local function anyWindowOpen()
 			return true
 		end
 	end
-	return tutorial.Visible
+	return false
 end
 
 local function mouseShouldBeFree()
@@ -1471,11 +1530,11 @@ local function updateMode()
 	end
 	hud.Controls.Visible = playing and settings.Controls and not isTouchOnly
 	hud.RoomCode.Visible = playing and hud.RoomCode.Text ~= ""
-	hud.Deal.Position = if playing then UDim2.new(1, -16, 0, 146) else UDim2.new(1, -16, 0, 10)
+	hud.Deal.Position = if playing then UDim2.new(1, -20, 0, 134) else UDim2.new(1, -20, 0, 12)
 	if not playing then
 		hud.ItemCard.Visible = false
 		hud.TouchBar.Visible = false
-		tutorial.Visible = false
+		tutorialSurface.Enabled = false
 		completeWindow.Visible = false
 		player.CameraMaxZoomDistance = 18
 		player.CameraMinZoomDistance = 6
@@ -1490,25 +1549,27 @@ local function updateMode()
 	updateHint()
 end
 
--- Pendant le tutoriel, la barre d'outils et la consigne sont cachées (rien ne se chevauche).
-local function setTutorialVisible(show)
-	tutorial.Visible = show
-	local playing = inMap()
-	for _, element in { hud.Hotbar, hud.Hint, hud.Area } do
-		element.Visible = playing and not show
-	end
-end
-
+-- Accroche le tutoriel au panneau du niveau (il peut arriver un peu après, à cause du chargement par zones).
+local tutorialToken = 0
 local function showTutorial()
-	if settings.Tutorial then
-		closeAllWindows()
-		setTutorialVisible(true)
-	end
-end
-
-local function hideTutorial()
-	setTutorialVisible(false)
-	startTimer()
+	tutorialToken += 1
+	local token = tutorialToken
+	tutorialSurface.Enabled = false
+	task.spawn(function()
+		for _ = 1, 40 do
+			if token ~= tutorialToken or not inMap() then
+				return
+			end
+			local level = Workspace:FindFirstChild("TidyLevel")
+			local board = level and level:FindFirstChild("TutorialBoard", true)
+			if board and board:IsA("BasePart") then
+				tutorialSurface.Adornee = board
+				tutorialSurface.Enabled = true
+				return
+			end
+			task.wait(0.5)
+		end
+	end)
 end
 
 ---------------------------------------------------------------------------
@@ -1560,11 +1621,11 @@ local function updateQueueUI()
 		local wins = player:GetAttribute("Wins") or 0
 		for id, card in mapCards do
 			card.Lock.Visible = mapLocked(card.Map)
-			card.LockText.Text = "Needs " .. plural(card.Map.WinsRequired, "win")
-			card.Requirement.Text = if card.Map.WinsRequired == 0 then "Free" else ("🏆 " .. plural(card.Map.WinsRequired, "win"))
+			local previous = card.Map.Requires and TidyConfig.GetMap(card.Map.Requires)
+			card.LockText.Text = if previous then ("Finish the " .. previous.Short .. " to unlock") else ""
 			card.Stroke.Color = if id == mapId then THEME.Green else THEME.Edge
-			card.Stroke.Transparency = if id == mapId then 0 else 0.85
-			card.Stroke.Thickness = if id == mapId then 4 else 2
+			card.Stroke.Transparency = if id == mapId then 0 else 0.6
+			card.Stroke.Thickness = if id == mapId then 6 else 3
 		end
 		for s, b in sizeButtons do
 			local active = s == size and map ~= nil
@@ -1597,9 +1658,6 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		return
 	end
 	if input.UserInputType == Enum.UserInputType.MouseButton1 then
-		if tutorial.Visible then
-			return
-		end
 		local ray = aimRay()
 		if ray then
 			handleClick(ray)
@@ -1612,18 +1670,14 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		openWindow("Upgrades")
 	elseif input.KeyCode == Enum.KeyCode.F then
 		openWindow("Shop")
-	elseif input.KeyCode == Enum.KeyCode.J then
-		openWindow("Quests")
 	elseif input.KeyCode == Enum.KeyCode.R then
 		openWindow("Settings")
 	elseif input.KeyCode == Enum.KeyCode.Y then
 		freeMouse = not freeMouse
-	elseif input.KeyCode == Enum.KeyCode.M then
+	elseif input.KeyCode == Enum.KeyCode.M or input.KeyCode == Enum.KeyCode.Semicolon then
 		musicMuted = not musicMuted
 		applySettings()
 		showToast(if musicMuted then "Music muted" else "Music on", "info")
-	elseif input.KeyCode == Enum.KeyCode.Return and tutorial.Visible then
-		hideTutorial()
 	else
 		for _, tool in TOOLS do
 			if input.KeyCode == tool.Key and inMap() then
@@ -1641,7 +1695,7 @@ UserInputService.InputChanged:Connect(function(input, gameProcessed)
 end)
 
 UserInputService.TouchTap:Connect(function(touchPositions, gameProcessed)
-	if gameProcessed or #touchPositions == 0 or tutorial.Visible then
+	if gameProcessed or #touchPositions == 0 then
 		return
 	end
 	local camera = Workspace.CurrentCamera
@@ -1723,9 +1777,6 @@ end)
 sideButtons.Shop.Button.Activated:Connect(function()
 	openWindow("Shop")
 end)
-sideButtons.Quests.Button.Activated:Connect(function()
-	openWindow("Quests")
-end)
 sideButtons.Settings.Button.Activated:Connect(function()
 	openWindow("Settings")
 end)
@@ -1754,13 +1805,6 @@ hud.NextButton.Activated:Connect(function()
 end)
 hud.DropButton.Activated:Connect(function()
 	actionEvent:FireServer("drop")
-end)
-tutorialGo.Activated:Connect(hideTutorial)
-tutorialHide.Activated:Connect(function()
-	settings.Tutorial = false
-	sendSettings()
-	refreshSettingsUI()
-	hideTutorial()
 end)
 replayButton.Activated:Connect(function()
 	completeWindow.Visible = false
@@ -1852,13 +1896,14 @@ end
 for _, pass in TidyConfig.GamePasses do
 	player:GetAttributeChangedSignal("Pass_" .. pass.Id):Connect(updatePoints)
 end
-player:GetAttributeChangedSignal("Quests"):Connect(updateQuests)
 player:GetAttributeChangedSignal("Settings"):Connect(updateSettingsFromServer)
+ReplicatedStorage:GetAttributeChangedSignal("ActiveMap"):Connect(updateMusic)
 player:GetAttributeChangedSignal("InMap"):Connect(function()
+	updateMusic()
 	updateMode()
 	updateQueueUI()
 end)
-for _, name in { "QueuePad", "QueueHost" } do
+for _, name in { "QueuePad", "QueueHost", "Cleared_Warehouse", "Cleared_Agency", "Cleared_Headquarters" } do
 	player:GetAttributeChangedSignal(name):Connect(updateQueueUI)
 end
 for _, name in { "TidyTotal", "TidyRemaining" } do
@@ -1904,10 +1949,14 @@ task.spawn(function()
 	end
 end)
 
+updateMusic()
+updateUiScale()
+if Workspace.CurrentCamera then
+	Workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateUiScale)
+end
 updateSettingsFromServer()
 updateCounters()
 updatePoints()
-updateQuests()
 updateTools()
 updateRoomCode()
 updateMode()

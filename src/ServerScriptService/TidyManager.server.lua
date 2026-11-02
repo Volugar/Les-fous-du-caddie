@@ -135,10 +135,14 @@ local function updateZoneBillboards(onlyKey)
 		if onlyKey == nil or key == onlyKey then
 			local billboard = zone:FindFirstChild("CategoryBillboard")
 			local panel = billboard and billboard:FindFirstChild("Panel")
-			local label = panel and panel:FindFirstChild("Text")
-			if label then
-				local info = TidyConfig.ItemTypes[zone:GetAttribute("ItemType")]
-				label.Text = string.format("%s %s\n%d / %d", info.Icon, zone:GetAttribute("ZoneLabel"), zoneCounts[key] or 0, zoneTotals[key] or 0)
+			local countLabel = panel and panel:FindFirstChild("Count")
+			if countLabel then
+				local placed, total = zoneCounts[key] or 0, zoneTotals[key] or 0
+				countLabel.Text = placed .. "/" .. total
+				local fill = panel.Bar and panel.Bar:FindFirstChild("Fill")
+				if fill then
+					fill.Size = UDim2.fromScale(if total > 0 then math.clamp(placed / total, 0, 1) else 0, 1)
+				end
 			end
 		end
 	end
@@ -234,6 +238,21 @@ local function questView(player, state)
 end
 
 -- Partage l'état du joueur avec son écran.
+-- Niveaux terminés au moins une fois (pour le déblocage en chaîne).
+-- Les anciens joueurs qui avaient déjà gagné une partie gardent l'accès au 2e niveau.
+local function clearedOf(state)
+	local cleared = {}
+	for _, map in TidyConfig.Maps do
+		if (state.MapWins[map.Id] or 0) > 0 then
+			cleared[map.Id] = true
+		end
+	end
+	if (state.Wins or 0) > 0 then
+		cleared[TidyConfig.Maps[1].Id] = true
+	end
+	return cleared
+end
+
 local function publishPlayer(player, state)
 	local types, categories, names = {}, {}, {}
 	for index, item in state.Held do
@@ -256,8 +275,10 @@ local function publishPlayer(player, state)
 	player:SetAttribute("Wins", state.Wins)
 	player:SetAttribute("MagnetUnlocked", magnetUnlocked(state))
 	player:SetAttribute("DealBought", state.DealBought)
+	local cleared = clearedOf(state)
 	for _, map in TidyConfig.Maps do
 		player:SetAttribute("Earned_" .. map.Id, state.Earned[map.Id] or 0)
+		player:SetAttribute("Cleared_" .. map.Id, cleared[map.Id] == true)
 	end
 	for id, levelValue in state.Levels do
 		player:SetAttribute("Level_" .. id, levelValue)
@@ -604,8 +625,17 @@ local function completeDay()
 			end
 		end
 		if state.InMap then
+			local firstClear = (state.MapWins[activeMap] or 0) == 0
 			state.Wins += 1
 			state.MapWins[activeMap] = (state.MapWins[activeMap] or 0) + 1
+			-- Déblocage en chaîne : finir un niveau ouvre le suivant.
+			if firstClear then
+				for _, map in TidyConfig.Maps do
+					if map.Requires == activeMap then
+						task.delay(2.5, notify, player, "room", "🔓 New level unlocked: " .. map.Name .. "!")
+					end
+				end
+			end
 			state.DaysCompleted += 1
 			state.DayProgress[activeMap] = nil
 			local bonus = award(player, state, TidyConfig.DayBonus)
@@ -692,7 +722,7 @@ local function place(player, state, zone, all)
 	if not root then
 		return
 	end
-	local quick = all == true and state.Levels.QuickStock >= 1
+	local quick = false -- rangement rapide retiré (seulement la main et l'aimant)
 
 	local placedAny = 0
 	local gainedTotal = 0
@@ -1795,8 +1825,9 @@ queueEvent.OnServerEvent:Connect(function(player, action, a, b)
 		if not map or not size then
 			return
 		end
-		if not unlockAll and state.Wins < map.WinsRequired then
-			notify(player, "error", "🔒 " .. map.Name .. " needs " .. map.WinsRequired .. " win(s). Finish a level first!")
+		if not unlockAll and not TidyConfig.IsMapUnlocked(map, clearedOf(state)) then
+			local previous = TidyConfig.GetMap(map.Requires)
+			notify(player, "error", "🔒 Finish the " .. (previous and previous.Short or "previous level") .. " to unlock " .. map.Name .. "!")
 			return
 		end
 		queue.Map = map.Id
@@ -1978,7 +2009,7 @@ local function onPlayerAdded(player)
 		if not level then
 			local mapId = type(teleportData) == "table" and teleportData.Map or nil
 			if not TidyConfig.GetMap(mapId) then
-				mapId = "Agency"
+				mapId = TidyConfig.Maps[1].Id
 			end
 			buildLevel(mapId)
 			Players.CharacterAutoLoads = true

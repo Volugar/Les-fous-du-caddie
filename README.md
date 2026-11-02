@@ -7,6 +7,25 @@ les poser sur la bonne étagère. Seul ou jusqu'à 4 joueurs.
 Tout le monde (hall d'accueil, niveaux, mobilier, objets, lumières) est **construit par les scripts
 au lancement du jeu**. Il n'y a rien à poser à la main dans Studio.
 
+## Nouveautés de la version 9
+
+- **Objets refaits un par un** : formes plus réalistes, couleurs vives, **étiquettes imprimées**
+  (marques, codes-barres, titres de livres, « CONFIDENTIAL »...). Fini les petits carrés lumineux,
+  les pièces qui scintillent et les objets à moitié dans le sol.
+- **Ordre des niveaux** : 1. Entrepôt (2 320 objets), 2. Agence pour l'emploi (2 600 objets, rez-de-chaussée agrandi),
+  3. Bureaux professionnels (3 000 objets, **en haut d'une tour** avec vue sur la ville).
+  **Finir un niveau débloque le suivant** (sauvegardé).
+- **Décor extérieur sérieux** vu par les fenêtres : zone industrielle, rue de ville, quartier d'affaires.
+- **Éclairage** plus clair dans tous les niveaux, toujours léger (sans lag).
+- **Tutoriel sur un panneau** à l'entrée de chaque niveau (plus de fenêtre qui bloque l'écran).
+- **Choix du niveau simplifié** : 3 grandes cartes illustrées, nombre de joueurs, START.
+- **HUD plus fin** : menu compact, consigne dans une pastille, 2 outils seulement (main et aimant), plus rien de coupé au bord de l'écran.
+- **Panneaux des meubles** : petits, taille fixe, barre de progression, un seul par groupe de meubles, verts quand on porte le bon objet.
+- **Boutique** : 7 articles essentiels aux prix étudiés (voir `docs/BOUTIQUE.md`), offre de départ mise en avant, cartes animées au survol.
+- **Musique** : une musique libre de droits de Roblox pour le hall et pour chaque niveau.
+- **Hall** : jardinières fleuries, coins salon, tableau « WHAT'S NEW ».
+- Quêtes du jour supprimées. Le bonus quotidien reste.
+
 ## Nouveautés de la version 8
 
 - **Moins de lag** : éclairage ShadowMap (plus léger que Future), les petites pièces et les milliers d'objets
@@ -14,7 +33,7 @@ au lancement du jeu**. Il n'y a rien à poser à la main dans Studio.
   toutes les étagères en permanence. Le réglage **Low graphics** coupe en plus les ombres et les effets.
 - **Nouvelle interface** : panneaux bleu nuit en verre, boutons colorés en relief, une seule famille de polices
   (Fredoka One pour les titres et les chiffres, Builder Sans pour les textes), tailles de texte régulières.
-  Menu en bas à gauche (points, rang, Upgrades, Shop, Quests, Settings), compteurs en haut à droite,
+  Menu en bas à gauche (points, rang, Upgrades, Shop, Settings), compteurs en haut à droite,
   fenêtre Upgrades avec barre de niveaux, boutique en cartes, tutoriel en cartes.
 - **Nouveau hall** : damier crème et lavande, murs bleu nuit et or, grande verrière à caissons, lustre, logo du jeu,
   plateformes rondes numérotées, affiches dorées des articles Robux, classements bleu nuit et or.
@@ -47,7 +66,7 @@ Mettez `false` pour tester la progression normale dans Studio.
   niveau (on ne dépense rien pour ouvrir une pièce, rien n'est perdu). La journée en cours est
   **sauvegardée** : en revenant, les objets déjà rangés sont toujours à leur place.
 - **Interface style "cartes"** : chronomètre, compteurs, offre limitée **DEAL**, boutons
-  Upgrades [G], Shop [F], Quests [J], Settings [R], carte de l'objet en main (rayon + nom précis),
+  Upgrades [G], Shop [F], Settings [R], carte de l'objet en main (rayon + nom précis),
   barre d'outils à 4 cases avec cadenas, **6 cartes de tutoriel** à l'entrée d'un niveau.
 - **Objets très détaillés** (ours en peluche, voitures, bidons de lessive, conserves, boîtes à chaussures,
   trophées, cadres, classeurs...) et **pile d'objets portés visible** dans les mains.
@@ -91,47 +110,23 @@ dans Studio, les noms sont bien `TidyManager` et `TidyUI`.)
 - **Viseur** au centre : visez un objet et cliquez pour le mettre dans le panier ; visez l'étagère indiquée
   par les **panneaux suspendus** et cliquez pour le ranger. Sur mobile, touchez l'objet ou le meuble.
 - Les objets portés s'**empilent** dans vos mains. **Molette** (ou **E**) : changer d'objet. **Q** (A en AZERTY) : lâcher.
-- Outils : **1** main, **2** aimant, **3** loupe (rayon qui montre où aller), **4** rangement rapide
-  (range d'un clic tous les objets du panier qui vont sur ce meuble).
-- **Y** : libérer la souris. **M** : couper la musique. **G / F / J / R** : améliorations, boutique, quêtes, paramètres.
+- Outils : **1** main, **2** aimant (à débloquer dans les améliorations)
+- **Y** : libérer la souris. **M** : couper la musique. **G / F / R** : améliorations, boutique, paramètres.
 - Livres, colis et classeurs vont sur le meuble de **la même couleur**.
 - Quand tout est rangé : **victoire** (+1 win, +1 000 points), puis **Play again** ou **Back to lobby**.
 
 ### Progression (sauvegardée)
-- Points, améliorations, victoires, points gagnés par niveau, quêtes, réglages et **journée en cours**.
+- Points, améliorations, victoires, niveaux terminés, points gagnés par niveau, réglages et **journée en cours**.
 - Les pièces / sections s'ouvrent selon les **points gagnés sur ce niveau** (affiché sur les portes et clôtures).
 - **Rangs** selon le total d'objets rangés : Intern → Office Assistant → Filing Clerk → Stock Keeper →
   Records Officer → Team Leader → Office Manager → Operations Director → CEO.
 - **Bonus quotidien** : 100 points par jour de suite (jusqu'à 700 au 7e jour, x2 pour les VIP).
-- **3 quêtes par jour** (ranger N objets, N cartons, finir N pièces, gagner N points), récompenses automatiques.
 
 ## Boutique Robux : à faire une fois le jeu publié
 
-Les articles sont déjà dans le jeu. Il faut juste les créer sur Roblox et coller leur numéro :
-
-1. Publiez le jeu (**File > Publish to Roblox**).
-2. Sur le **Creator Hub** : votre expérience > **Monetization > Passes** > **Create a Pass**.
-   Créez ces 6 pass (prix conseillés) :
-   - **+5 Carry**, 49 R$ : 5 objets de plus dans le panier.
-   - **+15 Carry**, 129 R$ : 15 objets de plus.
-   - **Max Speed**, 79 R$ : vitesse maximale tout de suite.
-   - **Infinite Magnet**, 99 R$ : aimant débloqué, portée de 60 studs.
-   - **x2 Points**, 149 R$ : double tous les points.
-   - **VIP**, 199 R$ : étiquette VIP dorée, +25 % de points, bonus quotidien x2.
-3. **Monetization > Developer Products** > **Create** : créez ces 5 produits (prix conseillés) :
-   - **Starter Deal**, 19 R$ : 3 000 points + 3 places de panier pour toujours. Achat unique, affiché 5 min dans le badge DEAL.
-   - **1,000 Points**, 25 R$.
-   - **6,000 Points**, 99 R$.
-   - **30,000 Points**, 399 R$.
-   - **Tidy Helper**, 49 R$ : range 50 objets tout seul.
-4. Copiez le numéro (ID) de chaque article dans le script **`TidyConfig`** : `GamePassId = 0`
-   devient `GamePassId = 123456789` (même chose avec `ProductId` pour les produits).
-
-Tant qu'un numéro vaut 0, l'article est « Coming soon » dans le jeu publié. **Dans Studio, il est offert pour la
-session**, ce qui permet de tester tous les effets gratuitement.
-
-Pour que le jeu rapporte, il faut surtout du monde : une belle icône et des miniatures, un titre clair,
-mettre à jour régulièrement (nouvel événement, nouveau niveau) et éventuellement les publicités Roblox.
+Tout est expliqué pas à pas dans **`docs/BOUTIQUE.md`** : les 7 articles, leur prix (et pourquoi), et où coller
+leur numéro dans `TidyConfig`. Tant qu'un numéro vaut 0, l'article est « Coming soon » dans le jeu publié ;
+**dans Studio, il est offert pour la session**, ce qui permet de tester tous les effets gratuitement.
 
 ## Sauvegarde dans Studio
 
@@ -139,25 +134,23 @@ Les sauvegardes utilisent les DataStores de Roblox. Pour les tester dans Studio 
 **Home > Game Settings > Security > Enable Studio Access to API Services**. Sans cela, le jeu marche
 normalement mais rien n'est sauvegardé entre deux tests.
 
-## Musique d'ambiance (originale, libre de droits)
+## Musique d'ambiance
 
-Le fichier **`assets/chill_loop.mp3`** est une musique calme **composée pour ce jeu**
-(générée par `tools/compose_music.py`) : vous pouvez l'utiliser librement. Pour l'activer :
-1. Sur le Creator Hub : **Development Items > Audio > Import**, choisissez `chill_loop.mp3`.
-2. Copiez l'identifiant de l'audio (un nombre).
-3. Dans `TidyConfig`, remplacez `TidyConfig.MusicSoundId = ""` par `TidyConfig.MusicSoundId = "rbxassetid://VOTRE_NOMBRE"`.
-
-Le volume se règle dans **Settings [R]**.
+Le jeu utilise des musiques **libres de droits de la bibliothèque audio de Roblox** (une pour le hall, une par niveau),
+réglées dans `TidyConfig.Music`. Rien à importer. Pour vérifier une musique : lancez **Play** dans Studio.
+Si une musique ne se lance pas, remplacez son numéro par une autre musique de la Creator Store publiée par « Roblox ».
+Le volume se règle dans **Settings [R]**, la touche **M** coupe la musique.
 
 ## Réglages simples (script `TidyConfig`)
 
 - `GameTitle`, `AgencyName` : noms affichés.
-- `Maps` : les niveaux, leur description et le nombre de victoires nécessaires (`WinsRequired`).
+- `Maps` : les niveaux dans l'ordre ; `Requires` = niveau à terminer pour débloquer le suivant.
+- `MapImages` : images des cartes du choix de niveau (facultatif).
 - `Rooms` : pièces de chaque niveau, seuil d'ouverture (`Unlock`, en points gagnés) et objets.
 - `ItemTypes` : noms, rayon, noms précis (`Variants`), consignes et points de chaque objet.
 - `Upgrades` : prix et niveaux des améliorations.
 - `GamePasses`, `Products`, `PassEffects`, `DealDuration` : boutique.
-- `Ranks`, `DailyBonusPerDay`, `QuestTemplates` : rangs, bonus quotidien, quêtes.
+- `Ranks`, `DailyBonusPerDay` : rangs, bonus quotidien.
 - `BaseCapacity`, `BaseWalkSpeed`, `ReachDistance`, `RoomBonus`, `DayBonus`, `MaxPartySize`.
 - `LightLevel` : intensité de l'éclairage (1 = normal, 0.8 = plus sombre, 1.2 = plus clair).
 
