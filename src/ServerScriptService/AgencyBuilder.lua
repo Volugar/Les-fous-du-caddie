@@ -3554,20 +3554,16 @@ local function createBoard(parent, name, position, facing, title, lineCount, col
 end
 
 ---------------------------------------------------------------------------
--- Hall d'accueil (lobby intérieur) : verrière, néons, colonnes, palmiers,
--- 6 files d'attente pour partir à plusieurs, boutique avec assistant et vitrines.
+-- Hall d'accueil (lobby intérieur) : verrière, fenêtres en arc, lambris, néons, palmiers,
+-- mur des classements à l'entrée, 6 tapis de départ, boutique avec affiches et assistant.
 ---------------------------------------------------------------------------
 local Hub = {}
 Hub.Center = Vector3.new(0, 1, 690)
 Hub.MinX, Hub.MaxX, Hub.MinZ, Hub.MaxZ = -70, 70, 620, 760
-Hub.PadColors = {
-	Color3.fromRGB(80, 200, 255),
-	Color3.fromRGB(255, 120, 200),
-	Color3.fromRGB(120, 230, 120),
-	Color3.fromRGB(255, 190, 60),
-	Color3.fromRGB(170, 120, 255),
-	Color3.fromRGB(255, 100, 90),
-}
+Hub.Plum = Color3.fromRGB(112, 92, 170)
+Hub.PlumDark = Color3.fromRGB(78, 62, 128)
+Hub.Rose = Color3.fromRGB(236, 200, 198)
+Hub.Robux = utf8.char(0xE002)
 
 -- Coin triangulaire (pignon de la verrière). highToward = direction où le coin est le plus haut.
 local function wedge(parent, name, size, center, highToward, color, material)
@@ -3584,182 +3580,276 @@ local function wedge(parent, name, size, center, highToward, color, material)
 	return part
 end
 
+-- Petit utilitaire : texte d'interface avec contour épais (style titres de jeux Roblox).
+local function guiText(parent, props)
+	local label = Instance.new("TextLabel")
+	label.BackgroundTransparency = 1
+	label.TextScaled = true
+	label.Font = props.Font or Enum.Font.FredokaOne
+	label.Text = props.Text or ""
+	label.TextColor3 = props.Color or Color3.new(1, 1, 1)
+	label.Position = props.Position or UDim2.new()
+	label.Size = props.Size or UDim2.fromScale(1, 1)
+	label.TextXAlignment = props.AlignX or Enum.TextXAlignment.Center
+	label.Name = props.Name or "Text"
+	label.ZIndex = props.ZIndex or 2
+	if props.Stroke then
+		local stroke = Instance.new("UIStroke")
+		stroke.Color = props.Stroke
+		stroke.Thickness = props.StrokeThickness or 3
+		stroke.Parent = label
+	end
+	label.Parent = parent
+	return label
+end
+
+local function corner(parent, scale)
+	local c = Instance.new("UICorner")
+	c.CornerRadius = UDim.new(scale or 0.2, 0)
+	c.Parent = parent
+	return c
+end
+
 -- Personnage de l'assistant derrière le comptoir de la boutique (fait de pièces).
 function Hub.Assistant(parent, x, z)
 	local model = newModel(parent, "ShopAssistant")
-	local skin = Color3.fromRGB(240, 196, 160)
-	local shirt = Color3.fromRGB(40, 170, 190)
+	local skin = Color3.fromRGB(240, 200, 170)
+	local shirt = Color3.fromRGB(240, 240, 244)
 	for _, side in { -1, 1 } do
-		block(model, "Leg", Vector3.new(0.9, 2.2, 0.9), Vector3.new(x + side * 0.5, FLOOR_TOP + 1.1, z), Color3.fromRGB(50, 56, 80), "SmoothPlastic")
+		block(model, "Leg", Vector3.new(0.9, 2.2, 0.9), Vector3.new(x + side * 0.5, FLOOR_TOP + 1.1, z), Color3.fromRGB(150, 110, 80), "SmoothPlastic")
 		block(model, "Arm", Vector3.new(0.8, 2.1, 0.8), Vector3.new(x + side * 1.45, FLOOR_TOP + 3.25, z), shirt, "SmoothPlastic")
 		block(model, "Hand", Vector3.new(0.7, 0.6, 0.7), Vector3.new(x + side * 1.45, FLOOR_TOP + 1.95, z), skin, "SmoothPlastic")
-		block(model, "Eye", Vector3.new(0.2, 0.25, 0.05), Vector3.new(x + side * 0.28, FLOOR_TOP + 5.15, z + 0.63), COLORS.Black, "SmoothPlastic", { CanCollide = false })
+		block(model, "Eye", Vector3.new(0.18, 0.28, 0.05), Vector3.new(x + side * 0.26, FLOOR_TOP + 5.15, z + 0.63), COLORS.Black, "SmoothPlastic", { CanCollide = false })
 	end
 	block(model, "Torso", Vector3.new(2.1, 2.2, 1.1), Vector3.new(x, FLOOR_TOP + 3.3, z), shirt, "SmoothPlastic")
-	block(model, "NameTag", Vector3.new(0.7, 0.3, 0.05), Vector3.new(x + 0.5, FLOOR_TOP + 3.9, z + 0.57), COLORS.White, "SmoothPlastic", { CanCollide = false })
+	for k = 0, 3 do
+		block(model, "Button", Vector3.new(0.14, 0.14, 0.05), Vector3.new(x, FLOOR_TOP + 2.6 + k * 0.45, z + 0.57), Color3.fromRGB(90, 90, 110), "SmoothPlastic", { CanCollide = false })
+	end
 	block(model, "Head", Vector3.new(1.2, 1.2, 1.2), Vector3.new(x, FLOOR_TOP + 5, z), skin, "SmoothPlastic")
-	block(model, "Smile", Vector3.new(0.5, 0.08, 0.05), Vector3.new(x, FLOOR_TOP + 4.75, z + 0.63), Color3.fromRGB(150, 60, 60), "SmoothPlastic", { CanCollide = false })
-	block(model, "Hair", Vector3.new(1.3, 0.4, 1.3), Vector3.new(x, FLOOR_TOP + 5.75, z - 0.05), Color3.fromRGB(90, 56, 30), "SmoothPlastic", { CanCollide = false })
-	block(model, "Cap", Vector3.new(1.35, 0.3, 1.35), Vector3.new(x, FLOOR_TOP + 6.05, z), Color3.fromRGB(240, 130, 40), "SmoothPlastic", { CanCollide = false })
-	block(model, "CapVisor", Vector3.new(1.2, 0.12, 0.7), Vector3.new(x, FLOOR_TOP + 5.95, z + 0.9), Color3.fromRGB(240, 130, 40), "SmoothPlastic", { CanCollide = false })
+	block(model, "Smile", Vector3.new(0.5, 0.08, 0.05), Vector3.new(x, FLOOR_TOP + 4.75, z + 0.63), Color3.fromRGB(60, 40, 40), "SmoothPlastic", { CanCollide = false })
+	block(model, "Hair", Vector3.new(1.3, 0.45, 1.3), Vector3.new(x, FLOOR_TOP + 5.75, z - 0.05), Color3.fromRGB(60, 40, 30), "SmoothPlastic", { CanCollide = false })
+	-- Tapis lumineux jaune sous l'assistant.
+	for _, e in { { 0, -2.4, 5.2, 0.25 }, { 0, 2.4, 5.2, 0.25 }, { -2.5, 0, 0.25, 5 }, { 2.5, 0, 0.25, 5 } } do
+		block(model, "AssistantGlow", Vector3.new(e[3], 0.1, e[4]), Vector3.new(x + e[1], FLOOR_TOP + 0.05, z + e[2]), Color3.fromRGB(255, 214, 60), "Neon", { CanCollide = false, CastShadow = false })
+	end
 	local billboard = Instance.new("BillboardGui")
 	billboard.Name = "AssistantLabel"
-	billboard.Size = UDim2.fromScale(8, 1.6)
-	billboard.StudsOffsetWorldSpace = Vector3.new(0, 7.6, 0)
+	billboard.Size = UDim2.fromScale(8, 2.4)
+	billboard.StudsOffsetWorldSpace = Vector3.new(0, 8, 0)
 	billboard.Adornee = model:FindFirstChild("Head")
 	billboard.LightInfluence = 0
 	billboard.MaxDistance = 120
 	billboard.Parent = model
-	local label = Instance.new("TextLabel")
-	label.BackgroundTransparency = 1
-	label.Size = UDim2.fromScale(1, 1)
-	label.Font = Enum.Font.LuckiestGuy
-	label.Text = "ASSISTANT"
-	label.TextColor3 = Color3.fromRGB(255, 214, 90)
-	label.TextStrokeColor3 = Color3.fromRGB(90, 50, 10)
-	label.TextStrokeTransparency = 0
-	label.TextScaled = true
-	label.Parent = billboard
+	guiText(billboard, { Text = "🧹", Size = UDim2.fromScale(1, 0.5) })
+	guiText(billboard, { Text = "ASSISTANT", Font = Enum.Font.LuckiestGuy, Color = Color3.fromRGB(255, 214, 120), Stroke = Color3.fromRGB(90, 50, 20), Position = UDim2.fromScale(0, 0.5), Size = UDim2.fromScale(1, 0.5) })
 	return model
 end
 
--- Petite icône 3D d'un pass (dans la vitrine).
-function Hub.PassIcon(parent, passId, center)
-	local model = newModel(parent, "Icon_" .. passId)
-	local gold, red = COLORS.Gold, Color3.fromRGB(220, 50, 50)
-	if passId == "Carry5" or passId == "Carry15" then
-		local basket = cylinder(model, "Basket", 1, 1.8, center - Vector3.new(0, 0.3, 0), if passId == "Carry5" then Color3.fromRGB(80, 170, 240) else red, "SmoothPlastic")
-		basket.CanCollide = false
-		block(model, "Handle", Vector3.new(1.6, 0.15, 0.15), center + Vector3.new(0, 0.6, 0), COLORS.DarkMetal, "Metal", { CanCollide = false })
-		for _, side in { -1, 1 } do
-			block(model, "HandleSide", Vector3.new(0.15, 0.9, 0.15), center + Vector3.new(side * 0.75, 0.2, 0), COLORS.DarkMetal, "Metal", { CanCollide = false })
-		end
-		block(model, "Goods", Vector3.new(0.6, 0.5, 0.6), center + Vector3.new(0.2, 0.2, 0), Color3.fromRGB(250, 200, 60), "SmoothPlastic", { CanCollide = false })
-	elseif passId == "MaxSpeed" then
-		newPart(model, "Bolt", Vector3.new(0.4, 1.4, 0.3), CFrame.new(center + Vector3.new(0.15, 0.45, 0)) * CFrame.Angles(0, 0, math.rad(-25)), Color3.fromRGB(255, 220, 40), "Neon", { CanCollide = false })
-		newPart(model, "Bolt", Vector3.new(0.4, 1.4, 0.3), CFrame.new(center + Vector3.new(-0.15, -0.45, 0)) * CFrame.Angles(0, 0, math.rad(-25)), Color3.fromRGB(255, 220, 40), "Neon", { CanCollide = false })
-	elseif passId == "InfiniteMagnet" then
-		block(model, "MagnetBase", Vector3.new(1.6, 0.4, 0.4), center - Vector3.new(0, 0.5, 0), red, "SmoothPlastic", { CanCollide = false })
-		for _, side in { -1, 1 } do
-			block(model, "MagnetArm", Vector3.new(0.4, 1.1, 0.4), center + Vector3.new(side * 0.6, 0.15, 0), red, "SmoothPlastic", { CanCollide = false })
-			block(model, "MagnetTip", Vector3.new(0.42, 0.3, 0.42), center + Vector3.new(side * 0.6, 0.85, 0), COLORS.Metal, "Metal", { CanCollide = false })
-		end
-	elseif passId == "DoublePoints" then
-		for i = 0, 3 do
-			local coin = cylinder(model, "Coin", 0.2, 1.2, center + Vector3.new(0, -0.6 + i * 0.22, 0), gold, "Foil")
-			coin.CanCollide = false
-		end
-		local coin = newPart(model, "Coin", Vector3.new(0.2, 1.2, 1.2), CFrame.new(center + Vector3.new(0.5, 0.4, 0)) * CFrame.Angles(0, math.rad(90), 0), gold, "Foil", { CanCollide = false })
-		coin.Shape = Enum.PartType.Cylinder
-	else
-		local ring = cylinder(model, "CrownRing", 0.6, 1.6, center - Vector3.new(0, 0.3, 0), gold, "Foil")
-		ring.CanCollide = false
-		for k = 0, 4 do
-			local angle = math.rad(k * 72)
-			block(model, "CrownSpike", Vector3.new(0.25, 0.6, 0.25), center + Vector3.new(math.cos(angle) * 0.65, 0.25, math.sin(angle) * 0.65), gold, "Foil", { CanCollide = false })
-			local gem = block(model, "Gem", Vector3.new(0.2, 0.2, 0.2), center + Vector3.new(math.cos(angle) * 0.65, 0.6, math.sin(angle) * 0.65), Color3.fromRGB(230, 40, 80), "Neon", { CanCollide = false })
-			gem.Shape = Enum.PartType.Ball
-		end
+-- Monument de classement : socle, colonnes, linteau avec gemme lumineuse, panneau de 10 lignes.
+-- Renvoie la liste des lignes { Name, Value } que le serveur met à jour.
+function Hub.Monument(parent, name, x, z, facing, title, gemColor, panelColor)
+	local model = newModel(parent, name)
+	local base = CFrame.lookAt(Vector3.new(x, FLOOR_TOP, z), Vector3.new(x, FLOOR_TOP, z) + facing)
+	local function at(px, py, pz)
+		return base * CFrame.new(px, py, pz)
 	end
-	return model
+	local stone = Hub.Plum
+	newPart(model, "Plinth", Vector3.new(19, 1.4, 3.2), at(0, 0.7, 0), Hub.PlumDark, "SmoothPlastic")
+	for _, side in { -1, 1 } do
+		newPart(model, "Pillar", Vector3.new(2.2, 15, 2.4), at(side * 8.6, 8.9, 0), stone, "SmoothPlastic")
+		newPart(model, "PillarCap", Vector3.new(2.8, 0.6, 2.9), at(side * 8.6, 16.6, 0), Hub.PlumDark, "SmoothPlastic")
+	end
+	newPart(model, "Lintel", Vector3.new(21, 2.4, 3.2), at(0, 17.8, 0), stone, "SmoothPlastic")
+	newPart(model, "LintelTrim", Vector3.new(21.4, 0.4, 3.4), at(0, 16.7, 0), Hub.PlumDark, "SmoothPlastic")
+	-- Écrin de la gemme.
+	newPart(model, "GemHousing", Vector3.new(5.6, 4.6, 3), at(0, 20.6, 0), Hub.PlumDark, "SmoothPlastic")
+	local gem = newPart(model, "Gem", Vector3.new(3.2, 3.2, 1.2), at(0, 20.6, -1.2), gemColor, "Neon", { CanCollide = false, CastShadow = false })
+	gem.Shape = Enum.PartType.Ball
+	local light = Instance.new("PointLight")
+	light.Color = gemColor
+	light.Range = 14
+	light.Brightness = lampPower(0.9)
+	light.Parent = gem
+	-- Panneau.
+	local board = newPart(model, "Board", Vector3.new(14.6, 14, 0.4), at(0, 9.1, -0.4), panelColor, "SmoothPlastic", { CanCollide = false })
+	newPart(model, "BoardFrame", Vector3.new(15.2, 14.6, 0.3), at(0, 9.1, -0.25), Hub.PlumDark, "SmoothPlastic", { CanCollide = false })
+	local gui = Instance.new("SurfaceGui")
+	gui.Name = "BoardGui"
+	gui.Face = Enum.NormalId.Front
+	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	gui.PixelsPerStud = 40
+	gui.LightInfluence = 0.15
+	gui.Parent = board
+	guiText(gui, { Name = "Title", Text = title, Font = Enum.Font.LuckiestGuy, Color = Color3.fromRGB(255, 255, 255), Stroke = Hub.PlumDark, StrokeThickness = 6, Position = UDim2.fromScale(0.04, 0.02), Size = UDim2.fromScale(0.92, 0.1) })
+	local rows = {}
+	for i = 1, 10 do
+		local row = Instance.new("Frame")
+		row.Name = "Row" .. i
+		row.Position = UDim2.fromScale(0.06, 0.14 + (i - 1) * 0.084)
+		row.Size = UDim2.fromScale(0.88, 0.072)
+		row.BackgroundColor3 = if i <= 3 then Color3.fromRGB(255, 246, 214) else Color3.fromRGB(255, 255, 255)
+		row.Parent = gui
+		corner(row, 0.35)
+		local stroke = Instance.new("UIStroke")
+		stroke.Color = Hub.PlumDark
+		stroke.Thickness = 3
+		stroke.Parent = row
+		local medal = ({ "🥇", "🥈", "🥉" })[i]
+		guiText(row, { Name = "Rank", Text = medal or ("#" .. i), Font = Enum.Font.LuckiestGuy, Color = Hub.PlumDark, Position = UDim2.fromScale(0.02, 0.1), Size = UDim2.fromScale(0.12, 0.8) })
+		local nameLabel = guiText(row, { Name = "PlayerName", Text = "---", Font = Enum.Font.FredokaOne, Color = Color3.fromRGB(60, 50, 80), AlignX = Enum.TextXAlignment.Left, Position = UDim2.fromScale(0.16, 0.12), Size = UDim2.fromScale(0.56, 0.76) })
+		local valueLabel = guiText(row, { Name = "Value", Text = "", Font = Enum.Font.LuckiestGuy, Color = Color3.fromRGB(110, 80, 170), AlignX = Enum.TextXAlignment.Right, Position = UDim2.fromScale(0.72, 0.12), Size = UDim2.fromScale(0.25, 0.76) })
+		rows[i] = { Name = nameLabel, Value = valueLabel }
+	end
+	return rows
 end
 
--- Vitrine d'un pass : socle, cage de verre, icône, panneau avec nom et prix.
-function Hub.DisplayStand(parent, pass, x, z)
-	local model = newModel(parent, "PassStand_" .. pass.Id)
-	local pedestal = block(model, "Pedestal", Vector3.new(3, 3.4, 3), Vector3.new(x, FLOOR_TOP + 1.7, z), COLORS.White, "SmoothPlastic")
-	block(model, "PedestalTrim", Vector3.new(3.2, 0.3, 3.2), Vector3.new(x, FLOOR_TOP + 3.45, z), COLORS.Gold, "Foil", { CanCollide = false })
-	block(model, "Case", Vector3.new(2.6, 2.8, 2.6), Vector3.new(x, FLOOR_TOP + 5, z), COLORS.Glass, "Glass", { Transparency = 0.7, CastShadow = false })
-	block(model, "CaseTop", Vector3.new(2.8, 0.2, 2.8), Vector3.new(x, FLOOR_TOP + 6.5, z), COLORS.Gold, "Foil", { CanCollide = false })
-	Hub.PassIcon(model, pass.Id, Vector3.new(x, FLOOR_TOP + 5, z))
-	local light = Instance.new("PointLight")
-	light.Range = 7
-	light.Brightness = lampPower(0.6)
-	light.Color = Color3.fromRGB(255, 230, 180)
-	light.Parent = pedestal
-	local sign = newSign(model, "PriceSign", pass.Icon .. " " .. pass.Name .. "\nR$ " .. pass.Price, Vector3.new(2.8, 1.8, 0.1), Vector3.new(x, FLOOR_TOP + 2, z + 1.56), Vector3.new(0, 0, 1), Color3.fromRGB(30, 34, 50), Color3.fromRGB(255, 214, 90))
-	sign:FindFirstChild("SignGuiFront").Text.Font = Enum.Font.FredokaOne
+-- Affiche d'un article de la boutique : arche orange, panneau bleu, badge rond, prix, bouton.
+function Hub.Poster(parent, entry, kind, x, z)
+	local model = newModel(parent, "Poster_" .. entry.Id)
+	local orange = Color3.fromRGB(246, 160, 70)
+	block(model, "Feet", Vector3.new(7, 0.6, 1.6), Vector3.new(x, FLOOR_TOP + 0.3, z), Color3.fromRGB(40, 110, 200), "SmoothPlastic")
+	for _, side in { -1, 1 } do
+		block(model, "Leg", Vector3.new(0.8, 2.2, 0.8), Vector3.new(x + side * 2.6, FLOOR_TOP + 1.4, z), Color3.fromRGB(40, 110, 200), "SmoothPlastic")
+	end
+	block(model, "Shelf", Vector3.new(7.6, 0.6, 1.4), Vector3.new(x, FLOOR_TOP + 2.8, z), Color3.fromRGB(250, 236, 200), "SmoothPlastic")
+	block(model, "Frame", Vector3.new(7.4, 9.6, 0.8), Vector3.new(x, FLOOR_TOP + 7.9, z), orange, "Wood")
+	local arch = cylinder(model, "Arch", 0.8, 7.4, Vector3.new(x, FLOOR_TOP + 12.7, z), orange, "Wood")
+	arch.CFrame = CFrame.new(x, FLOOR_TOP + 12.7, z) * CFrame.Angles(0, math.rad(90), 0)
+	local panel = block(model, "Panel", Vector3.new(6.4, 8.8, 0.2), Vector3.new(x, FLOOR_TOP + 7.9, z + 0.42), Color3.fromRGB(40, 110, 210), "SmoothPlastic", { CanCollide = false })
+	local top = cylinder(model, "ArchPanel", 0.2, 6.2, Vector3.new(x, FLOOR_TOP + 12.4, z + 0.42), Color3.fromRGB(250, 236, 200), "SmoothPlastic")
+	top.CFrame = CFrame.new(x, FLOOR_TOP + 12.4, z + 0.42) * CFrame.Angles(0, math.rad(90), 0)
+	top.CanCollide = false
+	local gui = Instance.new("SurfaceGui")
+	gui.Name = "PosterGui"
+	gui.Face = Enum.NormalId.Back
+	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	gui.PixelsPerStud = 50
+	gui.LightInfluence = 0.1
+	gui.Parent = panel
+	local badge = Instance.new("Frame")
+	badge.Name = "Badge"
+	badge.AnchorPoint = Vector2.new(0.5, 0)
+	badge.Position = UDim2.fromScale(0.5, 0.04)
+	badge.Size = UDim2.fromScale(0.62, 0.45)
+	badge.BackgroundColor3 = Color3.fromRGB(120, 210, 90)
+	badge.Parent = gui
+	local ratio = Instance.new("UIAspectRatioConstraint")
+	ratio.Parent = badge
+	corner(badge, 1)
+	local badgeStroke = Instance.new("UIStroke")
+	badgeStroke.Color = Color3.fromRGB(50, 60, 40)
+	badgeStroke.Thickness = 6
+	badgeStroke.Parent = badge
+	local gradient = Instance.new("UIGradient")
+	gradient.Color = ColorSequence.new(Color3.fromRGB(250, 250, 160), Color3.fromRGB(70, 170, 60))
+	gradient.Rotation = 90
+	gradient.Parent = badge
+	guiText(badge, { Text = entry.Icon, Position = UDim2.fromScale(0.15, 0.15), Size = UDim2.fromScale(0.7, 0.7) })
+	guiText(gui, { Name = "ItemName", Text = entry.Name, Font = Enum.Font.FredokaOne, Color = Color3.fromRGB(255, 255, 255), Stroke = Color3.fromRGB(20, 40, 90), Position = UDim2.fromScale(0.05, 0.52), Size = UDim2.fromScale(0.9, 0.13) })
+	local price = Instance.new("Frame")
+	price.Name = "Price"
+	price.AnchorPoint = Vector2.new(0.5, 0)
+	price.Position = UDim2.fromScale(0.5, 0.67)
+	price.Size = UDim2.fromScale(0.5, 0.1)
+	price.BackgroundColor3 = Color3.fromRGB(240, 196, 70)
+	price.Parent = gui
+	corner(price, 1)
+	guiText(price, { Text = Hub.Robux .. " " .. entry.Price, Font = Enum.Font.GothamBlack, Color = Color3.fromRGB(255, 255, 255), Stroke = Color3.fromRGB(150, 100, 20), Position = UDim2.fromScale(0.05, 0.08), Size = UDim2.fromScale(0.9, 0.84) })
+	local buy = Instance.new("Frame")
+	buy.Name = "Buy"
+	buy.AnchorPoint = Vector2.new(0.5, 0)
+	buy.Position = UDim2.fromScale(0.5, 0.81)
+	buy.Size = UDim2.fromScale(0.78, 0.15)
+	buy.BackgroundColor3 = Color3.fromRGB(70, 190, 80)
+	buy.Parent = gui
+	corner(buy, 0.4)
+	local buyStroke = Instance.new("UIStroke")
+	buyStroke.Color = Color3.fromRGB(30, 100, 40)
+	buyStroke.Thickness = 5
+	buyStroke.Parent = buy
+	guiText(buy, { Text = "BUY", Font = Enum.Font.LuckiestGuy, Color = Color3.fromRGB(255, 255, 255), Stroke = Color3.fromRGB(30, 100, 40), Position = UDim2.fromScale(0.05, 0.1), Size = UDim2.fromScale(0.9, 0.8) })
+	-- Petit chariot dans l'arche.
+	local archGui = Instance.new("SurfaceGui")
+	archGui.Face = Enum.NormalId.Left
+	archGui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	archGui.PixelsPerStud = 40
+	archGui.LightInfluence = 0.1
+	archGui.Parent = top
+	guiText(archGui, { Text = "🛒", Position = UDim2.fromScale(0.3, 0.05), Size = UDim2.fromScale(0.4, 0.38) })
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.Name = "ShopPrompt"
-	prompt.ActionText = "View"
-	prompt.ObjectText = pass.Name .. " - R$ " .. pass.Price
+	prompt.ActionText = "Buy"
+	prompt.ObjectText = entry.Name .. " - R$ " .. entry.Price
 	prompt.HoldDuration = 0
 	prompt.MaxActivationDistance = 10
 	prompt.RequiresLineOfSight = false
-	prompt:SetAttribute("PassId", pass.Id)
-	prompt.Parent = pedestal
+	prompt:SetAttribute("ShopKind", kind)
+	prompt:SetAttribute("ShopItem", entry.Id)
+	prompt.Parent = panel
 	return model
 end
 
--- File d'attente : plateforme lumineuse, arche avec écran, panneau d'état au-dessus.
+-- Fenêtre en arc (verre violet, montants blancs) posée contre un mur.
+function Hub.ArchWindow(parent, x, z, facing, width, height)
+	local model = newModel(parent, "ArchWindow")
+	local base = CFrame.lookAt(Vector3.new(x, FLOOR_TOP, z), Vector3.new(x, FLOOR_TOP, z) + facing)
+	local glass = Color3.fromRGB(150, 110, 230)
+	local white = Color3.fromRGB(250, 246, 250)
+	newPart(model, "Glass", Vector3.new(width, height, 0.15), base * CFrame.new(0, 6 + height / 2, 0), glass, "Glass", { CanCollide = false, Transparency = 0.15, Reflectance = 0.15 })
+	local archGlass = newPart(model, "ArchGlass", Vector3.new(0.15, width, width), base * CFrame.new(0, 6 + height, 0) * CFrame.Angles(0, math.rad(90), 0), glass, "Glass", { CanCollide = false, Transparency = 0.15, Reflectance = 0.15 })
+	archGlass.Shape = Enum.PartType.Cylinder
+	for _, side in { -1, 1 } do
+		newPart(model, "FrameSide", Vector3.new(0.6, height, 0.4), base * CFrame.new(side * width / 2, 6 + height / 2, -0.1), white, "SmoothPlastic", { CanCollide = false })
+	end
+	newPart(model, "FrameSill", Vector3.new(width + 1, 0.6, 0.8), base * CFrame.new(0, 6, -0.2), white, "SmoothPlastic", { CanCollide = false })
+	for k = 1, 2 do
+		newPart(model, "Mullion", Vector3.new(0.3, height + width / 2, 0.3), base * CFrame.new(-width / 2 + k * width / 3, 6 + (height + width / 2) / 2, -0.1), white, "SmoothPlastic", { CanCollide = false })
+	end
+	newPart(model, "Transom", Vector3.new(width, 0.3, 0.3), base * CFrame.new(0, 6 + height, -0.1), white, "SmoothPlastic", { CanCollide = false })
+	return model
+end
+
+-- Tapis de départ : cadre lumineux vert, panneau flottant "Empty / Waiting for players / PLAY".
 function Hub.QueuePad(parent, index, x, z, wallSide)
-	local color = Hub.PadColors[index]
 	local model = newModel(parent, "QueuePad" .. index)
-	local platform = cylinder(model, "Platform", 0.6, 12, Vector3.new(x, FLOOR_TOP + 0.3, z), Color3.fromRGB(40, 44, 60), "SmoothPlastic")
-	local ring = cylinder(model, "GlowRing", 0.25, 12.8, Vector3.new(x, FLOOR_TOP + 0.125, z), color, "Neon")
-	ring.CanCollide = false
-	local pad = cylinder(model, "Pad", 0.08, 10, Vector3.new(x, FLOOR_TOP + 0.64, z), color, "Neon")
-	pad.Transparency = 0.35
-	pad.CanCollide = false
+	local green = Color3.fromRGB(70, 255, 90)
+	local size = 11
+	block(model, "PadBase", Vector3.new(size, 0.12, size), Vector3.new(x, FLOOR_TOP + 0.06, z), Color3.fromRGB(70, 200, 90), "SmoothPlastic", { CanCollide = false, Transparency = 0.55 })
+	for _, e in { { 0, -size / 2, size + 0.6, 0.6 }, { 0, size / 2, size + 0.6, 0.6 }, { -size / 2, 0, 0.6, size }, { size / 2, 0, 0.6, size } } do
+		block(model, "PadGlow", Vector3.new(e[3], 0.2, e[4]), Vector3.new(x + e[1], FLOOR_TOP + 0.1, z + e[2]), green, "Neon", { CanCollide = false, CastShadow = false })
+	end
+	local pad = block(model, "Pad", Vector3.new(size - 1, 0.05, size - 1), Vector3.new(x, FLOOR_TOP + 0.15, z), green, "Neon", { CanCollide = false, CastShadow = false, Transparency = 0.8 })
 	pad:SetAttribute("QueueIndex", index)
 	local glow = Instance.new("PointLight")
-	glow.Color = color
+	glow.Color = green
 	glow.Range = 12
-	glow.Brightness = lampPower(0.7)
+	glow.Brightness = lampPower(0.6)
 	glow.Parent = pad
 	local sparkles = Instance.new("ParticleEmitter")
 	sparkles.Name = "Sparkles"
-	sparkles.Rate = 6
-	sparkles.Lifetime = NumberRange.new(1.5, 2.5)
+	sparkles.Rate = 5
+	sparkles.Lifetime = NumberRange.new(1.2, 2)
 	sparkles.Speed = NumberRange.new(1.5, 3)
-	sparkles.SpreadAngle = Vector2.new(40, 40)
+	sparkles.SpreadAngle = Vector2.new(30, 30)
 	sparkles.EmissionDirection = Enum.NormalId.Top
-	sparkles.Color = ColorSequence.new(color)
-	sparkles.Size = NumberSequence.new(0.3)
+	sparkles.Color = ColorSequence.new(green)
+	sparkles.Size = NumberSequence.new(0.25)
 	sparkles.LightEmission = 0.8
 	sparkles.Parent = pad
-
-	-- Arche contre le mur avec un écran "QUEUE n".
-	local archX = x + wallSide * 7.5
-	for _, side in { -1, 1 } do
-		block(model, "ArchPost", Vector3.new(1, 12, 1), Vector3.new(archX, FLOOR_TOP + 6, z + side * 6), Color3.fromRGB(40, 44, 60), "Metal")
-		block(model, "ArchGlow", Vector3.new(0.3, 11.6, 0.3), Vector3.new(archX - wallSide * 0.6, FLOOR_TOP + 6, z + side * 6), color, "Neon", { CanCollide = false })
-	end
-	block(model, "ArchTop", Vector3.new(1, 1.2, 13), Vector3.new(archX, FLOOR_TOP + 12.6, z), Color3.fromRGB(40, 44, 60), "Metal")
-	local screen = newSign(model, "QueueScreen", "QUEUE " .. index, Vector3.new(10, 3, 0.2), Vector3.new(archX - wallSide * 0.4, FLOOR_TOP + 9.5, z), Vector3.new(-wallSide, 0, 0), Color3.fromRGB(20, 24, 36), color)
-	screen:FindFirstChild("SignGuiFront").Text.Font = Enum.Font.LuckiestGuy
+	Hub.ArchWindow(model, wallSide * 69.8, z, Vector3.new(-wallSide, 0, 0), 9, 8)
 
 	local billboard = Instance.new("BillboardGui")
 	billboard.Name = "QueueBillboard"
 	billboard.Adornee = pad
-	billboard.Size = UDim2.fromScale(9, 3.4)
-	billboard.StudsOffsetWorldSpace = Vector3.new(0, 7, 0)
-	billboard.MaxDistance = 120
+	billboard.Size = UDim2.fromScale(10, 6)
+	billboard.StudsOffsetWorldSpace = Vector3.new(0, 7.5, 0)
+	billboard.MaxDistance = 140
 	billboard.LightInfluence = 0
 	billboard.Parent = model
-	local title = Instance.new("TextLabel")
-	title.Name = "Title"
-	title.BackgroundTransparency = 1
-	title.Size = UDim2.fromScale(1, 0.55)
-	title.Font = Enum.Font.LuckiestGuy
-	title.Text = "EMPTY"
-	title.TextColor3 = Color3.fromRGB(255, 255, 255)
-	title.TextStrokeColor3 = color:Lerp(Color3.new(0, 0, 0), 0.5)
-	title.TextStrokeTransparency = 0
-	title.TextScaled = true
-	title.Parent = billboard
-	local status = Instance.new("TextLabel")
-	status.Name = "Status"
-	status.BackgroundTransparency = 1
-	status.Position = UDim2.fromScale(0, 0.55)
-	status.Size = UDim2.fromScale(1, 0.45)
-	status.Font = Enum.Font.FredokaOne
-	status.Text = "Step on to play"
-	status.TextColor3 = color:Lerp(Color3.new(1, 1, 1), 0.5)
-	status.TextStrokeTransparency = 0.3
-	status.TextScaled = true
-	status.Parent = billboard
-	return { Index = index, Pad = pad, Center = Vector3.new(x, FLOOR_TOP, z), Radius = 5.5, Title = title, Status = status }
+	local title = guiText(billboard, { Name = "Title", Text = "Empty", Font = Enum.Font.FredokaOne, Color = Color3.fromRGB(245, 240, 255), Stroke = Color3.fromRGB(90, 70, 140), StrokeThickness = 3, Size = UDim2.fromScale(1, 0.3) })
+	local status = guiText(billboard, { Name = "Status", Text = "Waiting for players", Font = Enum.Font.FredokaOne, Color = Color3.fromRGB(255, 214, 110), Stroke = Color3.fromRGB(110, 60, 20), StrokeThickness = 2, Position = UDim2.fromScale(0, 0.32), Size = UDim2.fromScale(1, 0.24) })
+	guiText(billboard, { Name = "Play", Text = "PLAY", Font = Enum.Font.LuckiestGuy, Color = Color3.fromRGB(255, 255, 255), Stroke = Color3.fromRGB(70, 50, 130), StrokeThickness = 4, Position = UDim2.fromScale(0, 0.6), Size = UDim2.fromScale(1, 0.38) })
+	return { Index = index, Pad = pad, Center = Vector3.new(x, FLOOR_TOP, z), Radius = 5.2, Title = title, Status = status }
 end
 
 function Hub.Build(root)
@@ -3772,19 +3862,19 @@ function Hub.Build(root)
 	local structure = newFolder(root, "HallStructure")
 	local decor = newFolder(root, "HallDecor")
 
-	-- Sol en marbre clair, rosace bleue au centre, tapis vers la boutique.
-	block(structure, "HallFloor", Vector3.new(width, 1, depth), Vector3.new(cx, FLOOR_TOP - 0.5, cz), Color3.fromRGB(240, 240, 246), "Marble", { Reflectance = 0.12 })
-	local inlay = cylinder(structure, "FloorInlay", 0.02, 26, Vector3.new(cx, FLOOR_TOP + 0.01, cz), Color3.fromRGB(60, 110, 200), "Marble")
+	-- Sol en dalles claires, chemin central et rosace.
+	block(structure, "HallFloor", Vector3.new(width, 1, depth), Vector3.new(cx, FLOOR_TOP - 0.5, cz), Color3.fromRGB(236, 218, 186), "Slate", { Reflectance = 0.04 })
+	local inlay = cylinder(structure, "FloorInlay", 0.02, 26, Vector3.new(cx, FLOOR_TOP + 0.01, cz), Hub.Plum, "Marble")
 	inlay.CanCollide = false
-	local inlayInner = cylinder(structure, "FloorInlayInner", 0.03, 22, Vector3.new(cx, FLOOR_TOP + 0.015, cz), Color3.fromRGB(240, 240, 246), "Marble")
+	local inlayInner = cylinder(structure, "FloorInlayInner", 0.03, 22, Vector3.new(cx, FLOOR_TOP + 0.015, cz), Color3.fromRGB(244, 230, 204), "Marble")
 	inlayInner.CanCollide = false
-	block(structure, "RunnerSouth", Vector3.new(8, 0.04, 44), Vector3.new(cx, FLOOR_TOP + 0.02, 734), Color3.fromRGB(50, 70, 150), "Fabric", { CanCollide = false })
-	block(structure, "RunnerNorth", Vector3.new(8, 0.04, 26), Vector3.new(cx, FLOOR_TOP + 0.02, 657), Color3.fromRGB(50, 70, 150), "Fabric", { CanCollide = false })
+	block(structure, "RunnerSouth", Vector3.new(8, 0.04, 44), Vector3.new(cx, FLOOR_TOP + 0.02, 734), Color3.fromRGB(196, 120, 90), "Fabric", { CanCollide = false })
+	block(structure, "RunnerNorth", Vector3.new(8, 0.04, 22), Vector3.new(cx, FLOOR_TOP + 0.02, 659), Color3.fromRGB(196, 120, 90), "Fabric", { CanCollide = false })
 
-	-- Murs : soubassement bleu nuit avec néon cyan, partie haute claire, néon rose en haut.
+	-- Murs : lambris en bois rayé en bas, enduit rose au-dessus, bandeau néon blanc en haut.
 	local function wall(name, size, position)
-		block(structure, name .. "Low", Vector3.new(size.X, 4 + FLOOR_TOP, size.Z), Vector3.new(position.X, (4 + FLOOR_TOP) / 2, position.Z), Color3.fromRGB(36, 44, 80), "SmoothPlastic")
-		block(structure, name .. "High", Vector3.new(size.X, wallTop - 4 - FLOOR_TOP, size.Z), Vector3.new(position.X, 4 + FLOOR_TOP + (wallTop - 4 - FLOOR_TOP) / 2, position.Z), Color3.fromRGB(236, 240, 250), "Plaster")
+		block(structure, name .. "Low", Vector3.new(size.X, 5 + FLOOR_TOP, size.Z), Vector3.new(position.X, (5 + FLOOR_TOP) / 2, position.Z), Color3.fromRGB(214, 160, 110), "WoodPlanks")
+		block(structure, name .. "High", Vector3.new(size.X, wallTop - 5 - FLOOR_TOP, size.Z), Vector3.new(position.X, 5 + FLOOR_TOP + (wallTop - 5 - FLOOR_TOP) / 2, position.Z), Hub.Rose, "Plaster")
 	end
 	wall("NorthWall", Vector3.new(width + 2, 0, 1), Vector3.new(cx, 0, minZ - 0.5))
 	wall("WestWall", Vector3.new(1, 0, depth), Vector3.new(minX - 0.5, 0, cz))
@@ -3793,21 +3883,27 @@ function Hub.Build(root)
 		local length = piece[2] - piece[1]
 		wall("SouthWall", Vector3.new(length, 0, 1), Vector3.new((piece[1] + piece[2]) / 2, 0, maxZ + 0.5))
 	end
-	block(structure, "EntranceLintel", Vector3.new(12, wallTop - FLOOR_TOP - 10, 1), Vector3.new(0, FLOOR_TOP + 10 + (wallTop - FLOOR_TOP - 10) / 2, maxZ + 0.5), Color3.fromRGB(236, 240, 250), "Plaster")
+	block(structure, "EntranceLintel", Vector3.new(12, wallTop - FLOOR_TOP - 10, 1), Vector3.new(0, FLOOR_TOP + 10 + (wallTop - FLOOR_TOP - 10) / 2, maxZ + 0.5), Hub.Rose, "Plaster")
 	for _, side in { -1, 1 } do
 		block(structure, "EntranceDoor", Vector3.new(5.9, 10, 0.3), Vector3.new(side * 3, FLOOR_TOP + 5, maxZ + 0.6), COLORS.Glass, "Glass", { Transparency = 0.5 })
 	end
-	local neonCyan = Color3.fromRGB(80, 230, 255)
-	local neonPink = Color3.fromRGB(255, 90, 200)
+	-- Rayures orange du lambris et moulure.
+	local stripe = Color3.fromRGB(236, 130, 70)
 	for _, line in {
-		{ Vector3.new(width, 0.3, 0.2), Vector3.new(cx, FLOOR_TOP + 4.2, minZ + 0.1) },
-		{ Vector3.new(0.2, 0.3, depth), Vector3.new(minX + 0.1, FLOOR_TOP + 4.2, cz) },
-		{ Vector3.new(0.2, 0.3, depth), Vector3.new(maxX - 0.1, FLOOR_TOP + 4.2, cz) },
+		{ Vector3.new(width, 0.35, 0.15), Vector3.new(cx, FLOOR_TOP + 4.6, minZ + 0.08) },
+		{ Vector3.new(0.15, 0.35, depth), Vector3.new(minX + 0.08, FLOOR_TOP + 4.6, cz) },
+		{ Vector3.new(0.15, 0.35, depth), Vector3.new(maxX - 0.08, FLOOR_TOP + 4.6, cz) },
+	} do
+		block(structure, "WainscotRail", line[1], line[2], stripe, "SmoothPlastic", { CanCollide = false })
+	end
+	local neonWhite = Color3.fromRGB(255, 236, 230)
+	local neonPink = Color3.fromRGB(255, 120, 190)
+	for _, line in {
 		{ Vector3.new(width, 0.4, 0.2), Vector3.new(cx, wallTop - 0.4, minZ + 0.1) },
 		{ Vector3.new(0.2, 0.4, depth), Vector3.new(minX + 0.1, wallTop - 0.4, cz) },
 		{ Vector3.new(0.2, 0.4, depth), Vector3.new(maxX - 0.1, wallTop - 0.4, cz) },
 	} do
-		block(structure, "NeonTrim", line[1], line[2], if line[2].Y > 10 then neonPink else neonCyan, "Neon", { CanCollide = false, CastShadow = false })
+		block(structure, "NeonTrim", line[1], line[2], neonWhite, "Neon", { CanCollide = false, CastShadow = false, Transparency = 0.2 })
 	end
 
 	-- Verrière en voûte : deux pans de verre, nervures blanches, pignons.
@@ -3817,12 +3913,12 @@ function Hub.Build(root)
 	local angle = math.atan2(rise, run)
 	for _, side in { -1, 1 } do
 		local center = Vector3.new(side * run / 2, (wallTop + ridgeY) / 2, cz)
-		newPart(structure, "RoofGlass", Vector3.new(slopeLength, 0.4, depth + 2), CFrame.new(center) * CFrame.Angles(0, 0, -side * angle), Color3.fromRGB(190, 230, 255), "Glass", { Transparency = 0.6, CastShadow = false })
+		newPart(structure, "RoofGlass", Vector3.new(slopeLength, 0.4, depth + 2), CFrame.new(center) * CFrame.Angles(0, 0, -side * angle), Color3.fromRGB(170, 140, 230), "Glass", { Transparency = 0.55, CastShadow = false })
 		for z = minZ, maxZ, 10 do
 			newPart(structure, "RoofRib", Vector3.new(slopeLength, 0.9, 0.6), CFrame.new(Vector3.new(center.X, center.Y - 0.6, z)) * CFrame.Angles(0, 0, -side * angle), COLORS.White, "SmoothPlastic", { CanCollide = false, CastShadow = false })
 		end
 		for _, endZ in { minZ - 0.5, maxZ + 0.5 } do
-			wedge(structure, "Gable", Vector3.new(1, rise, run), Vector3.new(side * run / 2, wallTop + rise / 2, endZ), Vector3.new(-side, 0, 0), Color3.fromRGB(236, 240, 250), "Plaster")
+			wedge(structure, "Gable", Vector3.new(1, rise, run), Vector3.new(side * run / 2, wallTop + rise / 2, endZ), Vector3.new(-side, 0, 0), Hub.Rose, "Plaster")
 		end
 	end
 	block(structure, "RidgeBeam", Vector3.new(1.2, 1.2, depth + 2), Vector3.new(0, ridgeY - 0.4, cz), COLORS.White, "SmoothPlastic", { CanCollide = false })
@@ -3832,38 +3928,58 @@ function Hub.Build(root)
 	for _, x in { -30, 30 } do
 		local hangY = wallTop + (run - math.abs(x)) * rise / run - 0.8
 		for z = minZ + 15, maxZ - 10, 20 do
-			Deco.Pendant(decor, x, hangY, z, hangY - 18, Color3.fromRGB(250, 250, 250), true)
+			Deco.Pendant(decor, x, hangY, z, hangY - 18, Color3.fromRGB(60, 50, 70), z % 40 == 15)
 		end
 	end
 
-	-- Colonnes de marbre à bagues dorées.
+	-- Colonnes à bagues dorées, palmiers en pots, fontaine, bancs.
 	for _, x in { -46, 46 } do
 		for _, z in { 640, 672, 708, 740 } do
 			local column = newModel(decor, "Column")
-			cylinder(column, "Shaft", wallTop - FLOOR_TOP, 3, Vector3.new(x, FLOOR_TOP + (wallTop - FLOOR_TOP) / 2, z), COLORS.Marble, "Marble")
+			cylinder(column, "Shaft", wallTop - FLOOR_TOP, 3, Vector3.new(x, FLOOR_TOP + (wallTop - FLOOR_TOP) / 2, z), Color3.fromRGB(248, 236, 228), "Marble")
 			for _, y in { FLOOR_TOP + 0.4, FLOOR_TOP + 4.2, wallTop - 0.6 } do
 				local ringPart = cylinder(column, "GoldRing", 0.6, 3.6, Vector3.new(x, y, z), COLORS.Gold, "Foil")
 				ringPart.CanCollide = false
 			end
 		end
 	end
-
-	-- Fontaine au centre, palmiers, bancs.
 	HQ.Fountain(decor, 0, cz)
-	for _, p in { { -64, 628 }, { 64, 628 }, { -64, 752 }, { 64, 752 }, { -16, cz }, { 16, cz }, { -34, 706 }, { 34, 706 } } do
+	for _, p in { { -64, 628 }, { 64, 628 }, { -64, 742 }, { 64, 742 }, { -16, cz }, { 16, cz }, { -34, 706 }, { 34, 706 } } do
 		Deco.Palm(decor, p[1], p[2], 1)
 	end
 	for _, p in { { -20, 716 }, { 20, 716 }, { -20, 664 }, { 20, 664 } } do
 		createBench(decor, p[1], p[2])
 	end
 
-	-- Boutique : comptoir, assistant, étagères colorées et grande enseigne.
-	local shop = newModel(decor, "ShopCounter")
-	local counter = block(shop, "Counter", Vector3.new(30, 4, 3), Vector3.new(0, FLOOR_TOP + 2, 633), Color3.fromRGB(250, 250, 250), "SmoothPlastic")
-	block(shop, "CounterTop", Vector3.new(30.6, 0.3, 3.6), Vector3.new(0, FLOOR_TOP + 4.15, 633), COLORS.Gold, "Foil")
-	block(shop, "CounterStripe", Vector3.new(30.1, 0.5, 0.1), Vector3.new(0, FLOOR_TOP + 2.5, 634.55), neonPink, "Neon", { CanCollide = false })
-	local cash = block(shop, "CashRegister", Vector3.new(2, 1, 1.4), Vector3.new(-8, FLOOR_TOP + 4.8, 633), COLORS.DarkMetal, "Metal", { CanCollide = false })
-	cash.CanCollide = false
+	-- Boutique : grande enseigne verte, comptoir-caisse, assistant, affiches des articles.
+	local shop = newModel(decor, "Shop")
+	local counter = block(shop, "Counter", Vector3.new(16, 3.8, 4), Vector3.new(6, FLOOR_TOP + 1.9, 632), Color3.fromRGB(196, 190, 210), "SmoothPlastic")
+	block(shop, "CounterTop", Vector3.new(16.6, 0.3, 4.6), Vector3.new(6, FLOOR_TOP + 3.95, 632), Color3.fromRGB(240, 240, 246), "Marble")
+	block(shop, "CounterFront", Vector3.new(5, 3, 0.1), Vector3.new(1, FLOOR_TOP + 1.8, 634.05), Color3.fromRGB(176, 120, 80), "Wood", { CanCollide = false })
+	for k = 0, 1 do
+		block(shop, "Drawer", Vector3.new(3.2, 1.2, 0.1), Vector3.new(8 + k * 4, FLOOR_TOP + 2.2, 634.05), Color3.fromRGB(150, 140, 170), "SmoothPlastic", { CanCollide = false })
+	end
+	block(shop, "RegisterStand", Vector3.new(0.4, 1.6, 0.4), Vector3.new(6, FLOOR_TOP + 4.9, 631.6), COLORS.DarkMetal, "Metal", { CanCollide = false })
+	local screen = block(shop, "RegisterScreen", Vector3.new(3.2, 2.2, 0.3), Vector3.new(6, FLOOR_TOP + 6.6, 631.6), Color3.fromRGB(40, 44, 60), "SmoothPlastic", { CanCollide = false })
+	local screenGui = Instance.new("SurfaceGui")
+	screenGui.Face = Enum.NormalId.Back
+	screenGui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	screenGui.PixelsPerStud = 50
+	screenGui.LightInfluence = 0
+	screenGui.Parent = screen
+	local screenBg = Instance.new("Frame")
+	screenBg.Size = UDim2.fromScale(0.92, 0.88)
+	screenBg.Position = UDim2.fromScale(0.04, 0.06)
+	screenBg.BackgroundColor3 = Color3.fromRGB(110, 200, 250)
+	screenBg.Parent = screenGui
+	corner(screenBg, 0.1)
+	guiText(screenBg, { Text = "🛒", Position = UDim2.fromScale(0.2, 0.1), Size = UDim2.fromScale(0.6, 0.8) })
+	-- Anneau lumineux autour de la caisse.
+	local ring = cylinder(shop, "ShopRing", 0.12, 16, Vector3.new(6, FLOOR_TOP + 0.06, 637), Color3.fromRGB(70, 255, 90), "Neon")
+	ring.CanCollide = false
+	ring.Transparency = 0.3
+	local ringInner = cylinder(shop, "ShopRingInner", 0.14, 15, Vector3.new(6, FLOOR_TOP + 0.07, 637), Color3.fromRGB(236, 218, 186), "Slate")
+	ringInner.CanCollide = false
 	local shopPrompt = Instance.new("ProximityPrompt")
 	shopPrompt.Name = "ShopPrompt"
 	shopPrompt.ActionText = "Open Shop"
@@ -3872,52 +3988,62 @@ function Hub.Build(root)
 	shopPrompt.MaxActivationDistance = 12
 	shopPrompt.RequiresLineOfSight = false
 	shopPrompt.Parent = counter
-	Hub.Assistant(shop, 4, 628.5)
-	for i = 0, 3 do
-		local shelfX = -24 + i * 16
-		block(shop, "BackShelf", Vector3.new(12, 0.3, 2), Vector3.new(shelfX, FLOOR_TOP + 4, 621.2), COLORS.Wood, "Wood")
-		block(shop, "BackShelf", Vector3.new(12, 0.3, 2), Vector3.new(shelfX, FLOOR_TOP + 7, 621.2), COLORS.Wood, "Wood")
-		for k = 0, 4 do
-			for _, y in { 4.15, 7.15 } do
-				block(shop, "Goods", Vector3.new(1.4, 1.6, 1.2), Vector3.new(shelfX - 4.5 + k * 2.25, FLOOR_TOP + y + 0.8, 621.2), BRIGHT_COLORS[(i * 5 + k + (y > 5 and 3 or 0)) % #BRIGHT_COLORS + 1], "SmoothPlastic", { CanCollide = false })
-			end
+	Hub.Assistant(shop, -9, 631)
+	-- Enseigne "SHOP" (lettres vertes à gros contour) au-dessus de la caisse.
+	local signPart = block(shop, "ShopSign", Vector3.new(22, 6, 0.2), Vector3.new(4, FLOOR_TOP + 11, minZ + 0.3), Color3.new(1, 1, 1), "SmoothPlastic", { CanCollide = false, Transparency = 1 })
+	local signGui = Instance.new("SurfaceGui")
+	signGui.Face = Enum.NormalId.Back
+	signGui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	signGui.PixelsPerStud = 40
+	signGui.LightInfluence = 0
+	signGui.Parent = signPart
+	guiText(signGui, { Text = "SHOP", Font = Enum.Font.LuckiestGuy, Color = Color3.fromRGB(110, 230, 90), Stroke = Color3.fromRGB(20, 80, 30), StrokeThickness = 14 })
+	local title = newSign(shop, "GameTitle", string.upper(TidyConfig.GameTitle), Vector3.new(56, 4.5, 0.3), Vector3.new(0, FLOOR_TOP + 19.5, minZ + 0.3), Vector3.new(0, 0, 1), Hub.PlumDark, Color3.fromRGB(255, 214, 90))
+	title:FindFirstChild("SignGuiFront").Text.Font = Enum.Font.LuckiestGuy
+	-- Affiches des articles de chaque côté de la caisse.
+	local featured = {
+		{ "Product", TidyConfig.GetProduct("Deal") },
+		{ "Pass", TidyConfig.GetPass("Carry15") },
+		{ "Pass", TidyConfig.GetPass("DoublePoints") },
+		{ "Pass", TidyConfig.GetPass("InfiniteMagnet") },
+		{ "Pass", TidyConfig.GetPass("VIP") },
+		{ "Product", TidyConfig.GetProduct("Helper") },
+	}
+	local posterX = { -56, -44, -24, 26, 42, 56 }
+	for i, f in featured do
+		if f[2] then
+			Hub.Poster(decor, f[2], f[1], posterX[i], 625)
 		end
 	end
-	local shopSign = newSign(shop, "ShopSign", "SHOP", Vector3.new(16, 4.5, 0.4), Vector3.new(0, FLOOR_TOP + 11.5, minZ + 0.3), Vector3.new(0, 0, 1), Color3.fromRGB(255, 90, 170), COLORS.White)
-	shopSign:FindFirstChild("SignGuiFront").Text.Font = Enum.Font.LuckiestGuy
-	shopSign.Material = Enum.Material.Neon
-	local title = newSign(shop, "GameTitle", string.upper(TidyConfig.GameTitle), Vector3.new(60, 5, 0.4), Vector3.new(0, FLOOR_TOP + 18.5, minZ + 0.3), Vector3.new(0, 0, 1), Color3.fromRGB(36, 44, 80), Color3.fromRGB(255, 214, 90))
-	title:FindFirstChild("SignGuiFront").Text.Font = Enum.Font.LuckiestGuy
 
-	-- Vitrines des pass devant la boutique.
-	for i, pass in TidyConfig.GamePasses do
-		Hub.DisplayStand(decor, pass, -25 + (i - 1) * 10, 646)
-	end
-
-	-- Files d'attente le long des murs est et ouest.
+	-- Tapis de départ le long des murs est et ouest, sous des fenêtres en arc.
 	local pads = {}
 	local index = 0
 	for _, side in { -1, 1 } do
-		for _, z in { 655, 690, 725 } do
+		for _, z in { 660, 690, 720 } do
 			index += 1
-			table.insert(pads, Hub.QueuePad(decor, index, side * 59, z, side))
+			table.insert(pads, Hub.QueuePad(decor, index, side * 58, z, side))
 		end
 	end
 
-	-- Classement, rangs et borne "rejoindre un ami".
-	local leaderboard = createBoard(decor, "LeaderboardBoard", Vector3.new(-30, FLOOR_TOP + 9, 754), Vector3.new(0, 0, -1), "TOP TIDIERS", 10, Color3.fromRGB(36, 44, 80))
-	local ranksBoard = createBoard(decor, "RanksBoard", Vector3.new(30, FLOOR_TOP + 9, 754), Vector3.new(0, 0, -1), "RANKS", #TidyConfig.Ranks, Color3.fromRGB(36, 44, 80))
-	for i, rank in TidyConfig.Ranks do
-		local line = ranksBoard:FindFirstChild("Line" .. i)
-		if line then
-			line.Text = rank.Name .. "  -  " .. TidyConfig.FormatNumber(rank.Items) .. " items"
-		end
+	-- Mur des classements à l'entrée (de chaque côté de la porte).
+	local boards = {}
+	local monuments = {
+		{ "Wins", -48, "TOP WINS", Color3.fromRGB(110, 240, 230), Color3.fromRGB(200, 240, 220) },
+		{ "Agency", -24, "AGENCY  FASTEST", Color3.fromRGB(200, 120, 255), Color3.fromRGB(236, 226, 250) },
+		{ "Warehouse", 24, "WAREHOUSE  FASTEST", Color3.fromRGB(255, 70, 80), Color3.fromRGB(250, 228, 232) },
+		{ "Headquarters", 48, "HQ  FASTEST", Color3.fromRGB(70, 110, 255), Color3.fromRGB(226, 232, 252) },
+	}
+	for _, m in monuments do
+		boards[m[1]] = Hub.Monument(decor, "Leaderboard_" .. m[1], m[2], maxZ - 2.2, Vector3.new(0, 0, -1), m[3], m[4], m[5])
 	end
+
+	-- Borne "rejoindre un ami".
 	local kiosk = newModel(decor, "JoinKiosk")
-	block(kiosk, "KioskBase", Vector3.new(3, 1, 2), Vector3.new(14, FLOOR_TOP + 0.5, 744), Color3.fromRGB(36, 44, 80), "SmoothPlastic")
-	local kioskBody = block(kiosk, "KioskBody", Vector3.new(2.4, 5, 1.4), Vector3.new(14, FLOOR_TOP + 3.5, 744), Color3.fromRGB(250, 250, 250), "SmoothPlastic")
-	block(kiosk, "KioskScreen", Vector3.new(2, 2.4, 0.1), Vector3.new(14, FLOOR_TOP + 4.4, 744.75), Color3.fromRGB(80, 200, 255), "Neon", { CanCollide = false })
-	newSign(kiosk, "KioskSign", "JOIN A FRIEND", Vector3.new(4, 1, 0.1), Vector3.new(14, FLOOR_TOP + 6.7, 744.75), Vector3.new(0, 0, 1), Color3.fromRGB(255, 90, 170), COLORS.White)
+	block(kiosk, "KioskBase", Vector3.new(3, 1, 2), Vector3.new(10, FLOOR_TOP + 0.5, 744), Hub.PlumDark, "SmoothPlastic")
+	local kioskBody = block(kiosk, "KioskBody", Vector3.new(2.4, 5, 1.4), Vector3.new(10, FLOOR_TOP + 3.5, 744), Color3.fromRGB(250, 250, 250), "SmoothPlastic")
+	block(kiosk, "KioskScreen", Vector3.new(2, 2.4, 0.1), Vector3.new(10, FLOOR_TOP + 4.4, 743.25), Color3.fromRGB(80, 200, 255), "Neon", { CanCollide = false })
+	newSign(kiosk, "KioskSign", "JOIN A FRIEND", Vector3.new(4, 1, 0.1), Vector3.new(10, FLOOR_TOP + 6.7, 743.25), Vector3.new(0, 0, -1), Hub.Plum, COLORS.White)
 	local kioskPrompt = Instance.new("ProximityPrompt")
 	kioskPrompt.Name = "JoinPrompt"
 	kioskPrompt.ActionText = "Enter a code"
@@ -3927,8 +4053,8 @@ function Hub.Build(root)
 	kioskPrompt.RequiresLineOfSight = false
 	kioskPrompt.Parent = kioskBody
 
-	local spawn = createSpawn(root, "HubSpawn", Vector3.new(0, FLOOR_TOP, 750))
-	return spawn, pads, leaderboard
+	local spawn = createSpawn(root, "HubSpawn", Vector3.new(0, FLOOR_TOP, 740))
+	return spawn, pads, boards
 end
 
 ---------------------------------------------------------------------------
@@ -4084,11 +4210,11 @@ function AgencyBuilder.BuildHub()
 	root.Name = "TidyHub"
 	local wasCollecting = collectObstacles
 	collectObstacles = false
-	local spawn, pads, leaderboard = Hub.Build(root)
+	local spawn, pads, boards = Hub.Build(root)
 	collectObstacles = wasCollecting
 	setFloor(GROUND_TOP)
 	root.Parent = Workspace
-	return { Spawn = spawn, Pads = pads, Leaderboard = leaderboard, Root = root }
+	return { Spawn = spawn, Pads = pads, Boards = boards, Root = root }
 end
 
 function AgencyBuilder.GetItemsFolder()

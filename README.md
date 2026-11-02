@@ -9,9 +9,14 @@ au lancement du jeu**. Il n'y a rien à poser à la main dans Studio.
 
 ## Nouveautés de la version 7
 
-- **Hall d'accueil intérieur** : verrière en voûte, néons, colonnes de marbre, palmiers, fontaine,
-  **6 files d'attente** lumineuses, **boutique avec un assistant** et vitrines des pass, classement,
+- **Hall d'accueil intérieur** : murs rosés et soubassement en bois, verrière violette en voûte,
+  fenêtres en arc, colonnes, palmiers, fontaine, **6 plateformes vertes** (« Empty / Waiting for players / PLAY »),
   borne « Join a friend ».
+- **Mur des classements à l'entrée** : 4 grands panneaux surmontés d'une gemme lumineuse,
+  **TOP WINS** et **temps le plus rapide** pour chaque niveau (records sauvegardés).
+- **Boutique stylée** : enseigne SHOP verte, assistant sur sa plateforme, **6 affiches en arc**
+  des articles Robux (cliquer = acheter directement), nouvelle fenêtre boutique en cartes
+  (GAME PASSES / POINTS & BOOSTS, rubans NEW!, BEST!, DEAL!).
 - **3 niveaux** :
   - **Employment Agency** : l'agence pour l'emploi, 16 pièces sur 2 étages, 1 122 objets ;
   - **Distribution Warehouse** : immense entrepôt de 9 sections, 2 320 objets (débloqué après 1 victoire) ;

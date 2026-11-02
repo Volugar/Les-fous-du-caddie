@@ -620,33 +620,64 @@ for i, upgrade in TidyConfig.Upgrades do
 end
 
 ---------------------------------------------------------------------------
--- Boutique Robux
+-- Boutique Robux (fenêtre crème : en-tête avec icône, sections, cartes avec badge rond)
 ---------------------------------------------------------------------------
-local shopWindow = makeWindow("Shop", "SHOP", UDim2.new(0, 760, 0, 560))
-local shopTabs = {}
-local shopPages = {}
-for i, tab in { { "Passes", "⭐ Game Passes" }, { "Products", "🪙 Points & Boosts" } } do
-	local tabButton = button(shopWindow, { Name = tab[1] .. "Tab", Position = UDim2.new(0, 16 + (i - 1) * 230, 0, 68), Size = UDim2.new(0, 220, 0, 42), Text = tab[2], BackgroundColor3 = THEME.CreamDark, TextColor3 = THEME.Brown, ZIndex = 6 })
-	shopTabs[tab[1]] = tabButton
-	local page = make("ScrollingFrame", { Name = tab[1] .. "Page", Position = UDim2.new(0, 16, 0, 120), Size = UDim2.new(1, -32, 1, -136), BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 8, AutomaticCanvasSize = Enum.AutomaticSize.Y, CanvasSize = UDim2.new(), Visible = i == 1, ZIndex = 6, Parent = shopWindow })
-	make("UIGridLayout", { CellSize = UDim2.new(0, 232, 0, 196), CellPadding = UDim2.new(0, 10, 0, 10), SortOrder = Enum.SortOrder.LayoutOrder, Parent = page })
-	shopPages[tab[1]] = page
+local ROBUX = utf8.char(0xE002)
+local shopWindow = makeWindow("Shop", "SHOP", UDim2.new(0, 820, 0, 620))
+shopWindow.BackgroundColor3 = Color3.fromRGB(250, 243, 226)
+shopWindow.Header.Visible = false
+do
+	local iconCircle = make("Frame", { Name = "IconCircle", Position = UDim2.new(0, 34, 0, 22), Size = UDim2.new(0, 84, 0, 84), BackgroundColor3 = Color3.fromRGB(236, 224, 196), ZIndex = 6, Parent = shopWindow })
+	addCorner(iconCircle, UDim.new(1, 0))
+	label(iconCircle, { Text = "🏪", Position = UDim2.fromScale(0.15, 0.15), Size = UDim2.fromScale(0.7, 0.7), ZIndex = 7 })
+	label(shopWindow, { Name = "ShopTitle", Position = UDim2.new(0, 132, 0, 18), Size = UDim2.new(0, 360, 0, 58), Text = "SHOP", Font = Enum.Font.GothamBlack, TextColor3 = Color3.fromRGB(60, 44, 30), TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 6 })
+	label(shopWindow, { Name = "Subtitle", Position = UDim2.new(0, 134, 0, 74), Size = UDim2.new(0, 360, 0, 26), Text = "Speed up the tidying!", Font = Enum.Font.GothamMedium, TextColor3 = Color3.fromRGB(110, 90, 66), TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 6 })
+	make("Frame", { Name = "Underline", Position = UDim2.new(0, 132, 0, 106), Size = UDim2.new(0, 380, 0, 3), BackgroundColor3 = THEME.Gold, BorderSizePixel = 0, ZIndex = 6, Parent = shopWindow })
+	local close = make("TextButton", { Name = "CloseShop", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -24, 0, 22), Size = UDim2.new(0, 54, 0, 54), BackgroundColor3 = Color3.fromRGB(250, 246, 236), Text = "✕", Font = Enum.Font.GothamBold, TextScaled = true, TextColor3 = Color3.fromRGB(60, 44, 30), ZIndex = 7, Parent = shopWindow })
+	addCorner(close, UDim.new(0, 10))
+	addStroke(close, Color3.fromRGB(110, 90, 66), 2)
+	make("UIPadding", { PaddingTop = UDim.new(0, 12), PaddingBottom = UDim.new(0, 12), PaddingLeft = UDim.new(0, 12), PaddingRight = UDim.new(0, 12), Parent = close })
+	close.Activated:Connect(function()
+		shopWindow.Visible = false
+	end)
 end
-local shopTiles = {}
-local function shopTile(page, kind, entry, order)
-	local tile = make("Frame", { Name = entry.Id, LayoutOrder = order, BackgroundColor3 = THEME.White, ZIndex = 7, Parent = page })
-	addCorner(tile, UDim.new(0, 12))
-	addStroke(tile, if entry.Best then THEME.Orange else THEME.CreamDark, if entry.Best then 3 else 2)
-	label(tile, { Name = "Icon", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 6), Size = UDim2.new(0, 64, 0, 56), Text = entry.Icon, ZIndex = 8 })
-	label(tile, { Name = "Name", Position = UDim2.new(0, 8, 0, 62), Size = UDim2.new(1, -16, 0, 28), Text = entry.Name, ZIndex = 8 })
-	label(tile, { Name = "Desc", Position = UDim2.new(0, 10, 0, 92), Size = UDim2.new(1, -20, 0, 44), Text = entry.Description, TextWrapped = true, Font = Enum.Font.GothamMedium, TextColor3 = THEME.Muted, ZIndex = 8 })
-	if entry.Best then
-		local ribbon = make("Frame", { Name = "Best", Position = UDim2.new(0, -6, 0, 8), Size = UDim2.new(0, 92, 0, 24), BackgroundColor3 = THEME.Orange, Rotation = -8, ZIndex = 9, Parent = tile })
-		addCorner(ribbon, UDim.new(0, 6))
-		label(ribbon, { Size = UDim2.fromScale(1, 1), Text = "BEST!", TextColor3 = THEME.White, ZIndex = 10 })
+local shopScroll = make("ScrollingFrame", { Name = "ShopScroll", Position = UDim2.new(0, 40, 0, 128), Size = UDim2.new(1, -80, 1, -150), BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 8, ScrollBarImageColor3 = THEME.GoldDark, AutomaticCanvasSize = Enum.AutomaticSize.Y, CanvasSize = UDim2.new(), ZIndex = 6, Parent = shopWindow })
+make("UIListLayout", { Padding = UDim.new(0, 16), SortOrder = Enum.SortOrder.LayoutOrder, HorizontalAlignment = Enum.HorizontalAlignment.Center, Parent = shopScroll })
+local shopSections = {}
+local function shopSection(order, text)
+	local header = make("Frame", { Name = "Section" .. order, LayoutOrder = order, Size = UDim2.new(1, -20, 0, 40), BackgroundTransparency = 1, ZIndex = 6, Parent = shopScroll })
+	for _, side in { 0, 1 } do
+		make("Frame", { AnchorPoint = Vector2.new(side, 0.5), Position = UDim2.new(side, 0, 0.5, 0), Size = UDim2.new(0.28, 0, 0, 2), BackgroundColor3 = THEME.Gold, BorderSizePixel = 0, ZIndex = 6, Parent = header })
 	end
-	local buy = button(tile, { Name = "Buy", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -8), Size = UDim2.new(1, -24, 0, 44), Text = "R$ " .. entry.Price, Font = FONT_BIG, ZIndex = 8 })
-	addStroke(buy, THEME.GreenDark, 2)
+	label(header, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 0), Size = UDim2.new(0.42, 0, 1, 0), Text = text, Font = Enum.Font.GothamBlack, TextColor3 = Color3.fromRGB(60, 44, 30), ZIndex = 7 })
+	local grid = make("Frame", { Name = "Grid" .. order, LayoutOrder = order + 1, Size = UDim2.new(1, -20, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1, ZIndex = 6, Parent = shopScroll })
+	make("UIGridLayout", { CellSize = UDim2.new(0.5, -12, 0, 240), CellPadding = UDim2.new(0, 20, 0, 18), SortOrder = Enum.SortOrder.LayoutOrder, Parent = grid })
+	shopSections[order] = header
+	return grid
+end
+local passesGrid = shopSection(1, "GAME PASSES")
+local productsGrid = shopSection(3, "POINTS & BOOSTS")
+local shopTiles = {}
+local function shopTile(grid, kind, entry, order, ribbonText)
+	local tile = make("Frame", { Name = entry.Id, LayoutOrder = order, BackgroundColor3 = Color3.fromRGB(253, 249, 238), ZIndex = 7, Parent = grid })
+	addCorner(tile, UDim.new(0, 12))
+	addStroke(tile, Color3.fromRGB(200, 170, 110), 2)
+	label(tile, { Name = "Name", Position = UDim2.new(0, 10, 0, 10), Size = UDim2.new(1, -20, 0, 30), Text = entry.Name, Font = Enum.Font.GothamBold, TextColor3 = Color3.fromRGB(60, 44, 30), ZIndex = 8 })
+	local badge = make("Frame", { Name = "Badge", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 44), Size = UDim2.new(0, 92, 0, 92), BackgroundColor3 = Color3.fromRGB(120, 210, 90), ZIndex = 8, Parent = tile })
+	addCorner(badge, UDim.new(1, 0))
+	addStroke(badge, Color3.fromRGB(50, 60, 40), 3)
+	make("UIGradient", { Color = ColorSequence.new(Color3.fromRGB(250, 250, 170), Color3.fromRGB(70, 170, 60)), Rotation = 90, Parent = badge })
+	label(badge, { Text = entry.Icon, Position = UDim2.fromScale(0.16, 0.16), Size = UDim2.fromScale(0.68, 0.68), ZIndex = 9 })
+	label(tile, { Name = "Desc", Position = UDim2.new(0, 16, 0, 140), Size = UDim2.new(1, -32, 0, 40), Text = entry.Description, TextWrapped = true, Font = Enum.Font.GothamMedium, TextColor3 = Color3.fromRGB(80, 64, 46), ZIndex = 8 })
+	local buy = make("TextButton", { Name = "Buy", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -12), Size = UDim2.new(0.74, 0, 0, 40), BackgroundColor3 = Color3.fromRGB(206, 160, 56), Text = ROBUX .. " " .. entry.Price, Font = Enum.Font.GothamBlack, TextScaled = true, TextColor3 = THEME.White, AutoButtonColor = true, ZIndex = 8, Parent = tile })
+	addCorner(buy, UDim.new(0, 8))
+	addStroke(buy, Color3.fromRGB(150, 110, 30), 2)
+	make("UIPadding", { PaddingTop = UDim.new(0, 6), PaddingBottom = UDim.new(0, 6), Parent = buy })
+	if ribbonText then
+		local ribbon = make("Frame", { Name = "Ribbon", Position = UDim2.new(0, -14, 0, -8), Size = UDim2.new(0, 96, 0, 26), Rotation = -12, BackgroundColor3 = Color3.fromRGB(242, 186, 60), ZIndex = 10, Parent = tile })
+		addCorner(ribbon, UDim.new(0, 4))
+		label(ribbon, { Size = UDim2.fromScale(1, 1), Text = ribbonText, Font = Enum.Font.GothamBlack, TextColor3 = THEME.White, ZIndex = 11 })
+	end
 	buy.Activated:Connect(function()
 		local ok, message = shopFunction:InvokeServer(kind, entry.Id)
 		if message and message ~= "" then
@@ -656,21 +687,18 @@ local function shopTile(page, kind, entry, order)
 	shopTiles[kind .. entry.Id] = { Buy = buy, Entry = entry, Kind = kind }
 end
 for i, pass in TidyConfig.GamePasses do
-	shopTile(shopPages.Passes, "Pass", pass, i)
+	shopTile(passesGrid, "Pass", pass, i, if i == 1 then "NEW!" elseif pass.Best then "BEST!" else nil)
 end
 for i, product in TidyConfig.Products do
-	shopTile(shopPages.Products, "Product", product, i)
+	shopTile(productsGrid, "Product", product, i, if product.OneTime then "DEAL!" else nil)
 end
+-- Fait défiler la boutique jusqu'à une section ("Passes" ou "Products").
 local function showShopTab(name)
-	for tabName, page in shopPages do
-		page.Visible = tabName == name
-		shopTabs[tabName].BackgroundColor3 = if tabName == name then THEME.Gold else THEME.CreamDark
-		shopTabs[tabName].TextColor3 = if tabName == name then THEME.White else THEME.Brown
-	end
-end
-for tabName, tabButton in shopTabs do
-	tabButton.Activated:Connect(function()
-		showShopTab(tabName)
+	local header = if name == "Products" then shopSections[3] else shopSections[1]
+	task.defer(function()
+		pcall(function()
+			shopScroll.CanvasPosition = Vector2.new(0, math.max(0, header.AbsolutePosition.Y - shopScroll.AbsolutePosition.Y + shopScroll.CanvasPosition.Y))
+		end)
 	end)
 end
 showShopTab("Passes")
@@ -954,8 +982,8 @@ local function updatePoints()
 		elseif tile.Entry.OneTime then
 			owned = player:GetAttribute("DealBought") == true
 		end
-		tile.Buy.Text = if owned then "OWNED" else ("R$ " .. tile.Entry.Price)
-		tile.Buy.BackgroundColor3 = if owned then THEME.Locked else THEME.Green
+		tile.Buy.Text = if owned then "OWNED" else (ROBUX .. " " .. tile.Entry.Price)
+		tile.Buy.BackgroundColor3 = if owned then THEME.Locked else Color3.fromRGB(206, 160, 56)
 		tile.Buy.Active = not owned
 	end
 end
@@ -1437,7 +1465,14 @@ ProximityPromptService.PromptTriggered:Connect(function(prompt)
 	if prompt.Name == "ShopPrompt" then
 		closeAllWindows("Shop")
 		shopWindow.Visible = true
-		showShopTab("Passes")
+		local kind, itemId = prompt:GetAttribute("ShopKind"), prompt:GetAttribute("ShopItem")
+		showShopTab(if kind == "Product" then "Products" else "Passes")
+		if type(kind) == "string" and type(itemId) == "string" then
+			local ok, message = shopFunction:InvokeServer(kind, itemId)
+			if message and message ~= "" then
+				showToast(message, if ok then "purchase" else "error")
+			end
+		end
 	elseif prompt.Name == "JoinPrompt" then
 		closeAllWindows("Join")
 		joinWindow.Visible = true

@@ -87,6 +87,8 @@ local totalItems, remainingItems = 0, 0
 local roomTotals, roomPlaced = {}, {}
 local placedRecord = {} -- "pièce|type|catégorie" -> nombre rangé aujourd'hui
 local placedThisRound = 0
+local roundStartedAt = os.clock()
+local roundTimed = true -- faux si la journée a repris une sauvegarde (temps non comparable)
 local roundRestored = false
 local unlockedRooms = {}
 
@@ -579,8 +581,24 @@ local function putItemInSlot(item, zone, slot)
 end
 
 -- Journée terminée : tout le niveau est rangé. Victoire pour tous les joueurs du niveau.
+local function formatDuration(seconds)
+	seconds = math.max(0, math.floor(seconds))
+	if seconds >= 3600 then
+		return string.format("%d:%02d:%02d", seconds // 3600, (seconds % 3600) // 60, seconds % 60)
+	end
+	return string.format("%d:%02d", seconds // 60, seconds % 60)
+end
+
 local function completeDay()
+	local elapsed = math.floor(os.clock() - roundStartedAt)
 	for player, state in states do
+		if state.InMap and roundTimed and elapsed > 0 then
+			local best = state.BestTimes[activeMap]
+			if not best or elapsed < best then
+				state.BestTimes[activeMap] = elapsed
+				notify(player, "room", "🏆 New personal record: " .. formatDuration(elapsed) .. "!")
+			end
+		end
 		if state.InMap then
 			state.Wins += 1
 			state.MapWins[activeMap] = (state.MapWins[activeMap] or 0) + 1
@@ -592,6 +610,9 @@ local function completeDay()
 			task.spawn(saveData, player, state)
 		end
 	end
+	task.delay(3, function()
+		updateLeaderboard()
+	end)
 end
 
 -- Récompenses et messages après avoir rangé un objet (joueur ou aide de la boutique).
@@ -896,6 +917,7 @@ local function restoreDayProgress(player, state)
 		return
 	end
 	roundRestored = true
+	roundTimed = false
 	local freeSlots = {}
 	for _, zone in level.Zones do
 		local key = zone:GetAttribute("ItemType") .. "|" .. (zone:GetAttribute("Category") or "-")
@@ -958,6 +980,8 @@ function startRound()
 	roomTotals, roomPlaced, placedRecord = {}, {}, {}
 	placedThisRound = 0
 	roundRestored = false
+	roundStartedAt = os.clock()
+	roundTimed = true
 	for _, item in items do
 		local itemType = item:GetAttribute("ItemType")
 		totals[itemType] = (totals[itemType] or 0) + 1
@@ -1113,6 +1137,16 @@ do
 	end
 end
 
+-- Classements du mur de l'entrée : victoires, et meilleur temps sur chaque niveau.
+local winsStore = nil
+local timeStores = {}
+pcall(function()
+	winsStore = DataStoreService:GetOrderedDataStore("NorthfieldWins_v1")
+	for _, map in TidyConfig.Maps do
+		timeStores[map.Id] = DataStoreService:GetOrderedDataStore("NorthfieldBestTime_" .. map.Id .. "_v1")
+	end
+end)
+
 local function saveKey(player)
 	return "player_" .. player.UserId
 end
@@ -1155,6 +1189,7 @@ local function buildSaveData(player, state)
 		LastDay = state.LastDay,
 		DaysCompleted = state.DaysCompleted,
 		Quests = state.Quests,
+		BestTimes = state.BestTimes,
 		DayProgress = state.DayProgress,
 		DealBought = state.DealBought,
 		HelperCharges = state.HelperCharges,
@@ -1180,6 +1215,19 @@ function saveData(player, state)
 				pcall(function()
 					lifetimeStore:SetAsync(tostring(player.UserId), state.Lifetime)
 				end)
+			end
+			if winsStore and state.Wins > 0 then
+				pcall(function()
+					winsStore:SetAsync(tostring(player.UserId), state.Wins)
+				end)
+			end
+			for mapId, seconds in state.BestTimes do
+				local store = timeStores[mapId]
+				if store then
+					pcall(function()
+						store:SetAsync(tostring(player.UserId), seconds)
+					end)
+				end
 			end
 			return true
 		end
@@ -1219,6 +1267,14 @@ local function applySaveData(player, state, data)
 	if type(data.Earned) == "table" then
 		for _, map in TidyConfig.Maps do
 			state.Earned[map.Id] = math.max(0, readNumber(data.Earned[map.Id], 0))
+		end
+	end
+	if type(data.BestTimes) == "table" then
+		for _, map in TidyConfig.Maps do
+			local t = tonumber(data.BestTimes[map.Id])
+			if t and t > 0 then
+				state.BestTimes[map.Id] = math.floor(t)
+			end
 		end
 	end
 	if type(data.MapWins) == "table" then
@@ -1589,16 +1645,16 @@ local function publishQueue(queue)
 	local pad = queue.Pad
 	local map = queue.Map and TidyConfig.GetMap(queue.Map)
 	if #queue.Members == 0 then
-		pad.Title.Text = "EMPTY"
-		pad.Status.Text = "Step on to play"
+		pad.Title.Text = "Empty"
+		pad.Status.Text = "Waiting for players"
 	elseif queue.Countdown then
-		pad.Title.Text = string.upper(map and map.Name or "")
+		pad.Title.Text = (map and map.Icon .. " " .. map.Name) or ""
 		pad.Status.Text = "Starting in " .. math.max(0, math.ceil(queue.Countdown)) .. "..."
 	elseif not map then
-		pad.Title.Text = "CHOOSING A LEVEL"
-		pad.Status.Text = queue.Host and (queue.Host.DisplayName .. " is choosing...") or ""
+		pad.Title.Text = "Choosing a map..."
+		pad.Status.Text = queue.Host and (queue.Host.DisplayName .. " is the host") or ""
 	else
-		pad.Title.Text = string.upper(map.Name)
+		pad.Title.Text = map.Icon .. " " .. map.Name
 		pad.Status.Text = "Waiting for players " .. #queue.Members .. "/" .. queue.Size
 	end
 	pad.Pad:SetAttribute("QueueMap", queue.Map or "")
@@ -1871,6 +1927,7 @@ local function onPlayerAdded(player)
 		LastDay = 0,
 		DaysCompleted = 0,
 		Quests = { Day = 0, Indices = {}, Progress = {}, Done = {} },
+		BestTimes = {},
 		DayProgress = {},
 		Passes = {},
 		DealBought = false,
@@ -1978,32 +2035,81 @@ local function nameOf(userId)
 	return "Player"
 end
 
-function updateLeaderboard()
-	local gui = hub and hub.Leaderboard
-	if not gui then
-		return
+-- Remplit un panneau avec des lignes { Name, Value }.
+local function fillBoard(rows, entries)
+	for i, row in rows do
+		local entry = entries[i]
+		row.Name.Text = if entry then entry.Name else "---"
+		row.Value.Text = if entry then entry.Value else ""
+	end
+end
+
+-- Lit un classement global ; renvoie nil si ce n'est pas possible (Studio sans accès aux données).
+local function readTop(store, ascending, format)
+	if not store then
+		return nil
 	end
 	local entries = {}
 	local ok = pcall(function()
-		local pages = lifetimeStore:GetSortedAsync(false, 10)
+		local pages = store:GetSortedAsync(ascending, 10)
 		for _, entry in pages:GetCurrentPage() do
-			table.insert(entries, { Name = nameOf(tonumber(entry.key) or 0), Items = entry.value })
+			table.insert(entries, { Name = nameOf(tonumber(entry.key) or 0), Value = format(entry.value) })
 		end
 	end)
 	if not ok or #entries == 0 then
-		entries = {}
-		for player, state in states do
-			table.insert(entries, { Name = player.Name, Items = state.Lifetime })
-		end
-		table.sort(entries, function(a, b)
-			return a.Items > b.Items
-		end)
+		return nil
 	end
-	for i = 1, 10 do
-		local line = gui:FindFirstChild("Line" .. i)
-		local entry = entries[i]
-		if line then
-			line.Text = if entry then (i .. ".  " .. entry.Name .. "  -  " .. TidyConfig.FormatNumber(entry.Items) .. " items") else (i .. ".  ---")
+	return entries
+end
+
+function updateLeaderboard()
+	local boards = hub and hub.Boards
+	if not boards then
+		return
+	end
+	-- Victoires
+	local wins = readTop(winsStore, false, function(v)
+		return TidyConfig.FormatNumber(v) .. " wins"
+	end)
+	if not wins then
+		local list = {}
+		for player, state in states do
+			if state.Wins > 0 then
+				table.insert(list, { Name = player.Name, Raw = state.Wins })
+			end
+		end
+		table.sort(list, function(a, b)
+			return a.Raw > b.Raw
+		end)
+		wins = {}
+		for i, e in list do
+			wins[i] = { Name = e.Name, Value = TidyConfig.FormatNumber(e.Raw) .. " wins" }
+		end
+	end
+	if boards.Wins then
+		fillBoard(boards.Wins, wins)
+	end
+	-- Meilleurs temps par niveau
+	for _, map in TidyConfig.Maps do
+		local rows = boards[map.Id]
+		if rows then
+			local top = readTop(timeStores[map.Id], true, formatDuration)
+			if not top then
+				local list = {}
+				for player, state in states do
+					if state.BestTimes[map.Id] then
+						table.insert(list, { Name = player.Name, Raw = state.BestTimes[map.Id] })
+					end
+				end
+				table.sort(list, function(a, b)
+					return a.Raw < b.Raw
+				end)
+				top = {}
+				for i, e in list do
+					top[i] = { Name = e.Name, Value = formatDuration(e.Raw) }
+				end
+			end
+			fillBoard(rows, top)
 		end
 	end
 end
