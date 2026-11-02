@@ -30,6 +30,10 @@ local AgencyBuilder = require(ServerScriptService:WaitForChild("AgencyBuilder"))
 local isRoomServer = game.PrivateServerId ~= "" and game.PrivateServerOwnerId == 0
 local isTestServer = RunService:IsStudio() or game.PlaceId == 0
 ReplicatedStorage:SetAttribute("IsRoomServer", isRoomServer)
+-- Mode test (Studio seulement) : tous les niveaux et toutes les pièces ouverts, beaucoup de points,
+-- rien n'est sauvegardé (la vraie sauvegarde n'est jamais touchée). Réglage : TidyConfig.TestUnlockAll.
+local unlockAll = RunService:IsStudio() and TidyConfig.TestUnlockAll == true
+ReplicatedStorage:SetAttribute("TestUnlockAll", unlockAll)
 
 local MAX_DISTANCE = TidyConfig.ReachDistance + TidyConfig.ServerDistanceMargin
 local MAGNET_COOLDOWN = 0.5
@@ -316,7 +320,7 @@ local function applyVipTag(player, state)
 	local label = Instance.new("TextLabel")
 	label.BackgroundTransparency = 1
 	label.Size = UDim2.fromScale(1, 1)
-	label.Font = Enum.Font.LuckiestGuy
+	label.Font = Enum.Font.FredokaOne
 	label.Text = "👑 VIP"
 	label.TextColor3 = Color3.fromRGB(255, 210, 70)
 	label.TextStrokeColor3 = Color3.fromRGB(90, 50, 10)
@@ -466,7 +470,7 @@ local function refreshUnlocks(silent)
 	local earned = bestEarned()
 	local opened = {}
 	for _, room in TidyConfig.GetMapRooms(activeMap) do
-		if not unlockedRooms[room.Id] and earned >= room.Unlock then
+		if not unlockedRooms[room.Id] and (unlockAll or earned >= room.Unlock) then
 			unlockedRooms[room.Id] = true
 			table.insert(opened, room)
 		end
@@ -1791,7 +1795,7 @@ queueEvent.OnServerEvent:Connect(function(player, action, a, b)
 		if not map or not size then
 			return
 		end
-		if state.Wins < map.WinsRequired then
+		if not unlockAll and state.Wins < map.WinsRequired then
 			notify(player, "error", "🔒 " .. map.Name .. " needs " .. map.WinsRequired .. " win(s). Finish a level first!")
 			return
 		end
@@ -2003,6 +2007,11 @@ local function onPlayerAdded(player)
 			notify(player, "error", "Progress could not be loaded. It will not be saved this session.")
 		end
 		loadPasses(player, state)
+		if unlockAll then
+			state.CanSave = false
+			state.Points = math.max(state.Points, TidyConfig.TestPoints or 1000000)
+			notify(player, "quest", "🧪 TEST MODE: everything is unlocked (Studio only, nothing is saved).")
+		end
 		state.Loaded = true
 		ensureQuests(player, state)
 		giveDailyBonus(player, state)

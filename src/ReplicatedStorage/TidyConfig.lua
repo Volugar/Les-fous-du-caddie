@@ -252,9 +252,9 @@ TidyConfig.MagnetRadiusPerLevel = 4
 TidyConfig.Upgrades = {
 	{ Id = "Capacity", Name = "Bigger Basket", Icon = "🧺", Description = "Carry one more item", MaxLevel = 12, BaseCost = 60 },
 	{ Id = "Speed", Name = "Comfy Sneakers", Icon = "👟", Description = "Walk a little faster", MaxLevel = 6, BaseCost = 90 },
-	{ Id = "Magnet", Name = "Magnet", Icon = "🧲", Description = "Unlocks the magnet (tool 2), then increases its range", MaxLevel = 6, BaseCost = 150 },
-	{ Id = "Magnifier", Name = "Magnifier", Icon = "🔍", Description = "Unlocks the magnifier (tool 3): a light beam shows where to go", MaxLevel = 1, BaseCost = 120 },
-	{ Id = "QuickStock", Name = "Quick Stock", Icon = "🗄️", Description = "Unlocks Quick Stock (tool 4): put away ALL matching items in one click", MaxLevel = 1, BaseCost = 600 },
+	{ Id = "Magnet", Name = "Magnet", Icon = "🧲", Description = "Unlocks tool 2, then more range", MaxLevel = 6, BaseCost = 150 },
+	{ Id = "Magnifier", Name = "Magnifier", Icon = "🔍", Description = "Tool 3: a beam shows where to go", MaxLevel = 1, BaseCost = 120 },
+	{ Id = "QuickStock", Name = "Quick Stock", Icon = "🗄️", Description = "Tool 4: put away all matching items", MaxLevel = 1, BaseCost = 600 },
 }
 
 ---------------------------------------------------------------------------
@@ -341,6 +341,12 @@ TidyConfig.QueueCountdown = 5
 -- Éclairage du jeu : 1 = normal (doux). Mettez par exemple 0.8 si c'est encore trop lumineux,
 -- ou 1.2 si c'est trop sombre. Agit sur le soleil, l'ambiance et toutes les lampes.
 TidyConfig.LightLevel = 1
+
+-- MODE TEST (dans Roblox Studio seulement, jamais dans le jeu publié) :
+-- true = tous les niveaux et toutes les pièces sont ouverts et vous avez TestPoints points
+-- pour tout essayer. Rien n'est sauvegardé pendant ce mode. Mettez false pour jouer "normalement" dans Studio.
+TidyConfig.TestUnlockAll = true
+TidyConfig.TestPoints = 1000000
 
 -- Musique d'ambiance. Mettez ici l'identifiant de la musique après l'avoir importée sur Roblox,
 -- au format "rbxassetid://123456789". Laissez vide pour jouer sans musique.

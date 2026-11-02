@@ -53,7 +53,9 @@
         }
       },
       "$properties": {
-        "StreamingEnabled": true
+        "StreamingEnabled": true,
+        "StreamingTargetRadius": 384,
+        "StreamingMinRadius": 96
       }
     },
     "ReplicatedStorage": {
@@ -84,7 +86,7 @@
       "$className": "Lighting",
       "$properties": {
         "Technology": {
-          "Enum": 4
+          "Enum": 3
         }
       }
     }

@@ -7,6 +7,28 @@ les poser sur la bonne étagère. Seul ou jusqu'à 4 joueurs.
 Tout le monde (hall d'accueil, niveaux, mobilier, objets, lumières) est **construit par les scripts
 au lancement du jeu**. Il n'y a rien à poser à la main dans Studio.
 
+## Nouveautés de la version 8
+
+- **Moins de lag** : éclairage ShadowMap (plus léger que Future), les petites pièces et les milliers d'objets
+  ne projettent plus d'ombre, le monde se charge autour du joueur (streaming), l'écran ne recalcule plus
+  toutes les étagères en permanence. Le réglage **Low graphics** coupe en plus les ombres et les effets.
+- **Nouvelle interface** : panneaux bleu nuit en verre, boutons colorés en relief, une seule famille de polices
+  (Fredoka One pour les titres et les chiffres, Builder Sans pour les textes), tailles de texte régulières.
+  Menu en bas à gauche (points, rang, Upgrades, Shop, Quests, Settings), compteurs en haut à droite,
+  fenêtre Upgrades avec barre de niveaux, boutique en cartes, tutoriel en cartes.
+- **Nouveau hall** : damier crème et lavande, murs bleu nuit et or, grande verrière à caissons, lustre, logo du jeu,
+  plateformes rondes numérotées, affiches dorées des articles Robux, classements bleu nuit et or.
+  L'assistant a été retiré.
+- **Mode test dans Studio** : tout le jeu est ouvert pour l'essayer (voir plus bas).
+
+## Mode test (pour analyser tout le jeu dans Studio)
+
+Dans le script **`TidyConfig`** : `TidyConfig.TestUnlockAll = true` (réglage par défaut).
+Quand vous cliquez sur **Play dans Roblox Studio** : les 3 niveaux et toutes les pièces sont ouverts et vous avez
+**1 000 000 de points** (`TidyConfig.TestPoints`) pour acheter toutes les améliorations. Rien n'est sauvegardé pendant
+ce mode, votre vraie progression n'est pas touchée. Le mode ne marche **jamais dans le jeu publié**.
+Mettez `false` pour tester la progression normale dans Studio.
+
 ## Nouveautés de la version 7
 
 - **Hall d'accueil intérieur** : murs rosés et soubassement en bois, verrière violette en voûte,
