@@ -1,55 +1,53 @@
 # Boutique Robux : fiche à remplir une seule fois
 
 Seul le propriétaire du jeu peut créer les articles Robux. Roblox ne permet à personne d'autre de le faire, ni à un script.
-Comptez environ 2 minutes par article, 7 articles en tout.
+Comptez environ 2 minutes par passe, 6 passes en tout, plus 1 minute pour les serveurs privés.
 
-## Les 7 articles et leur prix
+## Les 6 passes
 
-| # | Nom à mettre | Type | Prix (Robux) | Ce que ça fait |
-|---|---|---|---|---|
-| 1 | Starter Deal | Developer Product | **49** | 3 000 points + 3 places de panier pour toujours. Achat unique, mis en avant tout en haut de la boutique. |
-| 2 | x2 Points | Game Pass | **199** | Double tous les points gagnés. |
-| 3 | Big Basket | Game Pass | **149** | 15 places de panier en plus, pour toujours. |
-| 4 | Super Magnet | Game Pass | **249** | Aimant débloqué avec une portée de 60 studs. |
-| 5 | VIP | Game Pass | **399** | Étiquette VIP dorée, +25 % de points, bonus quotidien x2. |
-| 6 | Points Pack | Developer Product | **99** | 10 000 points (achat répétable). |
-| 7 | Tidy Helper | Developer Product | **25** | Range 50 objets tout seul (achat répétable). |
+| # | Nom à mettre | Prix (Robux) | Ce que ça fait |
+|---|---|---|---|
+| 1 | VIP | **39** | Titre doré « 👑 VIP » au-dessus de la tête et panier doré visible par tous. |
+| 2 | +5 Carry | **49** | 5 objets de plus dans le panier (10 au total). |
+| 3 | +15 Carry | **129** | 15 objets de plus (cumulable). |
+| 4 | +30 Carry | **200** | 30 objets de plus (cumulable). |
+| 5 | Max Speed | **89** | Vitesse maximale tout de suite, pour toujours. |
+| 6 | Infinite Magnet | **699** | L'aimant attire les objets de toute la carte. |
 
-## Pourquoi ces prix
+**Les passes de panier s'additionnent** : 5 objets de base, 10 avec +5, 20 avec +15, 25 avec les deux,
+55 avec les trois. Seuls 5 objets restent visibles dans la pile, le compteur BASKET affiche le total.
 
-- **Ce qui vous revient** : vous touchez environ 70 % de chaque vente (Roblox garde 30 %).
-  Un pass à 199 R$ vous rapporte environ 139 R$.
-- **Une première dépense très petite** : l'offre de départ à 49 R$ fait passer un joueur de « je ne paie jamais » à « j'ai déjà acheté ».
-  Les développeurs Roblox rapportent que c'est l'étape la plus importante pour gagner de l'argent.
-- **x2 Points à 199** : c'est le pass le plus vendu dans les simulateurs. Les jeux comparables le vendent entre 199 et 399 R$.
-  199 est le bon prix pour un jeu qui démarre.
-- **Big Basket à 149** : une entrée de gamme facile. Dans Pet Simulator 99, le pass « +15 places » coûte 375.
-- **Super Magnet à 249** : c'est le confort le plus fort du jeu (ramasser de loin), donc un peu plus cher que x2 Points.
-- **VIP à 399** : c'est le pass « haut de gamme » qui fait paraître les autres moins chers. Le VIP de Pet Simulator 99 coûte 400.
-  399 R$ tient exactement dans le pack Robux à 4,99 € de l'application, le plus acheté par les jeunes joueurs.
-- **Points Pack à 99** et **Tidy Helper à 25** : des petits achats qu'on peut refaire, pour les joueurs qui veulent avancer plus vite.
-- **Prix régionaux** : Roblox baisse automatiquement les prix des pass dans les pays où le Robux coûte cher.
-  C'est activé par défaut, vous n'avez rien à faire.
-- J'ai retiré les doublons (+5 Carry, Max Speed, 1 000 et 30 000 points) : moins d'articles, chacun clairement utile.
-  Les joueurs qui avaient déjà acheté un ancien article le gardent.
+Pourquoi ces prix :
+- Le VIP à 39 et le +5 Carry à 49 sont des petites premières dépenses faciles.
+- Les paniers se cumulent, donc un joueur qui achète le +5 a envie du +15, puis du +30.
+- L'Infinite Magnet à 699 est l'article haut de gamme : les plus motivés le prennent, et il fait paraître les autres pas chers.
+- Vous touchez environ 70 % de chaque vente (Roblox garde 30 %).
 
-Sources : documentation officielle Roblox (monétisation, DevEx, prix régionaux), guides de prix 2025-2026,
-et les prix observés dans les jeux Roblox populaires du même genre.
+Les joueurs qui avaient acheté un ancien article (x2 Points, Big Basket…) le gardent.
 
-## Étapes
+## Étapes pour les passes
 
 1. Publiez le jeu : dans Studio, **File > Publish to Roblox**.
 2. Ouvrez le **Creator Hub** (create.roblox.com), puis votre expérience.
-3. Pour les 4 pass (lignes 2 à 5) : **Monetization > Passes > Create a Pass**.
-   - Mettez le nom, une image (vous pouvez prendre les miniatures du dossier `marketing`) et validez.
-   - Ouvrez le pass, cochez **Item for Sale** et mettez le prix du tableau.
-   - Copiez le **numéro du pass** (ID).
-4. Pour les 3 produits (lignes 1, 6 et 7) : **Monetization > Developer Products > Create**.
-   - Mettez le nom et le prix, puis copiez le **numéro** (ID).
-5. Dans Studio, ouvrez le script **`TidyConfig`** (dans ReplicatedStorage).
-   - Pour chaque article, remplacez `GamePassId = 0` ou `ProductId = 0` par le numéro copié.
-   - Exemple : `GamePassId = 123456789`.
-6. Publiez de nouveau. C'est fini.
+3. Pour chaque passe : **Monetization > Passes > Create a Pass**.
+   - Mettez le nom du tableau et une image. Les icônes prêtes à téléverser sont dans `marketing/pass_icons`.
+   - Ouvrez le passe, cochez **Item for Sale** et mettez le prix du tableau.
+   - Copiez le **numéro du passe** (ID).
+4. Dans Studio, ouvrez le script **`TidyConfig`** (dans ReplicatedStorage).
+   Pour chaque passe, remplacez `GamePassId = 0` par le numéro copié (exemple : `GamePassId = 123456789`).
+5. Publiez de nouveau.
 
-Tant qu'un numéro vaut 0, l'article affiche « Coming soon » dans le jeu publié.
+Le jeu lit ensuite le **vrai prix** de chaque passe auprès de Roblox, donc le prix affiché est toujours juste,
+même avec les prix régionaux.
+
+Tant qu'un numéro vaut 0, le passe affiche « Coming soon » dans le jeu publié.
 Dans Studio, il est offert pour tester ses effets gratuitement.
+
+## Serveurs privés (revenu chaque mois, sans rien de plus à faire)
+
+1. Creator Hub > votre expérience > **Monetization > Private Servers**.
+2. Activez **Allow Private Servers** et choisissez un prix par mois, par exemple **50 Robux**.
+3. Enregistrez.
+
+Les joueurs peuvent alors louer un serveur pour jouer seuls ou entre amis. Le jeu fonctionne normalement dedans
+(hall, plateformes, niveaux).

@@ -353,22 +353,22 @@ hud.Menu = make("Frame", {
 	Name = "Menu",
 	AnchorPoint = if isTouchOnly then Vector2.new(0, 0.5) else Vector2.new(0, 1),
 	Position = if isTouchOnly then UDim2.new(0, 20, 0.42, 0) else UDim2.new(0, 20, 1, -20),
-	Size = UDim2.new(0, 252, 0, 260),
+	Size = UDim2.new(0, 264, 0, 220),
 	BackgroundTransparency = 1,
 	Parent = screenGui,
 })
 make("UIListLayout", { Padding = UDim.new(0, 10), SortOrder = Enum.SortOrder.LayoutOrder, VerticalAlignment = Enum.VerticalAlignment.Bottom, Parent = hud.Menu })
 
-hud.LobbyButton = button(hud.Menu, { Name = "LobbyButton", LayoutOrder = 1, Size = UDim2.new(0, 160, 0, 40), Text = "🏠 Lobby", TextSize = 20 }, "Blue")
+
 hud.RoomCode = outlined(hud.Menu, { Name = "RoomCode", LayoutOrder = 2, Size = UDim2.new(1, 0, 0, 20), Text = "", Font = FONT, TextSize = 16, TextXAlignment = Enum.TextXAlignment.Left, Visible = false })
 
 hud.PointsPanel = glass(hud.Menu, { Name = "PointsPanel", LayoutOrder = 3, Size = UDim2.new(1, 0, 0, 60) }, 16)
-iconBadge(hud.PointsPanel, { Name = "Coin", Position = UDim2.new(0, 8, 0, 8), Size = UDim2.new(0, 44, 0, 44) }, THEME.Gold, "🪙")
+iconBadge(hud.PointsPanel, { Name = "Coin", Position = UDim2.new(0, 8, 0, 8), Size = UDim2.new(0, 44, 0, 44) }, THEME.Gold, "💰")
 hud.Points = label(hud.PointsPanel, { Name = "Points", Position = UDim2.new(0, 60, 0, 6), Size = UDim2.new(1, -70, 0, 30), Text = "0", Font = FONT_TITLE, TextSize = 27, TextXAlignment = Enum.TextXAlignment.Left, Outline = 2 })
 hud.Rank = label(hud.PointsPanel, { Name = "Rank", Position = UDim2.new(0, 60, 0, 36), Size = UDim2.new(1, -70, 0, 16), Text = "Intern", Font = FONT, TextSize = 14, TextColor3 = THEME.Muted, TextXAlignment = Enum.TextXAlignment.Left })
 
-local menuGrid = make("Frame", { Name = "Buttons", LayoutOrder = 4, Size = UDim2.new(1, 0, 0, 76), BackgroundTransparency = 1, Parent = hud.Menu })
-make("UIGridLayout", { CellSize = UDim2.new(0, 76, 0, 76), CellPadding = UDim2.new(0, 12, 0, 0), SortOrder = Enum.SortOrder.LayoutOrder, Parent = menuGrid })
+local menuGrid = make("Frame", { Name = "Buttons", LayoutOrder = 4, Size = UDim2.new(1, 0, 0, 70), BackgroundTransparency = 1, Parent = hud.Menu })
+make("UIGridLayout", { CellSize = UDim2.new(0, 60, 0, 70), CellPadding = UDim2.new(0, 8, 0, 0), SortOrder = Enum.SortOrder.LayoutOrder, Parent = menuGrid })
 
 local sideButtons = {}
 local function sideButton(name, text, key, order, icon, style)
@@ -377,8 +377,8 @@ local function sideButton(name, text, key, order, icon, style)
 	addCorner(b, UDim.new(0, 16))
 	addGradient(b, Color3.fromRGB(255, 255, 255), Color3.fromRGB(190, 190, 205))
 	local stroke = addStroke(b, colors[2], 2.5)
-	label(b, { Name = "Icon", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 6), Size = UDim2.new(0, 36, 0, 36), Text = icon, TextSize = 29 })
-	label(b, { Name = "Label", Position = UDim2.new(0, 2, 1, -25), Size = UDim2.new(1, -4, 0, 20), Text = text, Font = FONT_TITLE, TextSize = 15, Outline = 1.5 }).Outline.Color = colors[2]
+	label(b, { Name = "Icon", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 6), Size = UDim2.new(0, 32, 0, 32), Text = icon, TextSize = 26 })
+	label(b, { Name = "Label", Position = UDim2.new(0, 2, 1, -24), Size = UDim2.new(1, -4, 0, 18), Text = text, Font = FONT_TITLE, TextSize = 13, Outline = 1.5 }).Outline.Color = colors[2]
 	local badge = make("Frame", { Name = "KeyBadge", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -4, 0, 4), Size = UDim2.new(0, 20, 0, 20), BackgroundColor3 = THEME.Dark, BackgroundTransparency = 0.35, BorderSizePixel = 0, Visible = not isTouchOnly, Parent = b })
 	addCorner(badge, UDim.new(0, 7))
 	label(badge, { Size = UDim2.fromScale(1, 1), Text = keyName(key), Font = FONT_TITLE, TextSize = 13 })
@@ -388,6 +388,12 @@ end
 sideButton("Upgrades", "Upgrades", Enum.KeyCode.G, 1, "⚡", "Green")
 sideButton("Shop", "Shop", Enum.KeyCode.F, 2, "🛒", "Gold")
 sideButton("Settings", "Settings", Enum.KeyCode.R, 3, "⚙️", "Purple")
+sideButton("Lobby", "Lobby", Enum.KeyCode.L, 4, "🏠", "Blue")
+hud.LobbyButton = sideButtons.Lobby.Button
+
+-- Bandeau "TEST MODE" (Studio seulement) pour ne pas être surpris par les points et les niveaux ouverts.
+hud.TestBanner = make("TextLabel", { Name = "TestBanner", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 0), Size = UDim2.new(0, 330, 0, 24), BackgroundColor3 = THEME.Red, BorderSizePixel = 0, Text = "🧪 TEST MODE (Studio): all unlocked, not saved", Font = FONT_HEAVY, TextSize = 14, TextColor3 = THEME.White, Visible = false, Parent = screenGui })
+addCorner(hud.TestBanner, UDim.new(0, 8))
 -- Bord arc-en-ciel animé sur le bouton de la boutique.
 local shopGradient = make("UIGradient", {
 	Color = ColorSequence.new({
@@ -439,13 +445,15 @@ hud.DropButton = button(hud.TouchBar, { Name = "Drop", AnchorPoint = Vector2.new
 hud.NextButton = button(hud.TouchBar, { Name = "Next", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, 0, 0, 0), Size = UDim2.new(0, 60, 1, 0), Text = ">" }, "Purple")
 
 -- Aide des commandes (en bas à droite, ordinateur seulement).
-hud.Controls = glass(screenGui, { Name = "Controls", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -20, 1, -20), Size = UDim2.new(0, 200, 0, 104), BackgroundTransparency = 0.45, Visible = not isTouchOnly }, 14)
+hud.Controls = glass(screenGui, { Name = "Controls", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -20, 1, -20), Size = UDim2.new(0, 200, 0, 148), BackgroundTransparency = 0.45, Visible = not isTouchOnly }, 14)
 do
 	local lines = {
 		{ keyName(Enum.KeyCode.Q), "Drop item" },
 		{ "Wheel", "Switch item" },
 		{ keyName(Enum.KeyCode.Y), "Free mouse" },
 		{ "M", "Music on / off" },
+		{ "- / +", "Music volume" },
+		{ keyName(Enum.KeyCode.L), "Back to lobby" },
 	}
 	for i, line in lines do
 		local y = 10 + (i - 1) * 22
@@ -530,12 +538,30 @@ local function musicFor(mapId)
 	local list = TidyConfig.Music or {}
 	return list[mapId or "Lobby"] or list.Lobby or ""
 end
+local brokenMusic = {}
 local function updateMusic()
 	local playing = player:GetAttribute("InMap") == true
 	local id = musicFor(if playing then ReplicatedStorage:GetAttribute("ActiveMap") else "Lobby")
+	if brokenMusic[id] then
+		-- Musique de secours : la première de la liste qui fonctionne.
+		for _, other in TidyConfig.Music or {} do
+			if not brokenMusic[other] then
+				id = other
+				break
+			end
+		end
+	end
 	if id ~= "" and musicSound.SoundId ~= id then
 		musicSound.SoundId = id
 		musicSound:Play()
+		-- Si la musique ne se charge pas (numéro invalide ou non autorisé), on en essaie une autre.
+		task.delay(10, function()
+			if musicSound.SoundId == id and not musicSound.IsLoaded then
+				brokenMusic[id] = true
+				musicSound.SoundId = ""
+				updateMusic()
+			end
+		end)
 	end
 end
 
@@ -790,7 +816,7 @@ local upgradesWindow = makeWindow("Upgrades", "UPGRADES", UDim2.new(0, 600, 0, 5
 local upgradesPointsPill = make("Frame", { Name = "PointsPill", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -68, 0, 17), Size = UDim2.new(0, 150, 0, 36), BackgroundColor3 = THEME.Dark, BackgroundTransparency = 0.4, BorderSizePixel = 0, ZIndex = 6, Parent = upgradesWindow })
 addCorner(upgradesPointsPill, UDim.new(1, 0))
 addStroke(upgradesPointsPill, THEME.Gold, 2)
-local upgradesPoints = label(upgradesPointsPill, { Name = "Points", Size = UDim2.fromScale(1, 1), Text = "🪙 0", Font = FONT_TITLE, TextSize = 20, TextColor3 = THEME.Gold, ZIndex = 7 })
+local upgradesPoints = label(upgradesPointsPill, { Name = "Points", Size = UDim2.fromScale(1, 1), Text = "💰 0", Font = FONT_TITLE, TextSize = 20, TextColor3 = THEME.Gold, ZIndex = 7 })
 local UPGRADE_COLORS = { THEME.Blue, THEME.Pink, THEME.Red, THEME.Purple, THEME.Green }
 local upgradeRows = {}
 for i, upgrade in TidyConfig.Upgrades do
@@ -836,6 +862,10 @@ local function shopSection(order, text, color, columns)
 end
 local passesGrid = shopSection(1, "GAME PASSES", THEME.Gold, math.max(1, #TidyConfig.GamePasses))
 local productsGrid = shopSection(3, "POINTS & BOOSTS", THEME.Green, 3)
+if #TidyConfig.Products == 0 then
+	productsGrid.Visible = false
+	shopSections[3].Visible = false
+end
 local SHOP_COLORS = { THEME.Blue, THEME.Green, THEME.Gold, THEME.Purple, THEME.Pink, THEME.Red }
 local shopTiles = {}
 local function shopTile(grid, kind, entry, order, ribbonText)
@@ -976,8 +1006,8 @@ end
 ---------------------------------------------------------------------------
 -- Fin de niveau
 ---------------------------------------------------------------------------
-local completeWindow = makeWindow("Complete", "LEVEL COMPLETE!", UDim2.new(0, 540, 0, 350), "🏆")
-local completeText = label(completeWindow, { Name = "Text", Position = UDim2.new(0, 24, 0, 84), Size = UDim2.new(1, -48, 0, 150), Text = "", Font = FONT_HEAVY, TextSize = 22, TextWrapped = true, ZIndex = 6 })
+local completeWindow = makeWindow("Complete", "WELL DONE!", UDim2.new(0, 560, 0, 380), "🏆")
+local completeText = label(completeWindow, { Name = "Text", Position = UDim2.new(0, 24, 0, 80), Size = UDim2.new(1, -48, 0, 200), Text = "", Font = FONT_HEAVY, TextSize = 20, TextWrapped = true, ZIndex = 6 })
 local replayButton = button(completeWindow, { Name = "Replay", AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 24, 1, -22), Size = UDim2.new(0.5, -36, 0, 58), Text = "Play again", TextSize = 26, ZIndex = 6 }, "Green")
 local completeLobby = button(completeWindow, { Name = "Lobby", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -24, 1, -22), Size = UDim2.new(0.5, -36, 0, 58), Text = "Back to lobby", TextSize = 26, ZIndex = 6 }, "Blue")
 
@@ -1053,6 +1083,12 @@ local codeBox = make("TextBox", { Name = "Code", Position = UDim2.new(0, 24, 0, 
 addCorner(codeBox, UDim.new(0, 12))
 addStroke(codeBox, THEME.Gold, 2)
 local joinButton = button(joinWindow, { Name = "Join", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -20), Size = UDim2.new(0, 220, 0, 54), Text = "JOIN", TextSize = 28, ZIndex = 6 }, "Green")
+
+-- Confirmation avant de quitter un niveau (évite de partir par erreur).
+local confirmLobbyWindow = makeWindow("ConfirmLobby", "BACK TO LOBBY?", UDim2.new(0, 460, 0, 250), "🏠")
+label(confirmLobbyWindow, { Name = "Text", Position = UDim2.new(0, 24, 0, 84), Size = UDim2.new(1, -48, 0, 50), Text = "Your progress in this level is saved. You can come back later!", Font = FONT, TextSize = 18, TextColor3 = THEME.Muted, TextWrapped = true, ZIndex = 6 })
+local confirmYes = button(confirmLobbyWindow, { Name = "Yes", AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 24, 1, -22), Size = UDim2.new(0.5, -36, 0, 54), Text = "Yes", TextSize = 26, ZIndex = 6 }, "Blue")
+local confirmNo = button(confirmLobbyWindow, { Name = "No", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -24, 1, -22), Size = UDim2.new(0.5, -36, 0, 54), Text = "No", TextSize = 26, ZIndex = 6 }, "Gray")
 
 ---------------------------------------------------------------------------
 -- Mise à jour de l'interface
@@ -1138,7 +1174,8 @@ local function updateBag()
 	if info then
 		local categoryId = player:GetAttribute("CarryingCategory") or ""
 		local category = categoryId ~= "" and TidyConfig.GetCategory(carrying, categoryId)
-		hud.ItemSection.Text = info.Section .. (if category then "  •  " .. category.Name else "")
+		hud.ItemSection.Text = if category then (category.Name .. " → " .. info.PlaceName) else info.Section
+		hud.ItemSection.TextColor3 = if category then category.Color:Lerp(Color3.new(1, 1, 1), 0.35) else THEME.Gold
 		local name = player:GetAttribute("CarryingName") or ""
 		hud.ItemName.Text = if name ~= "" then name else info.DisplayName
 		hud.ItemCount.Text = (player:GetAttribute("Selected") or 1) .. " / " .. #types
@@ -1153,13 +1190,15 @@ local function updateHint()
 	end
 	hud.Hint.Visible = true
 	if finished then
-		hud.Hint.Text = "✨ Everything is spotless!"
+		hud.Hint.Text = "✨ Everything is spotless! Follow the green arrows to the EXIT"
 		return
 	end
 	local carrying = player:GetAttribute("Carrying") or ""
 	local info = TidyConfig.ItemTypes[carrying]
 	if info then
-		hud.Hint.Text = info.Icon .. "  " .. info.Hint
+		local categoryId = player:GetAttribute("CarryingCategory") or ""
+		local category = categoryId ~= "" and TidyConfig.GetCategory(carrying, categoryId)
+		hud.Hint.Text = if category then (info.Icon .. "  Put it on a " .. string.upper(category.Name) .. " " .. info.PlaceName) else (info.Icon .. "  " .. info.Hint)
 	else
 		hud.Hint.Text = if isTouchOnly then "👆  Tap an item to pick it up" else "🖱️  Click an item to pick it up"
 	end
@@ -1170,7 +1209,7 @@ local function updatePoints()
 	hud.Points.Text = fmt(points)
 	local wins = player:GetAttribute("Wins") or 0
 	hud.Rank.Text = (player:GetAttribute("Rank") or "Intern") .. "  •  🏆 " .. wins .. (if wins == 1 then " win" else " wins")
-	upgradesPoints.Text = "🪙 " .. fmt(points)
+	upgradesPoints.Text = "💰 " .. fmt(points)
 	for id, row in upgradeRows do
 		local levelValue = player:GetAttribute("Level_" .. id) or 0
 		local upgrade = row.Upgrade
@@ -1178,7 +1217,7 @@ local function updatePoints()
 			setButton(row.Buy, "MAX", "Gold")
 		else
 			local cost = TidyConfig.GetUpgradeCost(upgrade, levelValue)
-			setButton(row.Buy, "🪙 " .. fmt(cost), if points >= cost then "Green" else "Gray")
+			setButton(row.Buy, "💰 " .. fmt(cost), if points >= cost then "Green" else "Gray")
 		end
 		for level, pip in row.Pips do
 			local reached = level <= levelValue
@@ -1236,12 +1275,30 @@ local function startTimer()
 	end
 end
 
+-- Pluie de confettis à l'écran (fin de niveau).
+local function confetti()
+	local colors = { THEME.Pink, THEME.Gold, THEME.Green, THEME.Blue, THEME.Purple, THEME.Orange }
+	for k = 1, 70 do
+		local piece = make("Frame", { Name = "Confetti", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(math.random(), 0, 0, -20), Size = UDim2.new(0, math.random(8, 14), 0, math.random(12, 20)), Rotation = math.random(0, 360), BackgroundColor3 = colors[k % #colors + 1], BorderSizePixel = 0, ZIndex = 30, Parent = screenGui })
+		local duration = 1.8 + math.random() * 1.6
+		TweenService:Create(piece, TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Position = UDim2.new(piece.Position.X.Scale + (math.random() - 0.5) * 0.2, 0, 1.1, 0), Rotation = piece.Rotation + math.random(-360, 360) }):Play()
+		Debris:AddItem(piece, duration + 0.1)
+	end
+end
+
 local function showCompletion(message)
 	finished = true
 	timerStopped = os.clock()
 	closeAllWindows()
-	completeText.Text = (message or "Everything is spotless!") .. "\nTime: " .. formatTime(elapsed()) .. "\nTotal wins: 🏆 " .. (player:GetAttribute("Wins") or 0)
+	completeText.Text = "🎉 " .. (message or "Everything is spotless!") .. "\n⏱️ Time: " .. formatTime(elapsed()) .. "\n🏆 Total wins: " .. (player:GetAttribute("Wins") or 0)
+		.. "\n\n🚪 The green EXIT door is open near the entrance: walk through it to go back to the lobby!"
 	completeWindow.Visible = true
+	confetti()
+	if settings.Sfx then
+		local fanfare = make("Sound", { Name = "Fanfare", SoundId = TidyConfig.PlaceSoundId, Volume = 0.6, PlaybackSpeed = 0.8, Parent = SoundService })
+		fanfare:Play()
+		Debris:AddItem(fanfare, 3)
+	end
 	updateHint()
 end
 
@@ -1529,6 +1586,18 @@ local function updateMode()
 	end
 	hud.Controls.Visible = playing and settings.Controls and not isTouchOnly
 	hud.RoomCode.Visible = playing and hud.RoomCode.Text ~= ""
+	hud.TestBanner.Visible = testUnlockAll()
+	if not playing then
+		-- Retour au hall : la caméra regarde l'intérieur du hall (la fontaine), pas les portes.
+		task.delay(0.4, function()
+			local camera = Workspace.CurrentCamera
+			local root = getRoot()
+			if camera and root and not inMap() then
+				local focus = root.Position + Vector3.new(0, 2, 0)
+				camera.CFrame = CFrame.lookAt(focus + Vector3.new(0, 4, 12), focus + Vector3.new(0, 0, -20))
+			end
+		end)
+	end
 	hud.Deal.Position = if playing then UDim2.new(1, -20, 0, 134) else UDim2.new(1, -20, 0, 12)
 	if not playing then
 		hud.ItemCard.Visible = false
@@ -1673,6 +1742,21 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		openWindow("Settings")
 	elseif input.KeyCode == Enum.KeyCode.Y then
 		freeMouse = not freeMouse
+	elseif input.KeyCode == Enum.KeyCode.KeypadMinus or input.KeyCode == Enum.KeyCode.Minus or input.KeyCode == Enum.KeyCode.KeypadPlus or input.KeyCode == Enum.KeyCode.Equals then
+		-- Volume de la musique par paliers de 10 % (sauvegardé), jauge à l'écran.
+		local up = input.KeyCode == Enum.KeyCode.KeypadPlus or input.KeyCode == Enum.KeyCode.Equals
+		settings.Music = math.clamp(math.floor(settings.Music * 10 + 0.5) / 10 + (if up then 0.1 else -0.1), 0, 1)
+		musicMuted = false
+		applySettings()
+		sendSettings()
+		refreshSettingsUI()
+		local steps = math.floor(settings.Music * 10 + 0.5)
+		showToast("🎵 Music " .. string.rep("▮", math.ceil(steps / 2)) .. string.rep("▯", 5 - math.ceil(steps / 2)) .. "  " .. (steps * 10) .. "%", "info")
+	elseif input.KeyCode == Enum.KeyCode.L then
+		if inMap() then
+			closeAllWindows("ConfirmLobby")
+			panels.ConfirmLobby.Visible = true
+		end
 	elseif input.KeyCode == Enum.KeyCode.M or input.KeyCode == Enum.KeyCode.Semicolon then
 		musicMuted = not musicMuted
 		applySettings()
@@ -1732,7 +1816,7 @@ RunService.RenderStepped:Connect(function()
 	end
 	-- Compte à rebours de l'offre limitée.
 	local dealLeft = dealEndsAt - os.clock()
-	hud.Deal.Visible = dealLeft > 0 and player:GetAttribute("DealBought") ~= true and not anyWindowOpen()
+	hud.Deal.Visible = false -- plus d'offre limitée : la boutique ne vend que des passes
 	if hud.Deal.Visible then
 		hud.Deal.TimerPill.Time.Text = string.format("%d:%02d", dealLeft // 60, math.floor(dealLeft % 60))
 	end
@@ -1813,9 +1897,17 @@ local function backToLobby()
 	closeAllWindows()
 	lobbyFunction:InvokeServer("BackToLobby")
 end
+local function askLobby()
+	closeAllWindows("ConfirmLobby")
+	confirmLobbyWindow.Visible = true
+end
 completeLobby.Activated:Connect(backToLobby)
-settingsLobby.Activated:Connect(backToLobby)
-hud.LobbyButton.Activated:Connect(backToLobby)
+settingsLobby.Activated:Connect(askLobby)
+hud.LobbyButton.Activated:Connect(askLobby)
+confirmYes.Activated:Connect(backToLobby)
+confirmNo.Activated:Connect(function()
+	confirmLobbyWindow.Visible = false
+end)
 mapsStart.Activated:Connect(function()
 	queueEvent:FireServer("Start")
 end)
@@ -1948,6 +2040,21 @@ task.spawn(function()
 	end
 end)
 
+-- Vrais prix des passes (Roblox ajuste les prix selon le pays) : lus auprès de Roblox quand le pass existe.
+task.spawn(function()
+	local MarketplaceService = game:GetService("MarketplaceService")
+	for _, pass in TidyConfig.GamePasses do
+		if (pass.GamePassId or 0) ~= 0 then
+			local ok, info = pcall(function()
+				return MarketplaceService:GetProductInfo(pass.GamePassId, Enum.InfoType.GamePass)
+			end)
+			if ok and type(info) == "table" and tonumber(info.PriceInRobux) then
+				pass.Price = tonumber(info.PriceInRobux)
+			end
+		end
+	end
+	updatePoints()
+end)
 updateMusic()
 updateUiScale()
 if Workspace.CurrentCamera then

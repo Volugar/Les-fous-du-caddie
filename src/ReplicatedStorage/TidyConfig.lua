@@ -21,97 +21,97 @@ TidyConfig.AgencyName = "Northfield Employment Agency"
 TidyConfig.ItemTypes = {
 	Folder = {
 		DisplayName = "Case Folder", Plural = "Case Folders", Section = "Office Supplies",
-		Variants = { "Case Folder", "Client File", "Archive Folder", "Job Seeker File" },
-		PlaceName = "Archive Shelf", Hint = "Follow the signs to an Archive Shelf.", Points = 10, Icon = "📁", Height = 0.3,
+		Variants = { "Client File", "Job Offer File", "Payroll Folder", "Contract Folder" },
+		PlaceName = "Archive Shelf", Hint = "Put it on the Archive Shelf with the same colored label.", Points = 10, Icon = "📁", Height = 0.3,
 	},
 	Paper = {
 		DisplayName = "Stack of Papers", Plural = "Paper Stacks", Section = "Office Supplies",
-		Variants = { "Stack of Papers", "Application Forms", "Printed Reports", "Meeting Notes" },
-		PlaceName = "Document Tray", Hint = "Put it in a Document Tray (desks, counters, printers).", Points = 10, Icon = "📄", Height = 0.35,
+		Variants = { "Application Forms", "Printed Report", "Invoices", "Meeting Memos" },
+		PlaceName = "Document Tray", Hint = "Put it in a Document Tray of the same color (desks, counters, printers).", Points = 10, Icon = "📄", Height = 0.35,
 	},
 	Chair = {
 		DisplayName = "Chair", Plural = "Chairs", Section = "Furniture",
 		Variants = { "Office Chair", "Visitor Chair", "Meeting Chair" },
-		PlaceName = "Chair Spot", Hint = "Put it back in a free Chair Spot (green outline).", Points = 20, Icon = "🪑", Height = 4,
+		PlaceName = "Chair Spot", Hint = "Put it back in a free Chair Spot with the same colored sign.", Points = 20, Icon = "💺", Height = 4,
 	},
 	Box = {
 		DisplayName = "Cardboard Box", Plural = "Boxes", Section = "Storage",
-		Variants = { "Cardboard Box", "Supply Box", "Moving Box", "Archive Box" },
-		PlaceName = "Storage Shelf", Hint = "Follow the signs to a Storage Shelf.", Points = 15, Icon = "📦", Height = 1.6,
+		Variants = { "Supply Box", "Printer Paper Box", "Archive Box", "Moving Box" },
+		PlaceName = "Storage Shelf", Hint = "Put it on the Storage Shelf with the same colored label.", Points = 15, Icon = "📦", Height = 1.6,
 	},
 	Mug = {
 		DisplayName = "Mug", Plural = "Mugs", Section = "Kitchen",
-		Variants = { "Coffee Mug", "Tea Cup", "Office Mug", "\"World's Best Boss\" Mug" },
-		PlaceName = "Cupboard", Hint = "Put it in a Cupboard (break room, café).", Points = 10, Icon = "☕", Height = 0.6,
+		Variants = { "Coffee Mug", "Tea Cup", "Company Mug", "\"World's Best Boss\" Mug" },
+		PlaceName = "Cupboard", Hint = "Put it in the Cupboard with the same colored label.", Points = 10, Icon = "☕", Height = 0.6,
 	},
 	Plant = {
 		DisplayName = "Potted Plant", Plural = "Plants", Section = "Decor",
-		Variants = { "Potted Plant", "Fern", "Rubber Plant", "Little Succulent" },
-		PlaceName = "Planter", Hint = "Put it on a Planter.", Points = 15, Icon = "🪴", Height = 1.9,
+		Variants = { "Fern", "Little Succulent", "Flowering Plant", "Rubber Plant" },
+		PlaceName = "Planter", Hint = "Put it on the Planter with the same colored label.", Points = 15, Icon = "🌿", Height = 1.9,
 	},
 	Book = {
 		DisplayName = "Book", Plural = "Books", Section = "Library",
-		Variants = { "Book", "Guide", "Handbook", "Workbook" },
+		Variants = { "CV Guide", "Interview Handbook", "Training Workbook", "Careers Guide" },
 		PlaceName = "Bookcase", Hint = "Put it on the Bookcase with the same colored label.", Points = 8, Icon = "📘", Height = 1.1,
 	},
 	Parcel = {
 		DisplayName = "Parcel", Plural = "Parcels", Section = "Mail & Shipping",
-		Variants = { "Parcel", "Small Package", "Express Parcel", "Padded Parcel" },
+		Variants = { "Red Label Parcel", "Blue Label Parcel", "Green Label Parcel", "Yellow Label Parcel" },
 		PlaceName = "Parcel Shelf", Hint = "Put it on the shelf with the same colored label.", Points = 12, Icon = "📮", Height = 0.6,
 	},
 	Laptop = {
 		DisplayName = "Laptop", Plural = "Laptops", Section = "IT Equipment",
-		Variants = { "Laptop", "Work Laptop", "Ultrabook" },
-		PlaceName = "Charging Cart", Hint = "Put it in a Charging Cart.", Points = 12, Icon = "💻", Height = 0.15,
+		Variants = { "Work Laptop", "Design Laptop", "Developer Laptop", "Loan Laptop" },
+		PlaceName = "Charging Cart", Hint = "Put it in the Charging Cart with the same colored label.", Points = 12, Icon = "💻", Height = 0.15,
 	},
 	Cushion = {
 		DisplayName = "Cushion", Plural = "Cushions", Section = "Furniture",
-		Variants = { "Cushion", "Sofa Pillow", "Velvet Cushion" },
-		PlaceName = "Sofa", Hint = "Put it back on a Sofa.", Points = 8, Icon = "🛋️", Height = 0.45,
+		Variants = { "Mustard Cushion", "Coral Cushion", "Teal Cushion", "Lavender Cushion" },
+		PlaceName = "Sofa", Hint = "Put it on the Sofa with the same colored label.", Points = 8, Icon = "🛋️", Height = 0.45,
 	},
 	ShoeBox = {
 		DisplayName = "Shoe Box", Plural = "Shoe Boxes", Section = "Footwear",
-		Variants = { "Running Shoes", "Sneakers", "Leather Boots", "Sandals", "Kids' Shoes", "Hiking Boots" },
-		PlaceName = "Footwear Rack", Hint = "Follow the hanging signs to the FOOTWEAR racks.", Points = 10, Icon = "👟", Height = 0.85,
+		Variants = { "Running Shoes", "Sneakers", "Leather Boots", "Sandals", "Kids' Shoes" },
+		PlaceName = "Footwear Rack", Hint = "Follow the FOOTWEAR signs, then find the rack with the same colored sign.", Points = 10, Icon = "👟", Height = 0.85,
 	},
 	Toy = {
 		DisplayName = "Toy", Plural = "Toys", Section = "Toys & Games",
 		Variants = { "Teddy Bear", "Toy Car", "Beach Ball", "Toy Robot" },
-		PlaceName = "Toy Rack", Hint = "Follow the hanging signs to the TOYS racks.", Points = 12, Icon = "🧸", Height = 1.4,
+		PlaceName = "Toy Rack", Hint = "Follow the TOYS signs, then find the rack with the same colored sign.", Points = 12, Icon = "🧸", Height = 1.4,
 	},
 	Bottle = {
 		DisplayName = "Bottle", Plural = "Bottles", Section = "Household & Cleaning",
 		Variants = { "Laundry Detergent", "Dish Soap", "Glass Cleaner", "Fabric Softener" },
-		PlaceName = "Household Rack", Hint = "Follow the hanging signs to the HOUSEHOLD racks.", Points = 10, Icon = "🧴", Height = 1.4,
+		PlaceName = "Household Rack", Hint = "Follow the HOUSEHOLD signs, then find the rack with the same colored sign.", Points = 10, Icon = "🧴", Height = 1.4,
 	},
 	Can = {
 		DisplayName = "Canned Food", Plural = "Cans", Section = "Pantry",
-		Variants = { "Tomato Soup", "Baked Beans", "Sweetcorn", "Chickpeas", "Peaches in Syrup" },
-		PlaceName = "Pantry Rack", Hint = "Follow the hanging signs to the PANTRY racks.", Points = 8, Icon = "🥫", Height = 0.65,
+		Variants = { "Tomato Soup", "Baked Beans", "Sweetcorn", "Peaches in Syrup" },
+		PlaceName = "Pantry Rack", Hint = "Follow the PANTRY signs, then find the rack with the same colored sign.", Points = 8, Icon = "🥫", Height = 0.65,
 	},
 	Gadget = {
 		DisplayName = "Electronics Box", Plural = "Electronics", Section = "Electronics",
 		Variants = { "Headphones", "Smartphone", "Game Controller", "Smart Speaker" },
-		PlaceName = "Electronics Rack", Hint = "Follow the hanging signs to the ELECTRONICS racks.", Points = 15, Icon = "🎧", Height = 1.2,
+		PlaceName = "Electronics Rack", Hint = "Follow the ELECTRONICS signs, then find the rack with the same colored sign.", Points = 15, Icon = "🎧", Height = 1.2,
 	},
 	Tape = {
 		DisplayName = "Tape Roll", Plural = "Tape Rolls", Section = "Packaging",
 		Variants = { "Packing Tape", "Fragile Tape", "Masking Tape" },
-		PlaceName = "Packaging Rack", Hint = "Follow the hanging signs to the PACKAGING racks.", Points = 8, Icon = "🧻", Height = 0.45,
+		PlaceName = "Packaging Rack", Hint = "Follow the PACKAGING signs, then find the rack with the same colored sign.", Points = 8, Icon = "🧻", Height = 0.45,
 	},
 	Trophy = {
 		DisplayName = "Trophy", Plural = "Trophies", Section = "Awards",
 		Variants = { "Gold Trophy", "Silver Trophy", "Bronze Trophy", "Employee of the Month Cup" },
-		PlaceName = "Trophy Cabinet", Hint = "Put it in a Trophy Cabinet in the Hall of Fame.", Points = 15, Icon = "🏆", Height = 1.4,
+		PlaceName = "Trophy Cabinet", Hint = "Put it in the Trophy Cabinet with the same colored label.", Points = 15, Icon = "🏆", Height = 1.4,
 	},
 	Frame = {
 		DisplayName = "Photo Frame", Plural = "Photo Frames", Section = "Decor",
 		Variants = { "Team Photo", "Landscape Print", "Award Certificate", "Founder Portrait" },
-		PlaceName = "Frame Shelf", Hint = "Put it on a Frame Shelf.", Points = 12, Icon = "🖼️", Height = 0.95,
+		PlaceName = "Frame Shelf", Hint = "Put it on the Frame Shelf with the same colored label.", Points = 12, Icon = "🖼️", Height = 0.95,
 	},
 	Binder = {
 		DisplayName = "Ring Binder", Plural = "Binders", Section = "Records",
-		Variants = { "Ring Binder", "Annual Report", "Contracts Binder", "Policy Binder" },
+		Variants = { "Finance Binder", "Legal Binder", "HR Binder", "Marketing Binder" },
 		PlaceName = "Records Shelf", Hint = "Put it on the Records Shelf with the same colored label.", Points = 10, Icon = "📗", Height = 1.3,
 	},
 }
@@ -122,25 +122,122 @@ TidyConfig.TypeOrder = {
 	"ShoeBox", "Toy", "Bottle", "Can", "Gadget", "Tape", "Trophy", "Frame", "Binder",
 }
 
--- Sous-catégories : ces objets doivent aller sur le meuble de LEUR couleur.
+-- Sous-catégories : CHAQUE objet appartient à une catégorie et va sur le meuble de SA catégorie
+-- (même couleur, même nom sur le panneau). Id = identifiant, Name = nom du rayon, Item = nom de l'objet,
+-- Color = couleur du rayon et de l'objet. Les objets d'un niveau sont répartis à tour de rôle entre les catégories.
 TidyConfig.Categories = {
+	Folder = {
+		{ Id = "Clients", Name = "Client Files", Item = "Client File", Color = Color3.fromRGB(52, 112, 210) },
+		{ Id = "Jobs", Name = "Job Offers", Item = "Job Offer File", Color = Color3.fromRGB(56, 160, 86) },
+		{ Id = "Payroll", Name = "Payroll", Item = "Payroll Folder", Color = Color3.fromRGB(240, 170, 40) },
+		{ Id = "Contracts", Name = "Contracts", Item = "Contract Folder", Color = Color3.fromRGB(214, 64, 56) },
+	},
+	Paper = {
+		{ Id = "Forms", Name = "Application Forms", Item = "Application Forms", Color = Color3.fromRGB(52, 112, 210) },
+		{ Id = "Reports", Name = "Reports", Item = "Printed Report", Color = Color3.fromRGB(56, 160, 86) },
+		{ Id = "Invoices", Name = "Invoices", Item = "Invoices", Color = Color3.fromRGB(240, 170, 40) },
+		{ Id = "Memos", Name = "Memos", Item = "Meeting Memos", Color = Color3.fromRGB(220, 80, 150) },
+	},
+	Chair = {
+		{ Id = "Office", Name = "Office Chairs", Item = "Office Chair", Color = Color3.fromRGB(46, 86, 170) },
+		{ Id = "Visitor", Name = "Visitor Chairs", Item = "Visitor Chair", Color = Color3.fromRGB(52, 160, 104) },
+		{ Id = "Meeting", Name = "Meeting Chairs", Item = "Meeting Chair", Color = Color3.fromRGB(214, 70, 56) },
+	},
+	Box = {
+		{ Id = "Supplies", Name = "Office Supplies", Item = "Supply Box", Color = Color3.fromRGB(240, 130, 40) },
+		{ Id = "Printer", Name = "Printer Paper", Item = "Printer Paper Box", Color = Color3.fromRGB(46, 120, 226) },
+		{ Id = "Archive", Name = "Archive Boxes", Item = "Archive Box", Color = Color3.fromRGB(56, 160, 86) },
+		{ Id = "Moving", Name = "Moving Boxes", Item = "Moving Box", Color = Color3.fromRGB(150, 90, 200) },
+	},
+	Mug = {
+		{ Id = "Coffee", Name = "Coffee Mugs", Item = "Coffee Mug", Color = Color3.fromRGB(176, 104, 60) },
+		{ Id = "Tea", Name = "Tea Cups", Item = "Tea Cup", Color = Color3.fromRGB(80, 170, 110) },
+		{ Id = "Company", Name = "Company Mugs", Item = "Company Mug", Color = Color3.fromRGB(60, 120, 210) },
+		{ Id = "Fun", Name = "Fun Mugs", Item = "\"World's Best Boss\" Mug", Color = Color3.fromRGB(240, 190, 40) },
+	},
+	Plant = {
+		{ Id = "Ferns", Name = "Ferns", Item = "Fern", Color = Color3.fromRGB(60, 150, 70) },
+		{ Id = "Succulents", Name = "Succulents", Item = "Little Succulent", Color = Color3.fromRGB(70, 170, 170) },
+		{ Id = "Flowers", Name = "Flowering Plants", Item = "Flowering Plant", Color = Color3.fromRGB(230, 90, 150) },
+		{ Id = "Rubber", Name = "Rubber Plants", Item = "Rubber Plant", Color = Color3.fromRGB(204, 110, 60) },
+	},
 	Book = {
-		{ Id = "CV", Name = "CV & Cover Letters", Color = Color3.fromRGB(214, 64, 56) },
-		{ Id = "Interview", Name = "Interview Skills", Color = Color3.fromRGB(52, 112, 210) },
-		{ Id = "Training", Name = "Training & Courses", Color = Color3.fromRGB(56, 160, 86) },
-		{ Id = "Careers", Name = "Careers & Sectors", Color = Color3.fromRGB(236, 176, 40) },
+		{ Id = "CV", Name = "CV & Cover Letters", Item = "CV Guide", Color = Color3.fromRGB(214, 64, 56) },
+		{ Id = "Interview", Name = "Interview Skills", Item = "Interview Handbook", Color = Color3.fromRGB(52, 112, 210) },
+		{ Id = "Training", Name = "Training & Courses", Item = "Training Workbook", Color = Color3.fromRGB(56, 160, 86) },
+		{ Id = "Careers", Name = "Careers & Sectors", Item = "Careers Guide", Color = Color3.fromRGB(236, 176, 40) },
 	},
 	Parcel = {
-		{ Id = "Red", Name = "Red Label", Color = Color3.fromRGB(226, 62, 52) },
-		{ Id = "Blue", Name = "Blue Label", Color = Color3.fromRGB(46, 116, 222) },
-		{ Id = "Green", Name = "Green Label", Color = Color3.fromRGB(52, 170, 86) },
-		{ Id = "Yellow", Name = "Yellow Label", Color = Color3.fromRGB(246, 196, 40) },
+		{ Id = "Red", Name = "Red Label", Item = "Red Label Parcel", Color = Color3.fromRGB(226, 62, 52) },
+		{ Id = "Blue", Name = "Blue Label", Item = "Blue Label Parcel", Color = Color3.fromRGB(46, 116, 222) },
+		{ Id = "Green", Name = "Green Label", Item = "Green Label Parcel", Color = Color3.fromRGB(52, 170, 86) },
+		{ Id = "Yellow", Name = "Yellow Label", Item = "Yellow Label Parcel", Color = Color3.fromRGB(246, 196, 40) },
+	},
+	Laptop = {
+		{ Id = "Work", Name = "Work Laptops", Item = "Work Laptop", Color = Color3.fromRGB(70, 76, 92) },
+		{ Id = "Design", Name = "Design Laptops", Item = "Design Laptop", Color = Color3.fromRGB(176, 184, 198) },
+		{ Id = "Dev", Name = "Developer Laptops", Item = "Developer Laptop", Color = Color3.fromRGB(52, 104, 200) },
+		{ Id = "Loan", Name = "Loan Laptops", Item = "Loan Laptop", Color = Color3.fromRGB(236, 120, 40) },
+	},
+	Cushion = {
+		{ Id = "Mustard", Name = "Mustard Cushions", Item = "Mustard Cushion", Color = Color3.fromRGB(232, 176, 52) },
+		{ Id = "Coral", Name = "Coral Cushions", Item = "Coral Cushion", Color = Color3.fromRGB(230, 96, 80) },
+		{ Id = "Teal", Name = "Teal Cushions", Item = "Teal Cushion", Color = Color3.fromRGB(52, 156, 160) },
+		{ Id = "Lavender", Name = "Lavender Cushions", Item = "Lavender Cushion", Color = Color3.fromRGB(150, 110, 206) },
+	},
+	ShoeBox = {
+		{ Id = "Running", Name = "Running", Item = "Running Shoes", Color = Color3.fromRGB(240, 120, 40) },
+		{ Id = "Sneakers", Name = "Sneakers", Item = "Sneakers", Color = Color3.fromRGB(46, 110, 220) },
+		{ Id = "Boots", Name = "Boots", Item = "Leather Boots", Color = Color3.fromRGB(130, 84, 50) },
+		{ Id = "Sandals", Name = "Sandals", Item = "Sandals", Color = Color3.fromRGB(240, 196, 40) },
+		{ Id = "Kids", Name = "Kids", Item = "Kids' Shoes", Color = Color3.fromRGB(230, 80, 150) },
+	},
+	Toy = {
+		{ Id = "Teddy", Name = "Teddy Bears", Item = "Teddy Bear", Color = Color3.fromRGB(176, 120, 72) },
+		{ Id = "Cars", Name = "Toy Cars", Item = "Toy Car", Color = Color3.fromRGB(220, 50, 50) },
+		{ Id = "Balls", Name = "Balls", Item = "Beach Ball", Color = Color3.fromRGB(40, 160, 230) },
+		{ Id = "Robots", Name = "Robots", Item = "Toy Robot", Color = Color3.fromRGB(130, 90, 210) },
+	},
+	Bottle = {
+		{ Id = "Laundry", Name = "Laundry", Item = "Laundry Detergent", Color = Color3.fromRGB(50, 110, 220) },
+		{ Id = "Dish", Name = "Dish Soap", Item = "Dish Soap", Color = Color3.fromRGB(240, 190, 40) },
+		{ Id = "Glass", Name = "Glass Cleaner", Item = "Glass Cleaner", Color = Color3.fromRGB(40, 190, 200) },
+		{ Id = "Softener", Name = "Softener", Item = "Fabric Softener", Color = Color3.fromRGB(226, 110, 190) },
+	},
+	Can = {
+		{ Id = "Soups", Name = "Soups", Item = "Tomato Soup", Color = Color3.fromRGB(214, 48, 44) },
+		{ Id = "Beans", Name = "Beans", Item = "Baked Beans", Color = Color3.fromRGB(236, 130, 40) },
+		{ Id = "Vegetables", Name = "Vegetables", Item = "Sweetcorn", Color = Color3.fromRGB(60, 150, 70) },
+		{ Id = "Fruit", Name = "Fruit", Item = "Peaches in Syrup", Color = Color3.fromRGB(246, 196, 60) },
+	},
+	Gadget = {
+		{ Id = "Audio", Name = "Audio", Item = "Headphones", Color = Color3.fromRGB(140, 90, 210) },
+		{ Id = "Phones", Name = "Phones", Item = "Smartphone", Color = Color3.fromRGB(46, 120, 226) },
+		{ Id = "Gaming", Name = "Gaming", Item = "Game Controller", Color = Color3.fromRGB(220, 50, 60) },
+		{ Id = "Speakers", Name = "Speakers", Item = "Smart Speaker", Color = Color3.fromRGB(36, 166, 140) },
+	},
+	Tape = {
+		{ Id = "Packing", Name = "Packing Tape", Item = "Packing Tape", Color = Color3.fromRGB(196, 140, 80) },
+		{ Id = "Fragile", Name = "Fragile Tape", Item = "Fragile Tape", Color = Color3.fromRGB(226, 56, 46) },
+		{ Id = "Masking", Name = "Masking Tape", Item = "Masking Tape", Color = Color3.fromRGB(240, 204, 60) },
+	},
+	Trophy = {
+		{ Id = "Gold", Name = "Gold Trophies", Item = "Gold Trophy", Color = Color3.fromRGB(236, 184, 50) },
+		{ Id = "Silver", Name = "Silver Trophies", Item = "Silver Trophy", Color = Color3.fromRGB(170, 178, 192) },
+		{ Id = "Bronze", Name = "Bronze Trophies", Item = "Bronze Trophy", Color = Color3.fromRGB(196, 120, 64) },
+		{ Id = "Cups", Name = "Team Cups", Item = "Employee of the Month Cup", Color = Color3.fromRGB(52, 110, 200) },
+	},
+	Frame = {
+		{ Id = "Team", Name = "Team Photos", Item = "Team Photo", Color = Color3.fromRGB(52, 130, 220) },
+		{ Id = "Landscape", Name = "Landscapes", Item = "Landscape Print", Color = Color3.fromRGB(70, 160, 80) },
+		{ Id = "Certificates", Name = "Certificates", Item = "Award Certificate", Color = Color3.fromRGB(200, 150, 50) },
+		{ Id = "Portraits", Name = "Portraits", Item = "Founder Portrait", Color = Color3.fromRGB(150, 80, 170) },
 	},
 	Binder = {
-		{ Id = "Finance", Name = "Finance", Color = Color3.fromRGB(46, 150, 96) },
-		{ Id = "Legal", Name = "Legal", Color = Color3.fromRGB(44, 70, 150) },
-		{ Id = "HR", Name = "Human Resources", Color = Color3.fromRGB(150, 70, 180) },
-		{ Id = "Marketing", Name = "Marketing", Color = Color3.fromRGB(240, 120, 40) },
+		{ Id = "Finance", Name = "Finance", Item = "Finance Binder", Color = Color3.fromRGB(46, 150, 96) },
+		{ Id = "Legal", Name = "Legal", Item = "Legal Binder", Color = Color3.fromRGB(44, 70, 150) },
+		{ Id = "HR", Name = "Human Resources", Item = "HR Binder", Color = Color3.fromRGB(150, 70, 180) },
+		{ Id = "Marketing", Name = "Marketing", Item = "Marketing Binder", Color = Color3.fromRGB(240, 120, 40) },
 	},
 }
 
@@ -252,6 +349,11 @@ TidyConfig.DayBonus = 1000
 
 -- Distance maximale (en studs) pour ramasser ou ranger d'un clic.
 TidyConfig.ReachDistance = 14
+-- Anti-triche : un record de temps n'est accepté que s'il dure au moins ce nombre de secondes par objet.
+TidyConfig.MinSecondsPerItem = 0.15
+-- Anti-spam : actions par seconde autorisées par joueur (et réserve pour les rafales).
+TidyConfig.ActionsPerSecond = 12
+TidyConfig.ActionBurst = 15
 -- Marge supplémentaire utilisée par le serveur quand il revérifie la distance.
 TidyConfig.ServerDistanceMargin = 4
 
@@ -265,9 +367,9 @@ TidyConfig.MagnetRadiusPerLevel = 4
 
 -- Améliorations achetées avec les points. Prix = BaseCost x (niveau visé).
 TidyConfig.Upgrades = {
-	{ Id = "Capacity", Name = "Bigger Basket", Icon = "🧺", Description = "Carry one more item", MaxLevel = 12, BaseCost = 60 },
-	{ Id = "Speed", Name = "Comfy Sneakers", Icon = "👟", Description = "Walk a little faster", MaxLevel = 6, BaseCost = 90 },
-	{ Id = "Magnet", Name = "Magnet", Icon = "🧲", Description = "Unlocks tool 2, then more range", MaxLevel = 6, BaseCost = 150 },
+	-- Le panier ne s'agrandit qu'avec les passes (+5 / +15 / +30 Carry) : pas d'amélioration de capacité.
+	{ Id = "Speed", Name = "Comfy Sneakers", Icon = "👟", Description = "Walk a little faster", MaxLevel = 6, BaseCost = 400 },
+	{ Id = "Magnet", Name = "Magnet", Icon = "🧲", Description = "Unlocks tool 2, then more range", MaxLevel = 6, BaseCost = 600 },
 }
 
 ---------------------------------------------------------------------------
@@ -278,18 +380,16 @@ TidyConfig.Upgrades = {
 -- dans le jeu publié ; dans Studio, il est offert pour la session afin de le tester.
 -- Price = prix conseillé en Robux (affiché dans la boutique ; le vrai prix est celui du Creator Hub).
 TidyConfig.GamePasses = {
-	{ Id = "DoublePoints", Name = "x2 Points", Icon = "💰", Description = "Earn double points for everything, forever.", Price = 199, GamePassId = 0, Best = true },
-	{ Id = "Carry15", Name = "Big Basket", Icon = "🧺", Description = "Carry 15 more items at once, forever.", Price = 149, GamePassId = 0 },
-	{ Id = "InfiniteMagnet", Name = "Super Magnet", Icon = "🧲", Description = "Magnet unlocked with a huge 60-stud range.", Price = 249, GamePassId = 0 },
-	{ Id = "VIP", Name = "VIP", Icon = "👑", Description = "Gold VIP tag, +25% points and x2 daily bonus.", Price = 399, GamePassId = 0 },
+	{ Id = "VIP", Name = "VIP", Icon = "👑", Description = "Gold VIP title above your head and a golden basket.", Price = 39, GamePassId = 0 },
+	{ Id = "Carry5", Name = "+5 Carry", Icon = "🛒", Description = "Carry 5 more items at once, forever.", Price = 49, GamePassId = 0 },
+	{ Id = "Carry15", Name = "+15 Carry", Icon = "🛒", Description = "Carry 15 more items at once. Stacks with the others!", Price = 129, GamePassId = 0, Best = true },
+	{ Id = "Carry30", Name = "+30 Carry", Icon = "🛒", Description = "Carry 30 more items at once. Stacks with the others!", Price = 200, GamePassId = 0 },
+	{ Id = "MaxSpeed", Name = "Max Speed", Icon = "⚡", Description = "Top walking speed right away, forever.", Price = 89, GamePassId = 0 },
+	{ Id = "InfiniteMagnet", Name = "Infinite Magnet", Icon = "🧲", Description = "Your magnet reaches the whole map.", Price = 699, GamePassId = 0 },
 }
 
--- Produits (achats répétables, sauf l'offre de départ).
-TidyConfig.Products = {
-	{ Id = "Deal", Name = "Starter Deal", Icon = "🎁", Description = "3,000 points + permanent +3 carry. One time only!", Price = 49, ProductId = 0, Points = 3000, OneTime = true },
-	{ Id = "Points2", Name = "Points Pack", Icon = "💎", Description = "10,000 points to spend on upgrades.", Price = 99, ProductId = 0, Points = 10000 },
-	{ Id = "Helper", Name = "Tidy Helper", Icon = "🤖", Description = "Instantly puts away 50 items in open rooms (you get the points).", Price = 25, ProductId = 0, HelperItems = 50 },
-}
+-- Plus de produits (points, offre de départ, aide) : la boutique ne vend que des passes.
+TidyConfig.Products = {}
 
 -- Offre limitée (badge "DEAL" en haut à droite) : durée de l'offre à chaque session, en secondes.
 TidyConfig.DealDuration = 5 * 60
@@ -299,11 +399,12 @@ TidyConfig.DealCarryBonus = 3
 TidyConfig.PassEffects = {
 	Carry5 = 5,
 	Carry15 = 15,
+	Carry30 = 30,
 	MaxSpeedBonus = 4,
-	InfiniteMagnetRadius = 60,
-	DoublePoints = 2,
-	VIPPoints = 1.25,
-	VIPDaily = 2,
+	InfiniteMagnetRadius = 700, -- toute la carte
+	DoublePoints = 2, -- ancien pass (gardé pour ceux qui l'avaient acheté)
+	VIPPoints = 1, -- le VIP est cosmétique : titre doré et panier doré
+	VIPDaily = 1,
 }
 
 ---------------------------------------------------------------------------
@@ -458,7 +559,7 @@ function TidyConfig.GetRoomAt(position)
 	return nil
 end
 
--- Cherche une sous-catégorie (livres, colis, classeurs) par son identifiant.
+-- Cherche une sous-catégorie d'un type d'objet par son identifiant.
 function TidyConfig.GetCategory(itemType, categoryId)
 	for _, category in TidyConfig.Categories[itemType] or {} do
 		if category.Id == categoryId then
@@ -485,16 +586,36 @@ function TidyConfig.IsMapUnlocked(map, cleared)
 	return map.Requires == nil or (cleared ~= nil and cleared[map.Requires] == true)
 end
 
-function TidyConfig.GetVariantName(itemType, index)
+function TidyConfig.GetVariantName(itemType, index, categoryId)
 	local info = TidyConfig.ItemTypes[itemType]
 	if not info then
 		return itemType
+	end
+	-- Le nom suit la catégorie de l'objet (même règle que la répartition : à tour de rôle selon le numéro).
+	local category = TidyConfig.GetItemCategory(itemType, index, categoryId)
+	if category and category.Item then
+		return category.Item
 	end
 	local variants = info.Variants
 	if not variants or #variants == 0 then
 		return info.DisplayName
 	end
-	return variants[(index - 1) % #variants + 1]
+	return variants[((index or 1) - 1) % #variants + 1]
+end
+
+-- Catégorie d'un objet : celle demandée (categoryId) ou, à défaut, celle de son numéro (à tour de rôle).
+function TidyConfig.GetItemCategory(itemType, index, categoryId)
+	local categories = TidyConfig.Categories[itemType]
+	if not categories or #categories == 0 then
+		return nil
+	end
+	if categoryId then
+		local found = TidyConfig.GetCategory(itemType, categoryId)
+		if found then
+			return found
+		end
+	end
+	return categories[((index or 1) - 1) % #categories + 1]
 end
 
 -- Les 3 quêtes du jour (les mêmes pour un joueur toute la journée).

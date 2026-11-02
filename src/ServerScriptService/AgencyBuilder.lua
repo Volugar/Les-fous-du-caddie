@@ -383,32 +383,89 @@ local allSlots = {}
 local allZones = {}
 local allDoors = {}
 
--- Transforme un meuble en zone de rangement : on clique dessus pour y ranger.
--- Un panneau flottant (style panneau de rayon) affiche le nom et le compteur.
-local function makeZone(model, itemType, anchorPart, billboardHeight, categoryId)
-	local room = TidyConfig.GetRoomAt(anchorPart.Position)
+-- Catégories des zones (Cat) : chaque meuble de rangement appartient à UNE catégorie de son type d'objet.
+-- Les meubles qui n'en reçoivent pas à la construction sont répartis à la fin (Cat.Assign) :
+-- sections voisines pour une même catégorie, assez de places pour chaque catégorie, pièces ouvertes à temps.
+local Cat = {}
+Cat.Zones = {}
+
+-- Étiquette de couleur posée sur le meuble (nom du rayon). spot = { CFrame, Vector2 taille } ; face avant = -Z du CFrame.
+function Cat.Tag(parent, cframe, size, category)
+	local part = newPart(parent, "CategoryTag", Vector3.new(size.X, size.Y, 0.05), cframe, category.Color, "SmoothPlastic", { CanCollide = false, CastShadow = false })
+	part.CanTouch = false
+	local gui = Instance.new("SurfaceGui")
+	gui.Name = "TagGui"
+	gui.Face = Enum.NormalId.Front
+	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	gui.PixelsPerStud = 40
+	gui.MaxDistance = 90
+	gui.LightInfluence = 0.4
+	gui.Parent = part
+	local text = string.upper(category.Name)
+	local c = category.Color
+	local label = Instance.new("TextLabel")
+	label.Name = "Text"
+	label.BackgroundTransparency = 1
+	label.Size = UDim2.fromScale(1, 1)
+	label.Font = Enum.Font.FredokaOne
+	label.Text = text
+	label.TextColor3 = if c.R * 0.3 + c.G * 0.59 + c.B * 0.11 > 0.62 then Color3.fromRGB(34, 36, 46) else Color3.fromRGB(255, 255, 255)
+	label.TextSize = math.max(8, math.floor(math.min(size.Y * 40 * 0.72, size.X * 40 * 0.9 / (math.max(4, #text) * 0.58))))
+	label.Parent = gui
+	return part
+end
+
+-- Repères d'étiquettes : sur une face verticale (regarde vers "facing") ou à plat (texte lisible depuis -Z après "yaw").
+function Cat.Front(position, facing, width, height)
+	return { CFrame.lookAt(position, position + facing), Vector2.new(width, height) }
+end
+function Cat.Flat(position, yaw, width, height)
+	return { CFrame.new(position) * CFrame.Angles(0, yaw or 0, 0) * CFrame.Angles(math.rad(90), 0, 0), Vector2.new(width, height) }
+end
+
+-- Direction (le long de Z ou de X) vers le centre de la pièce : pour tourner les étiquettes vers les joueurs.
+function Cat.TowardRoom(x, z, alongX)
+	local room = TidyConfig.GetRoomAt(Vector3.new(x, FLOOR_TOP + 1, z))
+	if not room then
+		return if alongX then Vector3.new(0, 0, 1) else Vector3.new(1, 0, 0)
+	end
+	if alongX then
+		return Vector3.new(0, 0, if (room.MinZ + room.MaxZ) / 2 >= z then 1 else -1)
+	end
+	return Vector3.new(if (room.MinX + room.MaxX) / 2 >= x then 1 else -1, 0, 0)
+end
+
+-- Termine une zone dont la catégorie est connue : attributs, places, étiquettes, bacs colorés et panneau flottant.
+function Cat.Finish(model, categoryId)
+	local z = Cat.Zones[model]
+	local itemType = z.Type
 	local category = categoryId and TidyConfig.GetCategory(itemType, categoryId)
 	local info = TidyConfig.ItemTypes[itemType]
-	local zoneLabel = info.PlaceName
-	if category then
-		zoneLabel = zoneLabel .. " - " .. category.Name
-	end
-	model:SetAttribute("ItemType", itemType)
-	model:SetAttribute("ZoneLabel", zoneLabel)
-	model:SetAttribute("Room", room and room.Id or "")
+	model:SetAttribute("ZoneLabel", info.PlaceName .. (if category then " - " .. category.Name else ""))
 	if category then
 		model:SetAttribute("Category", category.Id)
+		for _, slot in z.Spots:GetChildren() do
+			slot:SetAttribute("Category", category.Id)
+		end
+		for _, spot in z.Labels or {} do
+			Cat.Tag(model, spot[1], spot[2], category)
+		end
+		for _, d in model:GetDescendants() do
+			if d.Name == "DocumentTray" and d:IsA("BasePart") then
+				d.Color = category.Color
+			end
+		end
 	end
-	CollectionService:AddTag(model, TidyConfig.ZoneTag)
+	z.Done = true
 
 	-- Panneau du meuble : petite pastille bleu nuit de taille fixe à l'écran (ne grossit plus de près),
 	-- icône de couleur, nom, barre de progression. L'écran du joueur n'affiche que le plus proche
 	-- de chaque groupe de meubles identiques, et le met en vert quand on porte le bon objet.
 	local billboard = Instance.new("BillboardGui")
 	billboard.Name = "CategoryBillboard"
-	billboard.Adornee = anchorPart
+	billboard.Adornee = z.Anchor
 	billboard.Size = UDim2.fromOffset(210, 46)
-	billboard.StudsOffsetWorldSpace = Vector3.new(0, billboardHeight, 0)
+	billboard.StudsOffsetWorldSpace = Vector3.new(0, z.Height, 0)
 	billboard.MaxDistance = 70
 	billboard.LightInfluence = 0
 	billboard.Enabled = false
@@ -446,7 +503,7 @@ local function makeZone(model, itemType, anchorPart, billboardHeight, categoryId
 	icon.BackgroundTransparency = 1
 	icon.Position = UDim2.fromOffset(5, 5)
 	icon.Size = UDim2.fromOffset(26, 26)
-	icon.TextScaled = true
+	icon.TextSize = 22
 	icon.Text = info.Icon
 	icon.Parent = iconBack
 
@@ -494,9 +551,232 @@ local function makeZone(model, itemType, anchorPart, billboardHeight, categoryId
 	local fillCorner = Instance.new("UICorner")
 	fillCorner.CornerRadius = UDim.new(1, 0)
 	fillCorner.Parent = fill
+end
 
+-- Unlock effectif d'une pièce (une pièce qui en "Requires" une autre s'ouvre au plus tôt avec elle).
+function Cat.RoomUnlock(room)
+	local unlock, guard = 0, 0
+	while room and guard < 10 do
+		unlock = math.max(unlock, room.Unlock or 0)
+		room = room.Requires and TidyConfig.GetRoom(room.Requires)
+		guard += 1
+	end
+	return unlock
+end
+
+-- Objets de chaque catégorie sur un niveau : demand[type][indexCatégorie] = liste des unlocks de leurs pièces.
+-- (Même règle que ScatterItems : numéro par type sur tout le niveau, catégories à tour de rôle.)
+function Cat.Demand(mapId)
+	local demand, counters = {}, {}
+	for _, room in TidyConfig.GetMapRooms(mapId) do
+		local unlock = Cat.RoomUnlock(room)
+		for _, itemType in TidyConfig.TypeOrder do
+			local categories = TidyConfig.Categories[itemType]
+			for _ = 1, room.Items[itemType] or 0 do
+				counters[itemType] = (counters[itemType] or 0) + 1
+				if categories then
+					local c = (counters[itemType] - 1) % #categories + 1
+					demand[itemType] = demand[itemType] or {}
+					demand[itemType][c] = demand[itemType][c] or {}
+					table.insert(demand[itemType][c], unlock)
+				end
+			end
+		end
+	end
+	return demand
+end
+
+-- Répartit les catégories sur les meubles qui n'en ont pas encore, pièce par pièce (dans l'ordre d'ouverture) :
+-- d'abord ce qu'il faut pour les objets déjà accessibles, puis le reste au prorata ; meubles voisins = même catégorie.
+function Cat.Assign(mapId)
+	local demand = Cat.Demand(mapId)
+	local roomOrder = {}
+	for i, room in TidyConfig.GetMapRooms(mapId) do
+		roomOrder[room.Id] = i
+	end
+	local byType, typeList = {}, {}
+	for _, model in allZones do
+		local z = Cat.Zones[model]
+		local categories = z and TidyConfig.Categories[z.Type]
+		if categories then
+			if not byType[z.Type] then
+				byType[z.Type] = {}
+				table.insert(typeList, z.Type)
+			end
+			z.Model = model
+			z.Slots = #z.Spots:GetChildren()
+			z.Unlock = if z.Room then Cat.RoomUnlock(z.Room) else 0
+			z.Order = if z.Room then roomOrder[z.Room.Id] or 999 else 999
+			z.Index = nil
+			for i, category in categories do
+				if category.Id == z.Fixed then
+					z.Index = i
+				end
+			end
+			table.insert(byType[z.Type], z)
+		end
+	end
+	for _, itemType in typeList do
+		local zones = byType[itemType]
+		local categories = TidyConfig.Categories[itemType]
+		local k = #categories
+		local need = demand[itemType] or {}
+		local function demandAt(c, unlock)
+			local n = 0
+			for _, u in need[c] or {} do
+				if u <= unlock then
+					n += 1
+				end
+			end
+			return n
+		end
+		local total, cap = {}, {}
+		for c = 1, k do
+			total[c] = #(need[c] or {})
+			cap[c] = 0
+		end
+		local groups, groupOf = {}, {}
+		for _, z in zones do
+			local key = if z.Room then z.Room.Id else "?"
+			local g = groupOf[key]
+			if not g then
+				g = { Unlock = z.Unlock, Order = z.Order, Zones = {} }
+				groupOf[key] = g
+				table.insert(groups, g)
+			end
+			table.insert(g.Zones, z)
+		end
+		table.sort(groups, function(a, b)
+			if a.Unlock ~= b.Unlock then
+				return a.Unlock < b.Unlock
+			end
+			return a.Order < b.Order
+		end)
+		for _, g in groups do
+			local auto, size = {}, 0
+			for _, z in g.Zones do
+				if z.Index then
+					cap[z.Index] += z.Slots
+				else
+					table.insert(auto, z)
+					size += z.Slots
+				end
+			end
+			if #auto > 0 then
+				-- Ordre de lecture en serpentin (rangées le long de X) : les meubles voisins se suivent.
+				table.sort(auto, function(a, b)
+					local pa, pb = a.Anchor.Position, b.Anchor.Position
+					local ra, rb = math.floor(pa.Z / 5 + 0.5), math.floor(pb.Z / 5 + 0.5)
+					if ra ~= rb then
+						return ra < rb
+					end
+					if ra % 2 == 0 then
+						return pa.X < pb.X
+					end
+					return pa.X > pb.X
+				end)
+				local now, sumNow = {}, 0
+				for c = 1, k do
+					now[c] = math.max(0, demandAt(c, g.Unlock) - cap[c])
+					sumNow += now[c]
+				end
+				local target = {}
+				if sumNow >= size then
+					for c = 1, k do
+						target[c] = size * now[c] / sumNow
+					end
+				else
+					local rest, fin, sumFin = size - sumNow, {}, 0
+					for c = 1, k do
+						fin[c] = math.max(0, total[c] - cap[c] - now[c])
+						sumFin += fin[c]
+					end
+					for c = 1, k do
+						target[c] = now[c] + (if sumFin > 0 then rest * fin[c] / sumFin else rest / k)
+					end
+				end
+				local acc, c, cumul = 0, 1, target[1]
+				for _, z in auto do
+					while c < k and acc + z.Slots / 2 >= cumul do
+						c += 1
+						cumul += target[c]
+					end
+					z.Index = c
+					cap[c] += z.Slots
+					acc += z.Slots
+				end
+			end
+		end
+		-- Réparation : une catégorie qui manque de places en prend à une autre qui en a trop (pièces tardives d'abord).
+		for _ = 1, 400 do
+			local worst, gap = nil, 0
+			for c = 1, k do
+				if total[c] - cap[c] > gap then
+					worst, gap = c, total[c] - cap[c]
+				end
+			end
+			if not worst then
+				break
+			end
+			local best = nil
+			for _, z in zones do
+				if not z.Fixed and z.Index ~= worst and cap[z.Index] - z.Slots >= total[z.Index] then
+					if not best then
+						best = z
+					else
+						local fits, bestFits = z.Slots >= gap, best.Slots >= gap
+						if fits ~= bestFits then
+							if fits then
+								best = z
+							end
+						elseif z.Unlock ~= best.Unlock then
+							if z.Unlock > best.Unlock then
+								best = z
+							end
+						elseif (fits and z.Slots < best.Slots) or (not fits and z.Slots > best.Slots) then
+							best = z
+						end
+					end
+				end
+			end
+			if not best then
+				warn("[AgencyBuilder] Not enough " .. itemType .. " slots for category " .. categories[worst].Id .. " on " .. mapId)
+				break
+			end
+			cap[best.Index] -= best.Slots
+			best.Index = worst
+			cap[worst] += best.Slots
+		end
+		for _, z in zones do
+			if not z.Done then
+				Cat.Finish(z.Model, categories[z.Index or 1].Id)
+			end
+		end
+	end
+	-- Zones d'un type sans catégories (aucune aujourd'hui) : panneau simple.
+	for _, model in allZones do
+		local z = Cat.Zones[model]
+		if z and not z.Done then
+			Cat.Finish(model, nil)
+		end
+	end
+end
+
+-- Transforme un meuble en zone de rangement : on clique dessus pour y ranger.
+-- categoryId (facultatif) : catégorie imposée ; sinon Cat.Assign la choisit à la fin de la construction.
+-- labels (facultatif) : repères des étiquettes de couleur à poser sur le meuble (voir Cat.Front / Cat.Flat).
+local function makeZone(model, itemType, anchorPart, billboardHeight, categoryId, labels)
+	local room = TidyConfig.GetRoomAt(anchorPart.Position)
+	model:SetAttribute("ItemType", itemType)
+	model:SetAttribute("Room", room and room.Id or "")
+	CollectionService:AddTag(model, TidyConfig.ZoneTag)
+	local spots = newFolder(model, "Spots")
+	Cat.Zones[model] = { Type = itemType, Anchor = anchorPart, Height = billboardHeight, Labels = labels, Spots = spots, Room = room, Fixed = categoryId }
 	table.insert(allZones, model)
-	return newFolder(model, "Spots")
+	if categoryId then
+		Cat.Finish(model, categoryId)
+	end
+	return spots
 end
 
 -- Place invisible où un objet doit être rangé. Elle brille quand le joueur
@@ -512,6 +792,7 @@ local function createSlot(spotsFolder, itemType, targetCFrame, categoryId)
 	slot.CanQuery = false
 	slot:SetAttribute("ItemType", itemType)
 	slot:SetAttribute("Occupied", false)
+	categoryId = categoryId or (spotsFolder.Parent and spotsFolder.Parent:GetAttribute("Category"))
 	if categoryId then
 		slot:SetAttribute("Category", categoryId)
 	end
@@ -5301,8 +5582,9 @@ function AgencyBuilder.Build(mapId)
 	table.clear(allZones)
 	table.clear(allDoors)
 	table.clear(currentItems)
+	table.clear(Cat.Zones)
 
-	setupLighting()
+	setupLighting(mapId)
 	local root = Instance.new("Model")
 	root.Name = "TidyLevel"
 	root:SetAttribute("Map", mapId)
@@ -5318,7 +5600,11 @@ function AgencyBuilder.Build(mapId)
 	end
 	-- Panneau du tutoriel face au point d'arrivée (les cartes sont dessinées par l'écran du joueur).
 	AG.TutorialBoard(root, mapId, map.Spawn)
+	-- Porte de sortie de fin de niveau, près de l'arrivée.
+	AG.ExitDoor(root, mapId, map.Spawn)
 	collectObstacles = false
+	-- Catégorie de chaque meuble de rangement (étiquettes, panneaux, places).
+	Cat.Assign(mapId)
 	setFloor(GROUND_TOP)
 
 	local spawn = createSpawn(root, "LevelSpawn", map.Spawn)

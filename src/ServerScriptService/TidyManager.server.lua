@@ -36,8 +36,59 @@ local unlockAll = RunService:IsStudio() and TidyConfig.TestUnlockAll == true
 ReplicatedStorage:SetAttribute("TestUnlockAll", unlockAll)
 
 local MAX_DISTANCE = TidyConfig.ReachDistance + TidyConfig.ServerDistanceMargin
+local pendingSaves = 0 -- sauvegardes en cours des joueurs qui viennent de partir
+
+-- Statistiques Roblox (Creator Hub > Analytics) : étapes clés du joueur. Jamais bloquant.
+local AnalyticsService = nil
+pcall(function()
+	AnalyticsService = game:GetService("AnalyticsService")
+end)
+local FUNNEL_STEPS = { Joined = 1, Queue = 2, EnteredLevel = 3, FirstPick = 4, FirstPlace = 5, FirstRoom = 6, LevelComplete = 7 }
+local funnelDone = {}
+local function track(player, method, ...)
+	if not AnalyticsService or not player or not player.Parent then
+		return
+	end
+	local args = table.pack(...)
+	task.spawn(function()
+		pcall(function()
+			AnalyticsService[method](AnalyticsService, player, table.unpack(args, 1, args.n))
+		end)
+	end)
+end
+local function funnel(player, stepName)
+	local done = funnelDone[player]
+	if not done then
+		done = {}
+		funnelDone[player] = done
+	end
+	if not done[stepName] then
+		done[stepName] = true
+		track(player, "LogOnboardingFunnelStepEvent", FUNNEL_STEPS[stepName], stepName)
+	end
+end
+
+-- Limite de fréquence des actions (anti-spam / anti-triche) : jetons rechargés chaque seconde.
+local actionBudget = {}
+local function allowAction(player, cost)
+	local now = os.clock()
+	local budget = actionBudget[player]
+	local burst = TidyConfig.ActionBurst or 15
+	if not budget then
+		budget = { Tokens = burst, Time = now }
+		actionBudget[player] = budget
+	end
+	budget.Tokens = math.min(burst, budget.Tokens + (now - budget.Time) * (TidyConfig.ActionsPerSecond or 12))
+	budget.Time = now
+	if budget.Tokens < cost then
+		return false
+	end
+	budget.Tokens -= cost
+	return true
+end
 local MAGNET_COOLDOWN = 0.5
 local STACK_MAX_HEIGHT = 5.5
+local STACK_MAX_VISIBLE = 5 -- objets visibles dans la pile ; les autres sont dans le panier (compteur BASKET)
 
 AgencyBuilder.ClearTemplate()
 local hub = nil
@@ -176,7 +227,11 @@ local function hasPass(state, passId)
 end
 
 local function capacityOf(state)
-	local capacity = TidyConfig.BaseCapacity + state.Levels.Capacity
+	-- 5 objets de base ; seuls les passes agrandissent le panier (ils se cumulent).
+	local capacity = TidyConfig.BaseCapacity
+	if hasPass(state, "Carry30") then
+		capacity += TidyConfig.PassEffects.Carry30
+	end
 	if hasPass(state, "Carry5") then
 		capacity += TidyConfig.PassEffects.Carry5
 	end
@@ -315,39 +370,104 @@ local function applyWalkSpeed(player, state)
 end
 
 -- Étiquette dorée "VIP" au-dessus de la tête.
+-- VIP : titre doré au-dessus de la tête et panier doré (visible par tous) où s'empilent les objets portés.
+local function buildVipBasket(root)
+	local basket = Instance.new("Model")
+	basket.Name = "VipBasket"
+	local gold = Color3.fromRGB(240, 190, 60)
+	local base = root.CFrame * CFrame.new(1.3, -1.05, -2.4)
+	local pieces = {
+		{ Vector3.new(1.9, 0.12, 1.5), CFrame.new(0, 0, 0) },
+		{ Vector3.new(1.9, 0.75, 0.1), CFrame.new(0, 0.4, -0.72) },
+		{ Vector3.new(1.9, 0.75, 0.1), CFrame.new(0, 0.4, 0.72) },
+		{ Vector3.new(0.1, 0.75, 1.5), CFrame.new(-0.92, 0.4, 0) },
+		{ Vector3.new(0.1, 0.75, 1.5), CFrame.new(0.92, 0.4, 0) },
+		{ Vector3.new(2, 0.1, 0.16), CFrame.new(0, 0.8, -0.74) },
+		{ Vector3.new(2, 0.1, 0.16), CFrame.new(0, 0.8, 0.74) },
+	}
+	for index, piece in pieces do
+		local part = Instance.new("Part")
+		part.Name = if index == 1 then "Bottom" else "Side"
+		part.Size = piece[1]
+		part.CFrame = base * piece[2]
+		part.Color = gold
+		part.Material = Enum.Material.Foil
+		part.Reflectance = 0.15
+		part.CanCollide = false
+		part.CanTouch = false
+		part.CanQuery = false
+		part.Massless = true
+		part.CastShadow = false
+		part.Parent = basket
+		local weld = Instance.new("WeldConstraint")
+		weld.Part0 = root
+		weld.Part1 = part
+		weld.Parent = part
+	end
+	basket.Parent = root.Parent
+	return basket
+end
+
 local function applyVipTag(player, state)
 	local character = player.Character
 	local head = character and (character:FindFirstChild("Head") or character:WaitForChild("Head", 5))
 	if not head then
 		return
 	end
+	local root = character:FindFirstChild("HumanoidRootPart")
 	local existing = head:FindFirstChild("VipTag")
+	local existingBasket = character:FindFirstChild("VipBasket")
 	if not hasPass(state, "VIP") then
 		if existing then
 			existing:Destroy()
 		end
+		if existingBasket then
+			existingBasket:Destroy()
+		end
 		return
+	end
+	if not existingBasket and root then
+		buildVipBasket(root)
 	end
 	if existing then
 		return
 	end
 	local tag = Instance.new("BillboardGui")
 	tag.Name = "VipTag"
-	tag.Size = UDim2.fromScale(3, 0.9)
-	tag.StudsOffsetWorldSpace = Vector3.new(0, 2.4, 0)
-	tag.MaxDistance = 80
+	tag.Size = UDim2.fromOffset(120, 40)
+	tag.StudsOffsetWorldSpace = Vector3.new(0, 2.6, 0)
+	tag.MaxDistance = 90
 	tag.LightInfluence = 0
 	tag.Adornee = head
+	local pill = Instance.new("Frame")
+	pill.Size = UDim2.fromScale(1, 1)
+	pill.BackgroundColor3 = Color3.fromRGB(255, 200, 64)
+	pill.BorderSizePixel = 0
+	pill.Parent = tag
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(1, 0)
+	corner.Parent = pill
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = Color3.fromRGB(150, 90, 10)
+	stroke.Thickness = 3
+	stroke.Parent = pill
+	local gradient = Instance.new("UIGradient")
+	gradient.Color = ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(220, 200, 160))
+	gradient.Rotation = 90
+	gradient.Parent = pill
 	local label = Instance.new("TextLabel")
 	label.BackgroundTransparency = 1
 	label.Size = UDim2.fromScale(1, 1)
 	label.Font = Enum.Font.FredokaOne
 	label.Text = "👑 VIP"
-	label.TextColor3 = Color3.fromRGB(255, 210, 70)
-	label.TextStrokeColor3 = Color3.fromRGB(90, 50, 10)
-	label.TextStrokeTransparency = 0
-	label.TextScaled = true
-	label.Parent = tag
+	label.TextColor3 = Color3.fromRGB(255, 255, 255)
+	label.TextSize = 24
+	label.Parent = pill
+	local textStroke = Instance.new("UIStroke")
+	textStroke.Color = Color3.fromRGB(150, 90, 10)
+	textStroke.Thickness = 2
+	textStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
+	textStroke.Parent = label
 	tag.Parent = head
 end
 
@@ -404,7 +524,7 @@ local function stackHeld(player, state)
 	for i = #order, 1, -1 do
 		local item = order[i]
 		local itemHeight = AgencyBuilder.GetItemHeight(item:GetAttribute("ItemType"))
-		if root and (height + itemHeight <= STACK_MAX_HEIGHT or #shown == 0) then
+		if root and #shown < STACK_MAX_VISIBLE and (height + itemHeight <= STACK_MAX_HEIGHT or #shown == 0) then
 			table.insert(shown, 1, item)
 			height += itemHeight
 		end
@@ -520,6 +640,9 @@ local function today()
 end
 
 local function ensureQuests(player, state)
+	if TidyConfig.QuestsPerDay <= 0 then
+		return -- quêtes du jour désactivées
+	end
 	local day = today()
 	if state.Quests.Day ~= day or #state.Quests.Indices == 0 then
 		state.Quests = { Day = day, Indices = TidyConfig.GetDailyQuests(player.UserId, day), Progress = {}, Done = {} }
@@ -528,6 +651,9 @@ end
 
 -- Fait avancer les quêtes d'un certain type. Les récompenses sont données automatiquement.
 local function advanceQuests(player, state, kind, amount, itemType)
+	if TidyConfig.QuestsPerDay <= 0 then
+		return
+	end
 	ensureQuests(player, state)
 	for i, templateIndex in state.Quests.Indices do
 		local template = TidyConfig.QuestTemplates[templateIndex]
@@ -614,10 +740,66 @@ local function formatDuration(seconds)
 	return string.format("%d:%02d", seconds // 60, seconds % 60)
 end
 
+-- Numéro du niveau dans l'ordre (1, 2, 3) pour les statistiques.
+local function mapIndexOf(mapId)
+	for index, map in TidyConfig.Maps do
+		if map.Id == mapId then
+			return index
+		end
+	end
+	return 0
+end
+
+-- Porte de sortie de fin de niveau (construite par AgencyBuilder : LevelExit > ExitPortal, ExitSign, ExitArrows).
+-- Fermée pendant le rangement ; ouverte (lumineuse) quand tout est rangé ; la traverser ramène au hall.
+local exitConnection = nil
+local returnToHub
+local function setExitOpen(open)
+	local exit = level and level.Root and level.Root:FindFirstChild("LevelExit")
+	if not exit then
+		return
+	end
+	local portal = exit:FindFirstChild("ExitPortal", true)
+	local sign = exit:FindFirstChild("ExitSign", true)
+	local arrows = exit:FindFirstChild("ExitArrows", true)
+	if portal and portal:IsA("BasePart") then
+		portal.Transparency = if open then 0.45 else 1
+		portal.CanTouch = open
+		if not exitConnection then
+			exitConnection = portal.Touched:Connect(function(hit)
+				local player = Players:GetPlayerFromCharacter(hit.Parent)
+				local state = player and states[player]
+				if state and state.InMap and remainingItems <= 0 and not state.Leaving then
+					state.Leaving = true
+					notify(player, "room", "🎉 Well done! Back to the lobby...")
+					task.delay(0.6, function()
+						state.Leaving = nil
+						returnToHub(player)
+					end)
+				end
+			end)
+		end
+	end
+	if sign then
+		local gui = sign:FindFirstChildWhichIsA("SurfaceGui", true)
+		if gui then
+			gui.Enabled = open
+		end
+	end
+	if arrows then
+		for _, arrow in arrows:GetDescendants() do
+			if arrow:IsA("BasePart") then
+				arrow.Transparency = if open then 0.2 else 1
+			end
+		end
+	end
+end
+
 local function completeDay()
 	local elapsed = math.floor(os.clock() - roundStartedAt)
 	for player, state in states do
-		if state.InMap and roundTimed and elapsed > 0 then
+		-- Record de temps seulement s'il est humainement possible (TidyConfig.MinSecondsPerItem par objet).
+		if state.InMap and roundTimed and elapsed > 0 and elapsed >= totalItems * (TidyConfig.MinSecondsPerItem or 0.15) then
 			local best = state.BestTimes[activeMap]
 			if not best or elapsed < best then
 				state.BestTimes[activeMap] = elapsed
@@ -641,9 +823,12 @@ local function completeDay()
 			local bonus = award(player, state, TidyConfig.DayBonus)
 			publishPlayer(player, state)
 			notify(player, "complete", "Level complete! +1 win, +" .. TidyConfig.FormatNumber(bonus) .. " bonus points")
+			funnel(player, "LevelComplete")
+			track(player, "LogProgressionCompleteEvent", "Levels", mapIndexOf(activeMap), activeMap)
 			task.spawn(saveData, player, state)
 		end
 	end
+	setExitOpen(true)
 	task.delay(3, function()
 		updateLeaderboard()
 	end)
@@ -658,9 +843,12 @@ local function rewardPlacement(player, state, item, roomDone)
 	local newRank = TidyConfig.GetRank(state.Lifetime)
 	advanceQuests(player, state, "Place", 1)
 	advanceQuests(player, state, "PlaceType", 1, itemType)
+	funnel(player, "FirstPlace")
 	if roomDone then
 		local room = TidyConfig.GetRoom(roomDone)
 		local bonus = award(player, state, TidyConfig.RoomBonus)
+		funnel(player, "FirstRoom")
+		track(player, "LogCustomEvent", "RoomCleared_" .. roomDone, 1)
 		advanceQuests(player, state, "Room", 1)
 		notify(player, "room", room.Name .. " is spotless! +" .. bonus .. " bonus points")
 	end
@@ -823,6 +1011,13 @@ local function drop(player, state)
 	state.Selected = math.min(state.Selected, #state.Held)
 	local minX, maxX, minZ, maxZ = AgencyBuilder.GetBounds(activeMap)
 	local front = (root.CFrame * CFrame.new(0, 0, -3)).Position
+	-- Pas de mur entre le joueur et l'endroit où l'objet tombe (sinon il resterait coincé derrière).
+	local losParams = RaycastParams.new()
+	losParams.FilterType = Enum.RaycastFilterType.Exclude
+	losParams.FilterDescendantsInstances = { player.Character, itemsFolder }
+	if Workspace:Raycast(root.Position, front - root.Position, losParams) then
+		front = root.Position
+	end
 	local x = math.clamp(front.X, minX + 1.5, maxX - 1.5)
 	local z = math.clamp(front.Z, minZ + 1.5, maxZ - 1.5)
 	local surfaceY = findSurfaceY(Vector3.new(x, root.Position.Y, z), player.Character)
@@ -1009,6 +1204,7 @@ function startRound()
 		end
 	end
 	roundNumber += 1
+	setExitOpen(false)
 	local items = AgencyBuilder.ScatterItems(Random.new():NextInteger(1, 1000000000))
 	totals, placedCounts, zoneCounts, zoneTotals = {}, {}, {}, {}
 	roomTotals, roomPlaced, placedRecord = {}, {}, {}
@@ -1064,6 +1260,10 @@ end
 
 -- Construit un niveau et commence une journée.
 local function buildLevel(mapId)
+	if exitConnection then
+		exitConnection:Disconnect()
+		exitConnection = nil
+	end
 	level = AgencyBuilder.Build(mapId)
 	activeMap = mapId
 	itemsFolder = AgencyBuilder.GetItemsFolder()
@@ -1082,8 +1282,12 @@ actionEvent.OnServerEvent:Connect(function(player, action, target, extra)
 	if not state or type(action) ~= "string" then
 		return
 	end
+	if not allowAction(player, if action == "cycle" then 0.5 else 1) then
+		return
+	end
 	if action == "pick" then
 		pick(player, state, target)
+		funnel(player, "FirstPick")
 	elseif action == "place" then
 		place(player, state, target, extra == true)
 	elseif action == "drop" then
@@ -1124,6 +1328,9 @@ upgradeFunction.OnServerInvoke = function(player, upgradeId)
 		return false, "Not enough points. You need " .. TidyConfig.FormatNumber(cost) .. "."
 	end
 	state.Points -= cost
+	pcall(function()
+		track(player, "LogEconomyEvent", Enum.AnalyticsEconomyFlowType.Sink, "Points", cost, state.Points, Enum.AnalyticsEconomyTransactionType.Shop.Name, upgradeId)
+	end)
 	state.Levels[upgradeId] = currentLevel + 1
 	if upgradeId == "Speed" then
 		applyWalkSpeed(player, state)
@@ -1186,18 +1393,46 @@ local function saveKey(player)
 end
 
 -- Charge la sauvegarde. Renvoie (true, données ou nil) si la lecture a réussi, false sinon.
+-- Verrou de session : une sauvegarde "appartient" au serveur qui a chargé le joueur. Quand le joueur
+-- change de serveur (hall -> partie -> hall), le nouveau serveur attend que l'ancien ait fini d'écrire
+-- et libéré le verrou, pour ne jamais charger une sauvegarde périmée ni l'écraser.
+local SESSION_TIMEOUT = 120
+local function lockedByOther(old)
+	return type(old) == "table" and type(old.Session) == "table" and old.Session.Job ~= game.JobId
+		and os.time() - (tonumber(old.Session.Time) or 0) < SESSION_TIMEOUT
+end
+
 local function loadData(player)
 	if not dataStore then
 		return false, nil
 	end
-	for attempt = 1, 3 do
-		local ok, result = pcall(function()
-			return dataStore:GetAsync(saveKey(player))
+	for attempt = 1, 12 do
+		local locked = false
+		local loaded = nil
+		local ok = pcall(function()
+			dataStore:UpdateAsync(saveKey(player), function(old)
+				-- Après ~30 s d'attente, on considère l'ancien verrou comme abandonné (serveur planté).
+				if attempt < 10 and lockedByOther(old) then
+					locked = true
+					return nil
+				end
+				local data = if type(old) == "table" then old else {}
+				data.Session = { Job = game.JobId, Time = os.time() }
+				loaded = data
+				return data
+			end)
 		end)
-		if ok then
-			return true, result
+		if ok and not locked then
+			if loaded then
+				loaded = table.clone(loaded)
+				loaded.Session = nil
+				if next(loaded) == nil then
+					loaded = nil
+				end
+			end
+			return true, loaded
 		end
-		task.wait(attempt)
+		task.wait(if locked then 3 else math.min(attempt, 4))
 	end
 	return false, nil
 end
@@ -1232,18 +1467,29 @@ local function buildSaveData(player, state)
 	}
 end
 
-function saveData(player, state)
+function saveData(player, state, release)
 	-- Jamais d'écriture si la lecture a échoué : on ne doit pas écraser une vraie sauvegarde.
 	if not dataStore or not state or not state.CanSave then
 		return false
 	end
 	local data = buildSaveData(player, state)
+	-- release = true quand le joueur quitte ce serveur : on libère le verrou de session.
+	data.Session = if release then nil else { Job = game.JobId, Time = os.time() }
 	for attempt = 1, 3 do
+		local stolen = false
 		local ok = pcall(function()
-			dataStore:UpdateAsync(saveKey(player), function()
+			dataStore:UpdateAsync(saveKey(player), function(old)
+				if lockedByOther(old) then
+					-- Un autre serveur a pris la main (le joueur y est déjà) : ne rien écraser.
+					stolen = true
+					return nil
+				end
 				return data
 			end)
 		end)
+		if ok and stolen then
+			return false
+		end
 		if ok then
 			if lifetimeStore then
 				pcall(function()
@@ -1457,7 +1703,8 @@ end)
 MarketplaceService.ProcessReceipt = function(receiptInfo)
 	local player = Players:GetPlayerByUserId(receiptInfo.PlayerId)
 	local state = player and states[player]
-	if not state or not state.Loaded then
+	-- Sans sauvegarde chargée, on ne valide jamais un achat (il serait perdu) : Roblox réessaiera.
+	if not state or not state.Loaded or (dataStore and not state.CanSave) then
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 	local receiptId = tostring(receiptInfo.PurchaseId)
@@ -1475,6 +1722,11 @@ MarketplaceService.ProcessReceipt = function(receiptInfo)
 	end
 	notify(player, "purchase", "Thank you! " .. product.Name .. " received.")
 	if state.CanSave and not saveData(player, state) then
+		-- L'achat n'est pas encore écrit : on retire le reçu pour que la prochaine tentative le refasse.
+		local index = table.find(state.Receipts, receiptId)
+		if index then
+			table.remove(state.Receipts, index)
+		end
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 	return Enum.ProductPurchaseDecision.PurchaseGranted
@@ -1550,6 +1802,8 @@ local function enterMap(player, offsetIndex)
 	state.InMap = true
 	player:SetAttribute("InMap", true)
 	player:SetAttribute("QueuePad", 0)
+	funnel(player, "EnteredLevel")
+	track(player, "LogProgressionStartEvent", "Levels", mapIndexOf(activeMap), activeMap or "")
 	player.RespawnLocation = level.Spawn
 	local offset = Vector3.new(((offsetIndex or 1) - 2.5) * 3, 3, 0)
 	moveCharacter(player, level.Spawn.CFrame + offset)
@@ -1566,7 +1820,7 @@ local function enterMap(player, offsetIndex)
 	refreshUnlocks()
 end
 
-local function returnToHub(player)
+function returnToHub(player)
 	local state = states[player]
 	if not state then
 		return
@@ -1624,6 +1878,9 @@ lobbyFunction.OnServerInvoke = function(player, action, argument)
 		returnToHub(player)
 		return true, ""
 	elseif action == "Join" then
+		if not allowAction(player, 10) then
+			return false, "Please wait a moment before trying again."
+		end
 		if isTestServer then
 			return false, "Joining a friend only works in the published game."
 		end
@@ -1825,9 +2082,16 @@ queueEvent.OnServerEvent:Connect(function(player, action, a, b)
 		if not map or not size then
 			return
 		end
-		if not unlockAll and not TidyConfig.IsMapUnlocked(map, clearedOf(state)) then
+		local everyoneUnlocked = true
+		for _, member in queue.Members do
+			local memberState = states[member]
+			if memberState and not TidyConfig.IsMapUnlocked(map, clearedOf(memberState)) then
+				everyoneUnlocked = false
+			end
+		end
+		if not unlockAll and not everyoneUnlocked then
 			local previous = TidyConfig.GetMap(map.Requires)
-			notify(player, "error", "🔒 Finish the " .. (previous and previous.Short or "previous level") .. " to unlock " .. map.Name .. "!")
+			notify(player, "error", "🔒 Everyone in the group must finish the " .. (previous and previous.Short or "previous level") .. " to play " .. map.Name .. "!")
 			return
 		end
 		queue.Map = map.Id
@@ -1875,8 +2139,16 @@ if hub then
 					end
 					if onPad and current == 0 then
 						local queue = queues[onPad]
-						if not queue.Launching and (queue.Host == nil or #queue.Members < queue.Size) and not queue.Countdown then
+						local chosenMap = queue.Map and TidyConfig.GetMap(queue.Map)
+						local mapOk = unlockAll or not chosenMap or TidyConfig.IsMapUnlocked(chosenMap, clearedOf(state))
+						if not mapOk then
+							if not lastFullNotice[player] or os.clock() - lastFullNotice[player] > 4 then
+								lastFullNotice[player] = os.clock()
+								notify(player, "error", "🔒 You haven't unlocked this level yet. Try another pad!")
+							end
+						elseif not queue.Launching and (queue.Host == nil or #queue.Members < queue.Size) and not queue.Countdown then
 							table.insert(queue.Members, player)
+							funnel(player, "Queue")
 							if not queue.Host then
 								queue.Host = player
 							end
@@ -1928,6 +2200,7 @@ local function onPlayerAdded(player)
 	if states[player] then
 		return
 	end
+	funnel(player, "Joined")
 	local leaderstats = Instance.new("Folder")
 	leaderstats.Name = "leaderstats"
 	local pointsValue = Instance.new("IntValue")
@@ -2188,6 +2461,8 @@ for _, player in Players:GetPlayers() do
 end
 
 Players.PlayerRemoving:Connect(function(player)
+	actionBudget[player] = nil
+	funnelDone[player] = nil
 	leaveQueue(player)
 	local state = states[player]
 	if state then
@@ -2197,7 +2472,11 @@ Players.PlayerRemoving:Connect(function(player)
 	returnAllItems(player)
 	states[player] = nil
 	lastLift[player] = nil
-	saveData(player, state)
+	pendingSaves += 1
+	task.spawn(function()
+		saveData(player, state, true)
+		pendingSaves -= 1
+	end)
 	if state and state.Loaded then
 		refreshUnlocks(true)
 	end
@@ -2218,12 +2497,13 @@ game:BindToClose(function()
 	for player, state in states do
 		pending += 1
 		task.spawn(function()
-			saveData(player, state)
+			saveData(player, state, true)
 			pending -= 1
 		end)
 	end
 	local started = os.clock()
-	while pending > 0 and os.clock() - started < 25 do
+	-- Attend aussi les sauvegardes des joueurs déjà partis (sinon elles peuvent être coupées).
+	while (pending > 0 or pendingSaves > 0) and os.clock() - started < 25 do
 		task.wait(0.5)
 	end
 end)

@@ -7,6 +7,33 @@ les poser sur la bonne étagère. Seul ou jusqu'à 4 joueurs.
 Tout le monde (hall d'accueil, niveaux, mobilier, objets, lumières) est **construit par les scripts
 au lancement du jeu**. Il n'y a rien à poser à la main dans Studio.
 
+## Nouveautés de la version 10 (sortie)
+
+- **Boutique simple, uniquement des passes** : VIP 39 R$ (titre doré + panier doré), +5 Carry 49, +15 Carry 129,
+  +30 Carry 200, Max Speed 89, Infinite Magnet 699. Les paniers se cumulent (5 → 55 objets). Icônes prêtes dans
+  `marketing/pass_icons`. Serveurs privés à activer (voir `docs/BOUTIQUE.md`).
+- **Panier** : 5 objets de base, seuls les passes l'agrandissent. Seuls 5 objets restent visibles dans la pile.
+- **Chaque objet a son étagère** (catégories avec couleur et panneau), la consigne dit exactement où aller.
+- **Fin de niveau** : confettis, écran « WELL DONE! » et **porte EXIT verte** près de l'entrée qui ramène au hall.
+- **Touches** : **L** retour au hall (avec confirmation), **- / +** volume de la musique, **M** couper la musique.
+- **Mode test** signalé par un bandeau rouge « TEST MODE » dans Studio.
+- **Décors extérieurs détaillés**, hall avec vue sur la ville, éclairage recalibré, atrium des bureaux meublé.
+- **Sécurité des sauvegardes** : verrou de session entre serveurs, attente des sauvegardes à la fermeture,
+  achats jamais validés sans sauvegarde. Anti-spam des actions et anti-triche sur les records de temps.
+- **Statistiques Roblox** (voir plus bas).
+
+## Statistiques (Creator Hub)
+
+Le jeu envoie automatiquement à Roblox les étapes clés des joueurs. Pour les voir :
+**Creator Hub > votre expérience > Analytics** (onglets **Funnels**, **Custom Events**, **Economy**, **Progression**).
+- **Funnels > Onboarding** : combien de joueurs arrivent, montent sur une plateforme, entrent dans un niveau,
+  ramassent un premier objet, rangent un premier objet, finissent une pièce, finissent un niveau.
+  C'est là que l'on voit où les joueurs abandonnent.
+- **Progression** : niveaux commencés et terminés (Warehouse, Agency, Corporate Offices).
+- **Custom Events** : pièces terminées (RoomCleared_...).
+- **Economy** : points dépensés en améliorations.
+Les données apparaissent quelques heures après les premières parties, une fois le jeu publié.
+
 ## Nouveautés de la version 9
 
 - **Objets refaits un par un** : formes plus réalistes, couleurs vives, **étiquettes imprimées**
@@ -111,7 +138,7 @@ dans Studio, les noms sont bien `TidyManager` et `TidyUI`.)
   par les **panneaux suspendus** et cliquez pour le ranger. Sur mobile, touchez l'objet ou le meuble.
 - Les objets portés s'**empilent** dans vos mains. **Molette** (ou **E**) : changer d'objet. **Q** (A en AZERTY) : lâcher.
 - Outils : **1** main, **2** aimant (à débloquer dans les améliorations)
-- **Y** : libérer la souris. **M** : couper la musique. **G / F / R** : améliorations, boutique, paramètres.
+- **Y** : libérer la souris. **M** : couper la musique, **- / +** : volume. **G / F / R / L** : améliorations, boutique, paramètres, retour au hall.
 - Livres, colis et classeurs vont sur le meuble de **la même couleur**.
 - Quand tout est rangé : **victoire** (+1 win, +1 000 points), puis **Play again** ou **Back to lobby**.
 
