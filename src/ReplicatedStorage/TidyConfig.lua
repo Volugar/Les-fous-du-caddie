@@ -456,7 +456,7 @@ TidyConfig.LightLevel = 1
 -- MODE TEST (dans Roblox Studio seulement, jamais dans le jeu publié) :
 -- true = tous les niveaux et toutes les pièces sont ouverts et vous avez TestPoints points
 -- pour tout essayer. Rien n'est sauvegardé pendant ce mode. Mettez false pour jouer "normalement" dans Studio.
-TidyConfig.TestUnlockAll = true
+TidyConfig.TestUnlockAll = false
 TidyConfig.TestPoints = 1000000
 
 -- Musique d'ambiance. Mettez ici l'identifiant de la musique après l'avoir importée sur Roblox,

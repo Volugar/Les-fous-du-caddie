@@ -69,7 +69,7 @@ Les données apparaissent quelques heures après les premières parties, une foi
 
 ## Mode test (pour analyser tout le jeu dans Studio)
 
-Dans le script **`TidyConfig`** : `TidyConfig.TestUnlockAll = true` (réglage par défaut).
+Dans le script **`TidyConfig`** : `TidyConfig.TestUnlockAll = false` (réglage par défaut de la version publiée). Mettez `true` pour tout tester.
 Quand vous cliquez sur **Play dans Roblox Studio** : les 3 niveaux et toutes les pièces sont ouverts et vous avez
 **1 000 000 de points** (`TidyConfig.TestPoints`) pour acheter toutes les améliorations. Rien n'est sauvegardé pendant
 ce mode, votre vraie progression n'est pas touchée. Le mode ne marche **jamais dans le jeu publié**.
