@@ -1198,7 +1198,7 @@ local function updateHint()
 	if info then
 		local categoryId = player:GetAttribute("CarryingCategory") or ""
 		local category = categoryId ~= "" and TidyConfig.GetCategory(carrying, categoryId)
-		hud.Hint.Text = if category then (info.Icon .. "  Put it on a " .. string.upper(category.Name) .. " " .. info.PlaceName) else (info.Icon .. "  " .. info.Hint)
+		hud.Hint.Text = if category then (info.Icon .. "  Put it on a " .. info.PlaceName .. " labeled " .. string.upper(category.Name)) else (info.Icon .. "  " .. info.Hint)
 	else
 		hud.Hint.Text = if isTouchOnly then "👆  Tap an item to pick it up" else "🖱️  Click an item to pick it up"
 	end
